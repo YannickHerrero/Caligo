@@ -47,6 +47,8 @@ impl PlayerInfoScreen {
             KeyCode::Char('q') | KeyCode::Esc | KeyCode::Tab => return self.return_to_map(),
             KeyCode::Up | KeyCode::Char('k') => self.scroll_focused(-1, player),
             KeyCode::Down | KeyCode::Char('j') => self.scroll_focused(1, player),
+            KeyCode::Left | KeyCode::Char('h') => self.focus = InfoFocus::Attacks,
+            KeyCode::Right | KeyCode::Char('l') => self.focus = InfoFocus::Inventory,
             _ => {}
         }
         Transition::Stay
