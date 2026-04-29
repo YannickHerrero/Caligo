@@ -48,7 +48,17 @@ impl From<NodeKind> for TransitionKind {
 }
 
 impl TransitionKind {
-    fn color(&self) -> Color {
+    pub const ALL: &'static [TransitionKind] = &[
+        TransitionKind::EasyFight,
+        TransitionKind::NormalFight,
+        TransitionKind::EliteFight,
+        TransitionKind::Camp,
+        TransitionKind::Shop,
+        TransitionKind::Mystery,
+        TransitionKind::Boss,
+    ];
+
+    pub fn color(&self) -> Color {
         match self {
             TransitionKind::EasyFight => Color::Rgb(120, 200, 120),
             TransitionKind::NormalFight => Color::Rgb(220, 90, 90),
@@ -60,7 +70,7 @@ impl TransitionKind {
         }
     }
 
-    fn label(&self) -> &'static str {
+    pub fn label(&self) -> &'static str {
         match self {
             TransitionKind::EasyFight => "Fight!",
             TransitionKind::NormalFight => "Fight!",
@@ -69,6 +79,18 @@ impl TransitionKind {
             TransitionKind::Shop => "Shop",
             TransitionKind::Mystery => "?",
             TransitionKind::Boss => "BOSS",
+        }
+    }
+
+    pub fn name(&self) -> &'static str {
+        match self {
+            TransitionKind::EasyFight => "Easy Fight",
+            TransitionKind::NormalFight => "Normal Fight",
+            TransitionKind::EliteFight => "Elite Fight",
+            TransitionKind::Camp => "Campment",
+            TransitionKind::Shop => "Shop",
+            TransitionKind::Mystery => "Mystery",
+            TransitionKind::Boss => "Boss",
         }
     }
 
