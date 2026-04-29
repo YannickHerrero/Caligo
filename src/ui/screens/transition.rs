@@ -25,6 +25,7 @@ enum TransitionEffect {
     HorizontalBars,
     VerticalCurtains,
     RadialClose,
+    DiagonalSlash,
 }
 
 impl From<NodeKind> for TransitionKind {
@@ -102,7 +103,7 @@ impl TransitionKind {
 
     fn effect(&self) -> TransitionEffect {
         match self {
-            TransitionKind::EasyFight => TransitionEffect::HorizontalBars,
+            TransitionKind::EasyFight => TransitionEffect::DiagonalSlash,
             TransitionKind::NormalFight => TransitionEffect::HorizontalBars,
             TransitionKind::EliteFight => TransitionEffect::HorizontalBars,
             TransitionKind::Camp => TransitionEffect::RadialClose,
@@ -134,6 +135,17 @@ impl TransitionEffect {
                 let (dx, dy) = aspect_distance(x, y, area);
                 let d = (dx * dx + dy * dy).sqrt();
                 d >= (1.0 - intensity)
+            }
+            TransitionEffect::DiagonalSlash => {
+                // Sweep diagonally from top-left to bottom-right. The thin
+                // tilt around the threshold gives the band a clean slash
+                // feel rather than a fade.
+                let w = area.width.max(1) as f32;
+                let h = area.height.max(1) as f32;
+                let dx = (x as f32 - area.x as f32) / w;
+                let dy = (y as f32 - area.y as f32) / h;
+                let progress = (dx + dy) * 0.5;
+                progress < intensity
             }
         }
     }
