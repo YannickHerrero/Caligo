@@ -27,6 +27,7 @@ enum TransitionEffect {
     RadialClose,
     DiagonalSlash,
     RandomScatter,
+    SpiralInward,
 }
 
 impl From<NodeKind> for TransitionKind {
@@ -106,7 +107,7 @@ impl TransitionKind {
         match self {
             TransitionKind::EasyFight => TransitionEffect::DiagonalSlash,
             TransitionKind::NormalFight => TransitionEffect::RandomScatter,
-            TransitionKind::EliteFight => TransitionEffect::HorizontalBars,
+            TransitionKind::EliteFight => TransitionEffect::SpiralInward,
             TransitionKind::Camp => TransitionEffect::RadialClose,
             TransitionKind::Shop => TransitionEffect::VerticalCurtains,
             TransitionKind::Mystery => TransitionEffect::RadialClose,
@@ -157,6 +158,20 @@ impl TransitionEffect {
                 let by = (y as i32 - area.y as i32) as u32;
                 let threshold = scatter_threshold(bx, by);
                 threshold < intensity
+            }
+            TransitionEffect::SpiralInward => {
+                // Outer cells with angle near 0 fill first; the front then
+                // sweeps clockwise and steadily inward, sketching a spiral
+                // arm. arms=3 gives several visible turns before the center
+                // is reached.
+                let (dx, dy) = aspect_distance(x, y, area);
+                let d = (dx * dx + dy * dy).sqrt().min(1.5);
+                let theta = dy.atan2(dx);
+                let theta_norm = theta / std::f32::consts::TAU + 0.5;
+                let arms = 3.0;
+                let max_fill = 1.5 + arms;
+                let fill_at = (1.5 - d) + arms * theta_norm;
+                intensity * max_fill > fill_at
             }
         }
     }
