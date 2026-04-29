@@ -4,7 +4,9 @@ use super::projectile::ProjectileKind;
 const JUMP_DURATION: f32 = 0.8;
 const DASH_DURATION: f32 = 0.5;
 const THROW_DURATION: f32 = 0.6;
+const SELF_CAST_DURATION: f32 = 0.6;
 const JUMP_HEIGHT: f32 = 4.0;
+const SELF_CAST_HEIGHT: f32 = 2.0;
 const THROW_ARC_HEIGHT: f32 = 5.0;
 
 #[derive(Debug, Clone)]
@@ -22,6 +24,7 @@ impl Animation {
             AnimationKind::Jump => JUMP_DURATION,
             AnimationKind::Dash => DASH_DURATION,
             AnimationKind::Throw(_) => THROW_DURATION,
+            AnimationKind::SelfCast => SELF_CAST_DURATION,
         };
         Self {
             kind,
@@ -65,6 +68,10 @@ impl Animation {
                 (x, base.1)
             }
             AnimationKind::Throw(_) => (self.start_x, base.1),
+            AnimationKind::SelfCast => {
+                let y_offset = -SELF_CAST_HEIGHT * (std::f32::consts::PI * p).sin();
+                (self.start_x, base.1 + y_offset)
+            }
         }
     }
 

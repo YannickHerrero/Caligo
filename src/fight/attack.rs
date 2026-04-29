@@ -8,6 +8,7 @@ pub enum AnimationKind {
     Jump,
     Dash,
     Throw(ProjectileKind),
+    SelfCast,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
