@@ -1,4 +1,4 @@
-use crate::ui::screens::{FightScreen, MapScreen, SelectScreen, TransitionScreen};
+use crate::ui::screens::{DemoScreen, FightScreen, MapScreen, SelectScreen, TransitionScreen};
 use crossterm::event::KeyCode;
 use ratatui::Frame;
 
@@ -6,6 +6,7 @@ pub enum Screen {
     Select(SelectScreen),
     Fight(FightScreen),
     Map(MapScreen),
+    Demo(DemoScreen),
     Transition(TransitionScreen),
 }
 
@@ -21,6 +22,7 @@ impl Screen {
             Screen::Select(s) => s.handle_key(key),
             Screen::Fight(s) => s.handle_key(key),
             Screen::Map(s) => s.handle_key(key),
+            Screen::Demo(s) => s.handle_key(key),
             Screen::Transition(s) => s.handle_key(key),
         }
     }
@@ -30,6 +32,7 @@ impl Screen {
             Screen::Select(s) => s.update(),
             Screen::Fight(s) => s.update(),
             Screen::Map(s) => s.update(),
+            Screen::Demo(s) => s.update(),
             Screen::Transition(s) => s.update(),
         }
     }
@@ -39,6 +42,7 @@ impl Screen {
             Screen::Select(s) => s.draw(frame),
             Screen::Fight(s) => s.draw(frame),
             Screen::Map(s) => s.draw(frame),
+            Screen::Demo(s) => s.draw(frame),
             Screen::Transition(s) => s.draw(frame),
         }
     }
