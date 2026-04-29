@@ -16,10 +16,12 @@ use ratatui::{
 const EDGE_DIM: Color = Color::Rgb(60, 52, 44);
 const EDGE_BRIGHT: Color = Color::Rgb(200, 170, 110);
 const VISITED_COLOR: Color = Color::Rgb(90, 90, 96);
+const CURRENT_COLOR: Color = Color::Rgb(255, 230, 170);
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 enum NodeState {
     Visited,
+    Current,
     Reachable,
     Future,
 }
@@ -56,7 +58,7 @@ pub fn render_edges(frame: &mut Frame, graph: &MapGraph, area: Rect) {
     frame.render_widget(canvas, area);
 }
 
-pub fn render_nodes(frame: &mut Frame, graph: &MapGraph, area: Rect) {
+pub fn render_nodes(frame: &mut Frame, graph: &MapGraph, cursor: Option<NodeId>, area: Rect) {
     if area.width == 0 || area.height == 0 {
         return;
     }
@@ -71,8 +73,11 @@ pub fn render_nodes(frame: &mut Frame, graph: &MapGraph, area: Rect) {
             width: 1,
             height: 1,
         };
-        let state = node_state(node, &reachable);
-        let style = node_style(node, state);
+        let state = node_state(node, graph, &reachable);
+        let mut style = node_style(node, state);
+        if Some(node.id) == cursor {
+            style = style.add_modifier(Modifier::REVERSED);
+        }
         let span = Span::styled(node.kind.icon(), style);
         frame.render_widget(Paragraph::new(span), cell);
     }
@@ -82,8 +87,10 @@ fn reachable_set(graph: &MapGraph) -> HashSet<NodeId> {
     graph.reachable().into_iter().collect()
 }
 
-fn node_state(node: &MapNode, reachable: &HashSet<NodeId>) -> NodeState {
-    if node.visited {
+fn node_state(node: &MapNode, graph: &MapGraph, reachable: &HashSet<NodeId>) -> NodeState {
+    if Some(node.id) == graph.current {
+        NodeState::Current
+    } else if node.visited {
         NodeState::Visited
     } else if reachable.contains(&node.id) {
         NodeState::Reachable
@@ -95,6 +102,9 @@ fn node_state(node: &MapNode, reachable: &HashSet<NodeId>) -> NodeState {
 fn node_style(node: &MapNode, state: NodeState) -> Style {
     match state {
         NodeState::Visited => Style::default().fg(VISITED_COLOR),
+        NodeState::Current => Style::default()
+            .fg(CURRENT_COLOR)
+            .add_modifier(Modifier::BOLD),
         NodeState::Reachable => Style::default()
             .fg(node.kind.color())
             .add_modifier(Modifier::BOLD),
