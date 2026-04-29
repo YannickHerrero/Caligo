@@ -39,7 +39,7 @@ impl FightState {
                 Attack::new("Pinch", AnimationKind::Dash),
                 Attack::new("Bubble", AnimationKind::Throw(ProjectileKind::Water)),
                 Attack::new("Snip", AnimationKind::Jump),
-                Attack::new("Shell Bash", AnimationKind::Dash),
+                Attack::new("Cosmic Orb", AnimationKind::Throw(ProjectileKind::EnergyBall)),
             ],
             items: vec![
                 Item::new("Small Potion"),
