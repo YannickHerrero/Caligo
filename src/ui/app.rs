@@ -88,7 +88,7 @@ impl App {
 
         let top_bar_area = chunks[0];
         let scene_area = chunks[1];
-        let _action_area = chunks[2];
+        let action_area = chunks[2];
 
         let current_size = (scene_area.width, scene_area.height);
         if current_size != self.last_terminal_size {
@@ -106,5 +106,6 @@ impl App {
         widgets::render_enemy(frame, &self.fight.enemy, scene_area);
         widgets::render_ground(frame, &self.environment, scene_area);
         widgets::render_hp_bars(frame, &self.fight, scene_area);
+        widgets::render_action_menu(frame, &self.fight, action_area);
     }
 }

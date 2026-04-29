@@ -89,3 +89,41 @@ pub fn render_hp_bars(frame: &mut Frame, fight: &FightState, area: Rect) {
     };
     frame.render_widget(Paragraph::new(enemy_bar), enemy_area);
 }
+
+pub fn render_action_menu(frame: &mut Frame, fight: &FightState, area: Rect) {
+    use ratatui::widgets::{Block, Borders};
+    use crate::fight::Action;
+
+    let lines: Vec<Line> = Action::ALL
+        .iter()
+        .enumerate()
+        .map(|(i, action)| {
+            let is_selected = i == fight.selected_action;
+            let cursor = if is_selected { "> " } else { "  " };
+            let style = if is_selected {
+                Style::default()
+                    .fg(Color::Yellow)
+                    .add_modifier(Modifier::BOLD)
+            } else {
+                Style::default().fg(Color::Gray)
+            };
+            Line::from(vec![
+                Span::styled(cursor, style),
+                Span::styled(action.label(), style),
+            ])
+        })
+        .collect();
+
+    let block = Block::default()
+        .borders(Borders::ALL)
+        .border_style(Style::default().fg(Color::DarkGray))
+        .title(Span::styled(
+            " Actions ",
+            Style::default()
+                .fg(Color::Yellow)
+                .add_modifier(Modifier::BOLD),
+        ));
+
+    let widget = Paragraph::new(lines).block(block);
+    frame.render_widget(widget, area);
+}
