@@ -1,10 +1,12 @@
+use super::projectile::ProjectileKind;
+
 pub const MAX_ATTACKS: usize = 4;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum AnimationKind {
     Jump,
     Dash,
-    EnergyBall,
+    Throw(ProjectileKind),
 }
 
 #[derive(Debug, Clone)]

@@ -3,6 +3,7 @@ use super::animation::Animation;
 use super::attack::{AnimationKind, Attack};
 use super::enemy::Enemy;
 use super::item::Item;
+use super::projectile::ProjectileKind;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum MenuState {
@@ -36,7 +37,7 @@ impl FightState {
             selected_action: 0,
             attacks: vec![
                 Attack::new("Pinch", AnimationKind::Dash),
-                Attack::new("Bubble", AnimationKind::EnergyBall),
+                Attack::new("Bubble", AnimationKind::Throw(ProjectileKind::Water)),
                 Attack::new("Snip", AnimationKind::Jump),
                 Attack::new("Shell Bash", AnimationKind::Dash),
             ],

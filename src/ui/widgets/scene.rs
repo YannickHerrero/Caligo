@@ -196,12 +196,12 @@ pub fn render_projectile(frame: &mut Frame, anim: &Animation, ground_y: f32, are
         width: 1,
         height: 1,
     };
+    let color = anim
+        .projectile_kind()
+        .map(|k| k.color())
+        .unwrap_or(Color::White);
     frame.render_widget(
-        Paragraph::new("●").style(
-            Style::default()
-                .fg(Color::Rgb(140, 220, 255))
-                .add_modifier(Modifier::BOLD),
-        ),
+        Paragraph::new("●").style(Style::default().fg(color).add_modifier(Modifier::BOLD)),
         cell,
     );
 }

@@ -1,8 +1,9 @@
 use super::attack::AnimationKind;
+use super::projectile::ProjectileKind;
 
 const JUMP_DURATION: f32 = 0.8;
 const DASH_DURATION: f32 = 0.5;
-const ENERGY_BALL_DURATION: f32 = 0.6;
+const THROW_DURATION: f32 = 0.6;
 const JUMP_HEIGHT: f32 = 4.0;
 
 #[derive(Debug, Clone)]
@@ -19,7 +20,7 @@ impl Animation {
         let duration = match kind {
             AnimationKind::Jump => JUMP_DURATION,
             AnimationKind::Dash => DASH_DURATION,
-            AnimationKind::EnergyBall => ENERGY_BALL_DURATION,
+            AnimationKind::Throw(_) => THROW_DURATION,
         };
         Self {
             kind,
@@ -62,17 +63,24 @@ impl Animation {
                 let x = self.start_x + (self.target_x - self.start_x) * lerp;
                 (x, base.1)
             }
-            AnimationKind::EnergyBall => (self.start_x, base.1),
+            AnimationKind::Throw(_) => (self.start_x, base.1),
         }
     }
 
     pub fn projectile_position(&self, base_y: f32) -> Option<(f32, f32)> {
         match self.kind {
-            AnimationKind::EnergyBall => {
+            AnimationKind::Throw(_) => {
                 let p = self.progress();
                 let x = self.start_x + 12.0 + (self.target_x - self.start_x - 12.0) * p;
                 Some((x, base_y - 1.0))
             }
+            _ => None,
+        }
+    }
+
+    pub fn projectile_kind(&self) -> Option<ProjectileKind> {
+        match self.kind {
+            AnimationKind::Throw(p) => Some(p),
             _ => None,
         }
     }
