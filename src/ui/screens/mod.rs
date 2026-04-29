@@ -8,6 +8,6 @@ pub mod transition;
 pub use demo::DemoScreen;
 pub use fight::FightScreen;
 pub use map::MapScreen;
-pub use player_info::{InfoFocus, PlayerInfoScreen};
+pub use player_info::PlayerInfoScreen;
 pub use select::SelectScreen;
 pub use transition::{TransitionKind, TransitionScreen};
