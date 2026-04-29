@@ -1,6 +1,6 @@
 use crate::crab::Crab;
 use crate::environment::{Environment, GroundStyle};
-use crate::fight::{Action, FightState, MenuState};
+use crate::fight::{Action, Animation, FightState, MenuState};
 use crate::ui::widgets;
 use anyhow::Result;
 use crossterm::event::{self, Event, KeyCode, KeyEventKind};
@@ -113,9 +113,23 @@ impl App {
                     self.fight.attack_selected += 2;
                 }
             }
-            KeyCode::Enter => {}
+            KeyCode::Enter => {
+                self.start_attack_animation();
+            }
             _ => {}
         }
+    }
+
+    fn start_attack_animation(&mut self) {
+        let idx = self.fight.attack_selected;
+        if idx >= self.fight.attacks.len() {
+            return;
+        }
+        let kind = self.fight.attacks[idx].kind;
+        let start_x = self.crab.position.0;
+        let target_x = (self.last_terminal_size.0 as f32 - 18.0).max(start_x + 5.0);
+        self.fight.animation = Some(Animation::new(kind, start_x, target_x));
+        self.fight.menu_state = MenuState::Main;
     }
 
     fn handle_item_menu(&mut self, key: KeyCode) {
