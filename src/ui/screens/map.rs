@@ -94,8 +94,9 @@ impl MapScreen {
         self.cursor = Some(reachable[new_pos]);
     }
 
-    pub fn update(&mut self) {
+    pub fn update(&mut self) -> Transition {
         self.tick = self.tick.wrapping_add(1);
+        Transition::Stay
     }
 
     pub fn draw(&mut self, frame: &mut Frame) {

@@ -42,7 +42,11 @@ impl App {
             }
 
             if last_tick.elapsed() >= tick_rate {
-                self.screen.update();
+                match self.screen.update() {
+                    Transition::Stay => {}
+                    Transition::Quit => self.should_quit = true,
+                    Transition::Goto(screen) => self.screen = screen,
+                }
                 last_tick = Instant::now();
             }
         }

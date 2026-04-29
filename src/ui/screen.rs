@@ -23,7 +23,7 @@ impl Screen {
         }
     }
 
-    pub fn update(&mut self) {
+    pub fn update(&mut self) -> Transition {
         match self {
             Screen::Select(s) => s.update(),
             Screen::Fight(s) => s.update(),

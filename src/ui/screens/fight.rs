@@ -132,7 +132,7 @@ impl FightScreen {
         Transition::Stay
     }
 
-    pub fn update(&mut self) {
+    pub fn update(&mut self) -> Transition {
         let dt = 0.05;
         let bounds = (
             self.last_terminal_size.0 as f32 - 2.0,
@@ -150,6 +150,7 @@ impl FightScreen {
         }
 
         self.environment.update_cycle(dt, 1.0, 1.0);
+        Transition::Stay
     }
 
     pub fn draw(&mut self, frame: &mut Frame) {

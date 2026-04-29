@@ -66,7 +66,9 @@ impl SelectScreen {
         }
     }
 
-    pub fn update(&mut self) {}
+    pub fn update(&mut self) -> Transition {
+        Transition::Stay
+    }
 
     pub fn draw(&mut self, frame: &mut Frame) {
         let area = frame.area();
