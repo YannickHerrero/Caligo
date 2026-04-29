@@ -1,5 +1,5 @@
 use crate::crab::Crab;
-use crate::environment::{Environment, TimeOfDay};
+use crate::environment::{Environment, GroundStyle, TimeOfDay};
 use ratatui::{
     layout::Rect,
     style::{Color, Modifier, Style},
@@ -115,4 +115,39 @@ pub fn render_environment_background(frame: &mut Frame, env: &Environment, area:
             area,
         );
     }
+}
+
+pub fn render_ground(frame: &mut Frame, env: &Environment, area: Rect) {
+    if area.height == 0 {
+        return;
+    }
+
+    let ground_y = area.y + area.height.saturating_sub(1);
+
+    let ground_color = match env.time_of_day {
+        TimeOfDay::Night => match env.ground_style {
+            GroundStyle::Beach => Color::Rgb(82, 72, 52),
+            GroundStyle::Garden => Color::Rgb(28, 64, 40),
+            GroundStyle::Rocky => Color::Rgb(70, 74, 78),
+            GroundStyle::Minimal => Color::Rgb(48, 72, 44),
+        },
+        _ => match env.ground_style {
+            GroundStyle::Beach => Color::Rgb(200, 183, 132),
+            GroundStyle::Garden => Color::Rgb(46, 128, 72),
+            GroundStyle::Rocky => Color::Rgb(126, 132, 138),
+            GroundStyle::Minimal => Color::Rgb(96, 146, 78),
+        },
+    };
+
+    let ground_display: String = env.ground_line.chars().take(area.width as usize).collect();
+
+    let ground_area = Rect {
+        x: area.x,
+        y: ground_y,
+        width: area.width,
+        height: 1,
+    };
+
+    let ground_widget = Paragraph::new(ground_display).style(Style::default().fg(ground_color));
+    frame.render_widget(ground_widget, ground_area);
 }
