@@ -1,7 +1,9 @@
 use crate::map::{self, MapGraph, NodeId};
 use crate::player::Player;
 use crate::ui::screen::{Screen, Transition};
-use crate::ui::screens::{FightScreen, SelectScreen, TransitionKind, TransitionScreen};
+use crate::ui::screens::{
+    FightScreen, PlayerInfoScreen, SelectScreen, TransitionKind, TransitionScreen,
+};
 use crate::ui::widgets;
 use crossterm::event::KeyCode;
 use ratatui::layout::{Constraint, Direction, Layout};
@@ -39,6 +41,10 @@ impl MapScreen {
     }
 
     pub fn handle_key(&mut self, key: KeyCode, player: &mut Player) -> Transition {
+        if matches!(key, KeyCode::Tab) && self.menu_state == MapMenuState::Browsing {
+            let from = std::mem::replace(self, MapScreen::new());
+            return Transition::Goto(Screen::PlayerInfo(PlayerInfoScreen::new(from)));
+        }
         match self.menu_state {
             MapMenuState::Browsing => self.handle_browsing(key),
             MapMenuState::Confirming => self.handle_confirming(key, player),
