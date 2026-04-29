@@ -1,7 +1,7 @@
 use crate::map::{MapGraph, MapNode};
 use ratatui::{
     layout::Rect,
-    style::{Color, Style},
+    style::{Color, Modifier, Style},
     symbols::Marker,
     text::Span,
     widgets::{
@@ -11,7 +11,6 @@ use ratatui::{
     Frame,
 };
 
-const NODE_GLYPH: &str = "●";
 const EDGE_COLOR: Color = Color::Rgb(80, 70, 60);
 
 pub fn render_edges(frame: &mut Frame, graph: &MapGraph, area: Rect) {
@@ -59,7 +58,10 @@ pub fn render_nodes(frame: &mut Frame, graph: &MapGraph, area: Rect) {
             width: 1,
             height: 1,
         };
-        let span = Span::styled(NODE_GLYPH, Style::default().fg(Color::Gray));
+        let style = Style::default()
+            .fg(node.kind.color())
+            .add_modifier(Modifier::BOLD);
+        let span = Span::styled(node.kind.icon(), style);
         frame.render_widget(Paragraph::new(span), cell);
     }
 }

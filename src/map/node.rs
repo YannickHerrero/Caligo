@@ -1,3 +1,5 @@
+use ratatui::style::Color;
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum NodeKind {
     EasyFight,
@@ -31,6 +33,30 @@ impl NodeKind {
             NodeKind::Shop => "Spend coin on goods.",
             NodeKind::Mystery => "An unknown encounter awaits.",
             NodeKind::Boss => "The floor's master. No turning back.",
+        }
+    }
+
+    pub fn icon(&self) -> &'static str {
+        match self {
+            NodeKind::EasyFight => "x",
+            NodeKind::NormalFight => "⚔",
+            NodeKind::EliteFight => "⚜",
+            NodeKind::Camp => "♨",
+            NodeKind::Shop => "$",
+            NodeKind::Mystery => "?",
+            NodeKind::Boss => "☠",
+        }
+    }
+
+    pub fn color(&self) -> Color {
+        match self {
+            NodeKind::EasyFight => Color::Rgb(120, 200, 120),
+            NodeKind::NormalFight => Color::Rgb(220, 90, 90),
+            NodeKind::EliteFight => Color::Rgb(255, 150, 60),
+            NodeKind::Camp => Color::Rgb(255, 210, 110),
+            NodeKind::Shop => Color::Rgb(110, 210, 230),
+            NodeKind::Mystery => Color::Rgb(190, 130, 230),
+            NodeKind::Boss => Color::Rgb(230, 70, 130),
         }
     }
 }
