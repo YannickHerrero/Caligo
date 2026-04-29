@@ -11,6 +11,25 @@ pub enum AnimationKind {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Effect {
+    Damage(u32),
+}
+
+impl Effect {
+    pub fn label(&self) -> String {
+        match self {
+            Effect::Damage(n) => format!("DMG {}", n),
+        }
+    }
+
+    pub fn color(&self) -> Color {
+        match self {
+            Effect::Damage(_) => Color::Rgb(255, 140, 90),
+        }
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Element {
     Neutral,
     Fire,
@@ -45,7 +64,7 @@ impl Element {
 pub struct Attack {
     pub name: String,
     pub kind: AnimationKind,
-    pub damage: u32,
+    pub effect: Effect,
     pub mana_cost: u32,
     pub element: Element,
     pub description: String,
@@ -60,10 +79,28 @@ impl Attack {
         element: Element,
         description: &str,
     ) -> Self {
+        Self::with_effect(
+            name,
+            kind,
+            Effect::Damage(damage),
+            mana_cost,
+            element,
+            description,
+        )
+    }
+
+    pub fn with_effect(
+        name: &str,
+        kind: AnimationKind,
+        effect: Effect,
+        mana_cost: u32,
+        element: Element,
+        description: &str,
+    ) -> Self {
         Self {
             name: name.to_string(),
             kind,
-            damage,
+            effect,
             mana_cost,
             element,
             description: description.to_string(),

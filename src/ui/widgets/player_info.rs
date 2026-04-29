@@ -401,10 +401,7 @@ pub fn render_info_strip(frame: &mut Frame, attack: Option<&Attack>, area: Rect)
                     .add_modifier(Modifier::BOLD),
             ),
             Span::styled("  ", Style::default()),
-            Span::styled(
-                format!("DMG {}", a.damage),
-                Style::default().fg(Color::Rgb(255, 140, 90)),
-            ),
+            Span::styled(a.effect.label(), Style::default().fg(a.effect.color())),
             Span::styled("  ", Style::default()),
             Span::styled(
                 format!("MP {}", a.mana_cost),
