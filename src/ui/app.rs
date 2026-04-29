@@ -1,6 +1,6 @@
 use crate::crab::Crab;
 use crate::environment::{Environment, GroundStyle};
-use crate::fight::{Action, FightState};
+use crate::fight::{Action, FightState, MenuState};
 use crate::ui::widgets;
 use anyhow::Result;
 use crossterm::event::{self, Event, KeyCode, KeyEventKind};
@@ -116,6 +116,12 @@ impl App {
         widgets::render_enemy(frame, &self.fight.enemy, scene_area);
         widgets::render_ground(frame, &self.environment, scene_area);
         widgets::render_hp_bars(frame, &self.fight, scene_area);
-        widgets::render_action_menu(frame, &self.fight, action_area);
+        match self.fight.menu_state {
+            MenuState::Main => widgets::render_action_menu(frame, &self.fight, action_area),
+            MenuState::AttackSelect => {
+                widgets::render_attack_menu(frame, &self.fight, action_area)
+            }
+            MenuState::ItemSelect => widgets::render_action_menu(frame, &self.fight, action_area),
+        }
     }
 }

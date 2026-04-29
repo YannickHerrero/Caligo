@@ -127,3 +127,62 @@ pub fn render_action_menu(frame: &mut Frame, fight: &FightState, area: Rect) {
     let widget = Paragraph::new(lines).block(block);
     frame.render_widget(widget, area);
 }
+
+pub fn render_attack_menu(frame: &mut Frame, fight: &FightState, area: Rect) {
+    use ratatui::layout::{Constraint, Direction, Layout};
+    use ratatui::widgets::{Block, Borders};
+    use crate::fight::MAX_ATTACKS;
+
+    let block = Block::default()
+        .borders(Borders::ALL)
+        .border_style(Style::default().fg(Color::DarkGray))
+        .title(Span::styled(
+            " Attacks ",
+            Style::default()
+                .fg(Color::Yellow)
+                .add_modifier(Modifier::BOLD),
+        ));
+    let inner = block.inner(area);
+    frame.render_widget(block, area);
+
+    let rows = Layout::default()
+        .direction(Direction::Vertical)
+        .constraints([Constraint::Ratio(1, 2), Constraint::Ratio(1, 2)])
+        .split(inner);
+
+    for row_idx in 0..2 {
+        let cols = Layout::default()
+            .direction(Direction::Horizontal)
+            .constraints([Constraint::Ratio(1, 2), Constraint::Ratio(1, 2)])
+            .split(rows[row_idx]);
+
+        for col_idx in 0..2 {
+            let slot = row_idx * 2 + col_idx;
+            let label = if slot < fight.attacks.len() {
+                fight.attacks[slot].name.clone()
+            } else if slot < MAX_ATTACKS {
+                "—".to_string()
+            } else {
+                String::new()
+            };
+
+            let is_selected = slot == fight.attack_selected;
+            let cursor = if is_selected { "> " } else { "  " };
+            let style = if is_selected {
+                Style::default()
+                    .fg(Color::Yellow)
+                    .add_modifier(Modifier::BOLD)
+            } else if slot < fight.attacks.len() {
+                Style::default().fg(Color::Gray)
+            } else {
+                Style::default().fg(Color::DarkGray)
+            };
+
+            let line = Line::from(vec![
+                Span::styled(cursor, style),
+                Span::styled(label, style),
+            ]);
+            frame.render_widget(Paragraph::new(line), cols[col_idx]);
+        }
+    }
+}
