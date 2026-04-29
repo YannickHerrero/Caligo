@@ -34,8 +34,14 @@ impl MapScreen {
             KeyCode::Char('q') | KeyCode::Esc => {
                 return Transition::Goto(Screen::Select(SelectScreen::new()));
             }
-            KeyCode::Left | KeyCode::Char('h') => self.move_cursor(-1),
-            KeyCode::Right | KeyCode::Char('l') => self.move_cursor(1),
+            KeyCode::Left | KeyCode::Char('h') => {
+                self.move_cursor(-1);
+                self.center_scroll_on_cursor();
+            }
+            KeyCode::Right | KeyCode::Char('l') => {
+                self.move_cursor(1);
+                self.center_scroll_on_cursor();
+            }
             KeyCode::Up | KeyCode::Char('k') => self.scroll_by(-SCROLL_STEP),
             KeyCode::Down | KeyCode::Char('j') => self.scroll_by(SCROLL_STEP),
             KeyCode::PageUp => self.scroll_by(-(self.last_viewport_height as i32)),
