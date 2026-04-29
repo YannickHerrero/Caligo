@@ -1,25 +1,18 @@
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Action {
     Attack,
-    Skill,
     Item,
-    Defend,
+    Flee,
 }
 
 impl Action {
-    pub const ALL: &'static [Action] = &[
-        Action::Attack,
-        Action::Skill,
-        Action::Item,
-        Action::Defend,
-    ];
+    pub const ALL: &'static [Action] = &[Action::Attack, Action::Item, Action::Flee];
 
     pub fn label(&self) -> &'static str {
         match self {
             Action::Attack => "Attack",
-            Action::Skill => "Skill",
             Action::Item => "Item",
-            Action::Defend => "Defend",
+            Action::Flee => "Flee",
         }
     }
 }
