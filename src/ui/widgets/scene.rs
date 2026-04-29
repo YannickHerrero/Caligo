@@ -1,6 +1,6 @@
 use crate::crab::Crab;
 use crate::environment::{Environment, GroundStyle, TimeOfDay};
-use crate::fight::Enemy;
+use crate::fight::{Animation, Enemy};
 use ratatui::{
     layout::Rect,
     style::{Color, Modifier, Style},
@@ -176,4 +176,32 @@ pub fn render_enemy(frame: &mut Frame, enemy: &Enemy, area: Rect) {
     let y = area.height as i32 - sprite_height - 1;
 
     render_element(frame, &enemy.sprite, x, y, enemy.color, area);
+}
+
+pub fn render_projectile(frame: &mut Frame, anim: &Animation, ground_y: f32, area: Rect) {
+    let Some((x, y)) = anim.projectile_position(ground_y) else {
+        return;
+    };
+    if x < 0.0 || y < 0.0 {
+        return;
+    }
+    let xi = x.round() as u16;
+    let yi = y.round() as u16;
+    if xi >= area.width || yi >= area.height {
+        return;
+    }
+    let cell = Rect {
+        x: area.x + xi,
+        y: area.y + yi,
+        width: 1,
+        height: 1,
+    };
+    frame.render_widget(
+        Paragraph::new("●").style(
+            Style::default()
+                .fg(Color::Rgb(140, 220, 255))
+                .add_modifier(Modifier::BOLD),
+        ),
+        cell,
+    );
 }
