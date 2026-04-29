@@ -68,7 +68,7 @@ pub fn render_hp_bars(frame: &mut Frame, fight: &FightState, area: Rect) {
     let player_width = 32u16.min(area.width);
     let player_area = Rect {
         x: area.x + 1,
-        y: area.y + area.height.saturating_sub(2),
+        y: area.y,
         width: player_width,
         height: 1,
     };
