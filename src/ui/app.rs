@@ -211,8 +211,14 @@ impl App {
         }
 
         widgets::render_top_bar(frame, &self.fight, top_bar_area);
+        let crab_override = self
+            .fight
+            .animation
+            .as_ref()
+            .map(|anim| anim.crab_position(self.crab.position));
+
         widgets::render_environment_background(frame, &self.environment, scene_area);
-        widgets::render_crab(frame, &self.crab, scene_area);
+        widgets::render_crab(frame, &self.crab, scene_area, crab_override);
         widgets::render_enemy(frame, &self.fight.enemy, scene_area);
         widgets::render_ground(frame, &self.environment, scene_area);
         widgets::render_hp_bars(frame, &self.fight, scene_area);

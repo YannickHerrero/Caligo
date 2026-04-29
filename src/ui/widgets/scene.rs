@@ -11,12 +11,18 @@ use ratatui::{
 
 use super::helpers::render_element;
 
-pub fn render_crab(frame: &mut Frame, crab: &Crab, area: Rect) {
+pub fn render_crab(
+    frame: &mut Frame,
+    crab: &Crab,
+    area: Rect,
+    position_override: Option<(f32, f32)>,
+) {
     let crab_frame = crab.get_frame();
     let color = crab.color();
 
-    let x_offset = crab.position.0 as u16;
-    let y_offset = crab.position.1 as u16;
+    let (px, py) = position_override.unwrap_or(crab.position);
+    let x_offset = px.max(0.0) as u16;
+    let y_offset = py.max(0.0) as u16;
 
     let lines: Vec<Line> = crab_frame
         .lines()
