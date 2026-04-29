@@ -14,6 +14,7 @@ pub struct App {
     pub environment: Environment,
     pub fight: FightState,
     last_terminal_size: (u16, u16),
+    last_action_height: u16,
 }
 
 impl App {
@@ -24,6 +25,7 @@ impl App {
             environment: Environment::generate(80, 15, GroundStyle::default()),
             fight: FightState::new(),
             last_terminal_size: (0, 0),
+            last_action_height: 0,
         }
     }
 
@@ -56,6 +58,14 @@ impl App {
     }
 
     fn handle_key(&mut self, key: KeyCode) {
+        match self.fight.menu_state {
+            MenuState::Main => self.handle_main_menu(key),
+            MenuState::AttackSelect => self.handle_attack_menu(key),
+            MenuState::ItemSelect => self.handle_item_menu(key),
+        }
+    }
+
+    fn handle_main_menu(&mut self, key: KeyCode) {
         let action_count = Action::ALL.len();
         match key {
             KeyCode::Char('q') | KeyCode::Esc => self.should_quit = true,
@@ -65,6 +75,74 @@ impl App {
             }
             KeyCode::Down | KeyCode::Char('j') => {
                 self.fight.selected_action = (self.fight.selected_action + 1) % action_count;
+            }
+            KeyCode::Enter => match self.fight.selected() {
+                Action::Attack => {
+                    self.fight.menu_state = MenuState::AttackSelect;
+                }
+                Action::Item => {
+                    self.fight.menu_state = MenuState::ItemSelect;
+                }
+                Action::Flee => {}
+            },
+            _ => {}
+        }
+    }
+
+    fn handle_attack_menu(&mut self, key: KeyCode) {
+        match key {
+            KeyCode::Esc | KeyCode::Backspace => {
+                self.fight.menu_state = MenuState::Main;
+            }
+            KeyCode::Char('q') => {
+                self.fight.menu_state = MenuState::Main;
+            }
+            KeyCode::Left | KeyCode::Char('h') => {
+                self.fight.attack_selected ^= 1;
+            }
+            KeyCode::Right | KeyCode::Char('l') => {
+                self.fight.attack_selected ^= 1;
+            }
+            KeyCode::Up | KeyCode::Char('k') => {
+                if self.fight.attack_selected >= 2 {
+                    self.fight.attack_selected -= 2;
+                }
+            }
+            KeyCode::Down | KeyCode::Char('j') => {
+                if self.fight.attack_selected < 2 {
+                    self.fight.attack_selected += 2;
+                }
+            }
+            KeyCode::Enter => {}
+            _ => {}
+        }
+    }
+
+    fn handle_item_menu(&mut self, key: KeyCode) {
+        let len = self.fight.items.len();
+        match key {
+            KeyCode::Esc | KeyCode::Backspace => {
+                self.fight.menu_state = MenuState::Main;
+            }
+            KeyCode::Char('q') => {
+                self.fight.menu_state = MenuState::Main;
+            }
+            KeyCode::Up | KeyCode::Char('k') => {
+                if self.fight.item_selected > 0 {
+                    self.fight.item_selected -= 1;
+                    if self.fight.item_selected < self.fight.item_scroll {
+                        self.fight.item_scroll = self.fight.item_selected;
+                    }
+                }
+            }
+            KeyCode::Down | KeyCode::Char('j') => {
+                if self.fight.item_selected + 1 < len {
+                    self.fight.item_selected += 1;
+                    let visible = self.last_action_height as usize;
+                    if visible > 0 && self.fight.item_selected >= self.fight.item_scroll + visible {
+                        self.fight.item_scroll = self.fight.item_selected + 1 - visible;
+                    }
+                }
             }
             KeyCode::Enter => {}
             _ => {}
@@ -99,6 +177,7 @@ impl App {
         let top_bar_area = chunks[0];
         let scene_area = chunks[1];
         let action_area = chunks[2];
+        self.last_action_height = action_area.height.saturating_sub(2);
 
         let current_size = (scene_area.width, scene_area.height);
         if current_size != self.last_terminal_size {
