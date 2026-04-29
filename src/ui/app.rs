@@ -18,11 +18,9 @@ pub struct App {
 
 impl App {
     pub fn new() -> Self {
-        let mut crab = Crab::new((6.0, 100.0), 95);
-        crab.anchor_at(6.0);
         Self {
             should_quit: false,
-            crab,
+            crab: Crab::new((6.0, 100.0), 95),
             environment: Environment::generate(80, 15, GroundStyle::default()),
             fight: FightState::new(),
             last_terminal_size: (0, 0),
@@ -80,6 +78,7 @@ impl App {
             self.last_terminal_size.1 as f32,
         );
         if bounds.0 > 0.0 && bounds.1 > 0.0 {
+            self.crab.walk_range_x = Some((0.0, bounds.0 * 0.4));
             self.crab.update(dt, bounds);
         }
         self.environment.update_cycle(dt, 1.0, 1.0);

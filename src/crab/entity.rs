@@ -110,7 +110,7 @@ pub struct Crab {
     ground_y: f32,
     jump_cooldown: f32,
     celebration_jump_done: bool,
-    pub anchor_x: Option<f32>,
+    pub walk_range_x: Option<(f32, f32)>,
 }
 
 impl Crab {
@@ -138,15 +138,8 @@ impl Crab {
             ground_y: position.1,
             jump_cooldown: 0.0,
             celebration_jump_done: false,
-            anchor_x: None,
+            walk_range_x: None,
         }
-    }
-
-    pub fn anchor_at(&mut self, x: f32) {
-        self.anchor_x = Some(x);
-        self.position.0 = x;
-        self.velocity.0 = 0.0;
-        self.direction = Direction::Right;
     }
 
     pub fn update(&mut self, dt: f32, bounds: (f32, f32)) {
@@ -225,7 +218,7 @@ impl Crab {
             Mood::Hungry => 0.005,
         };
 
-        if self.is_grounded && self.anchor_x.is_none() && self.rng.gen::<f32>() < move_chance {
+        if self.is_grounded && self.rng.gen::<f32>() < move_chance {
             let base_speed = match self.mood {
                 Mood::Ecstatic => 1.5,
                 Mood::Happy => 1.0,
@@ -272,20 +265,19 @@ impl Crab {
 
         let frame_width = 20.0;
 
-        if self.position.0 < 0.0 {
-            self.position.0 = 0.0;
+        let (min_x, max_x) = match self.walk_range_x {
+            Some((lo, hi)) => (lo, (hi - frame_width).max(lo)),
+            None => (0.0, bounds.0 - frame_width),
+        };
+
+        if self.position.0 < min_x {
+            self.position.0 = min_x;
             self.velocity.0 = self.velocity.0.abs();
             self.direction = Direction::Right;
-        } else if self.position.0 + frame_width > bounds.0 {
-            self.position.0 = bounds.0 - frame_width;
+        } else if self.position.0 > max_x {
+            self.position.0 = max_x;
             self.velocity.0 = -self.velocity.0.abs();
             self.direction = Direction::Left;
-        }
-
-        if let Some(anchor) = self.anchor_x {
-            self.position.0 = anchor;
-            self.velocity.0 = 0.0;
-            self.direction = Direction::Right;
         }
     }
 
