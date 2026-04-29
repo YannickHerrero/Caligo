@@ -4,6 +4,7 @@ use crate::fight::FightState;
 use crate::ui::widgets;
 use anyhow::Result;
 use crossterm::event::{self, Event, KeyCode, KeyEventKind};
+use ratatui::layout::{Constraint, Direction, Layout};
 use ratatui::Frame;
 use std::time::{Duration, Instant};
 
@@ -76,17 +77,34 @@ impl App {
     fn draw(&mut self, frame: &mut Frame) {
         let area = frame.area();
 
-        let current_size = (area.width, area.height);
+        let chunks = Layout::default()
+            .direction(Direction::Vertical)
+            .constraints([
+                Constraint::Length(1),
+                Constraint::Min(8),
+                Constraint::Length(8),
+            ])
+            .split(area);
+
+        let top_bar_area = chunks[0];
+        let scene_area = chunks[1];
+        let _action_area = chunks[2];
+
+        let current_size = (scene_area.width, scene_area.height);
         if current_size != self.last_terminal_size {
-            self.environment =
-                Environment::generate(area.width, area.height, self.environment.ground_style);
+            self.environment = Environment::generate(
+                scene_area.width,
+                scene_area.height,
+                self.environment.ground_style,
+            );
             self.last_terminal_size = current_size;
         }
 
-        widgets::render_environment_background(frame, &self.environment, area);
-        widgets::render_crab(frame, &self.crab, area);
-        widgets::render_enemy(frame, &self.fight.enemy, area);
-        widgets::render_ground(frame, &self.environment, area);
-        widgets::render_hp_bars(frame, &self.fight, area);
+        widgets::render_top_bar(frame, &self.fight, top_bar_area);
+        widgets::render_environment_background(frame, &self.environment, scene_area);
+        widgets::render_crab(frame, &self.crab, scene_area);
+        widgets::render_enemy(frame, &self.fight.enemy, scene_area);
+        widgets::render_ground(frame, &self.environment, scene_area);
+        widgets::render_hp_bars(frame, &self.fight, scene_area);
     }
 }

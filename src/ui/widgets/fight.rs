@@ -1,11 +1,32 @@
 use crate::fight::FightState;
 use ratatui::{
-    layout::Rect,
+    layout::{Alignment, Rect},
     style::{Color, Modifier, Style},
     text::{Line, Span},
     widgets::Paragraph,
     Frame,
 };
+
+pub fn render_top_bar(frame: &mut Frame, fight: &FightState, area: Rect) {
+    let line = Line::from(vec![
+        Span::styled(
+            format!("Floor {}", fight.floor),
+            Style::default()
+                .fg(Color::Yellow)
+                .add_modifier(Modifier::BOLD),
+        ),
+        Span::styled("  —  ", Style::default().fg(Color::DarkGray)),
+        Span::styled(
+            fight.enemy.name.clone(),
+            Style::default()
+                .fg(fight.enemy.color)
+                .add_modifier(Modifier::BOLD),
+        ),
+    ]);
+
+    let widget = Paragraph::new(line).alignment(Alignment::Center);
+    frame.render_widget(widget, area);
+}
 
 const HP_BAR_WIDTH: usize = 16;
 
