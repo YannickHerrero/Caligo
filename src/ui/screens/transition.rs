@@ -28,6 +28,7 @@ enum TransitionEffect {
     DiagonalSlash,
     RandomScatter,
     SpiralInward,
+    Checkerboard,
 }
 
 impl From<NodeKind> for TransitionKind {
@@ -109,7 +110,7 @@ impl TransitionKind {
             TransitionKind::NormalFight => TransitionEffect::RandomScatter,
             TransitionKind::EliteFight => TransitionEffect::SpiralInward,
             TransitionKind::Camp => TransitionEffect::IrisClose,
-            TransitionKind::Shop => TransitionEffect::VerticalCurtains,
+            TransitionKind::Shop => TransitionEffect::Checkerboard,
             TransitionKind::Mystery => TransitionEffect::IrisClose,
             TransitionKind::Boss => TransitionEffect::HorizontalBars,
         }
@@ -172,6 +173,25 @@ impl TransitionEffect {
                 let max_fill = 1.5 + arms;
                 let fill_at = (1.5 - d) + arms * theta_norm;
                 intensity * max_fill > fill_at
+            }
+            TransitionEffect::Checkerboard => {
+                // Two-pass tile fill in 2x1 squares (the cell aspect makes
+                // 2 wide x 1 tall look square). Phase 1 (intensity 0 -> 0.5)
+                // fills the even-parity squares left-to-right, top-to-bottom;
+                // phase 2 (0.5 -> 1.0) fills the odd-parity squares the same
+                // way over what's already painted.
+                let bx = ((x as i32 - area.x as i32) / 2).max(0);
+                let by = (y as i32 - area.y as i32).max(0);
+                let parity = (bx + by).rem_euclid(2);
+                let cells_per_row = (area.width as i32 / 2).max(1);
+                let total = (cells_per_row as f32 * area.height as f32).max(1.0);
+                let block_idx = (by * cells_per_row + bx) as f32;
+                let p_norm = block_idx / total;
+                if parity == 0 {
+                    intensity * 2.0 > p_norm
+                } else {
+                    (intensity - 0.5) * 2.0 > p_norm
+                }
             }
         }
     }
