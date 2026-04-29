@@ -58,6 +58,9 @@ impl App {
     }
 
     fn handle_key(&mut self, key: KeyCode) {
+        if self.fight.animation.is_some() {
+            return;
+        }
         match self.fight.menu_state {
             MenuState::Main => self.handle_main_menu(key),
             MenuState::AttackSelect => self.handle_attack_menu(key),
@@ -225,12 +228,16 @@ impl App {
         }
         widgets::render_ground(frame, &self.environment, scene_area);
         widgets::render_hp_bars(frame, &self.fight, scene_area);
-        match self.fight.menu_state {
-            MenuState::Main => widgets::render_action_menu(frame, &self.fight, action_area),
-            MenuState::AttackSelect => {
-                widgets::render_attack_menu(frame, &self.fight, action_area)
+        if self.fight.animation.is_none() {
+            match self.fight.menu_state {
+                MenuState::Main => widgets::render_action_menu(frame, &self.fight, action_area),
+                MenuState::AttackSelect => {
+                    widgets::render_attack_menu(frame, &self.fight, action_area)
+                }
+                MenuState::ItemSelect => {
+                    widgets::render_item_menu(frame, &self.fight, action_area)
+                }
             }
-            MenuState::ItemSelect => widgets::render_item_menu(frame, &self.fight, action_area),
         }
     }
 }
