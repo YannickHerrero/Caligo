@@ -97,10 +97,11 @@ impl MapScreen {
         }
 
         let pulse = pulse_phase(self.tick);
+        let scroll = widgets::compute_map_scroll(&self.graph, self.cursor, map_area.height);
         widgets::render_map_header(frame, &self.graph, header_area);
         widgets::render_environment_background(frame, &self.environment, sky_area);
-        widgets::render_map_edges(frame, &self.graph, map_area);
-        widgets::render_map_nodes(frame, &self.graph, self.cursor, pulse, map_area);
+        widgets::render_map_edges(frame, &self.graph, scroll, map_area);
+        widgets::render_map_nodes(frame, &self.graph, self.cursor, pulse, scroll, map_area);
         widgets::render_map_info(frame, &self.graph, self.cursor, info_area);
     }
 }

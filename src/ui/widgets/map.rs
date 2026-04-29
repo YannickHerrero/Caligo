@@ -1,6 +1,6 @@
 use std::collections::HashSet;
 
-use crate::map::{MapGraph, MapNode, NodeId};
+use crate::map::{generate::FLOORS, MapGraph, MapNode, NodeId};
 use ratatui::{
     layout::{Alignment, Rect},
     style::{Color, Modifier, Style},
@@ -17,6 +17,8 @@ const EDGE_DIM: Color = Color::Rgb(60, 52, 44);
 const EDGE_BRIGHT: Color = Color::Rgb(200, 170, 110);
 const VISITED_COLOR: Color = Color::Rgb(90, 90, 96);
 const CURRENT_COLOR: Color = Color::Rgb(255, 230, 170);
+
+pub const FLOOR_ROWS: u16 = 5;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 enum NodeState {
@@ -109,12 +111,33 @@ fn controls_line() -> Line<'static> {
     ])
 }
 
-pub fn render_edges(frame: &mut Frame, graph: &MapGraph, area: Rect) {
+pub fn compute_scroll(graph: &MapGraph, cursor: Option<NodeId>, viewport_height: u16) -> i32 {
+    let focus_floor = cursor
+        .or(graph.current)
+        .map(|id| graph.node(id).floor as i32)
+        .unwrap_or(0);
+    let virtual_y = floor_virtual_y(focus_floor);
+    let viewport_center = viewport_height as i32 / 2;
+    let scroll = virtual_y - viewport_center;
+    let max_scroll = (virtual_map_height() - viewport_height as i32).max(0);
+    scroll.clamp(0, max_scroll)
+}
+
+pub fn virtual_map_height() -> i32 {
+    FLOORS as i32 * FLOOR_ROWS as i32
+}
+
+fn floor_virtual_y(floor: i32) -> i32 {
+    let inv = FLOORS as i32 - 1 - floor;
+    inv * FLOOR_ROWS as i32 + FLOOR_ROWS as i32 / 2
+}
+
+pub fn render_edges(frame: &mut Frame, graph: &MapGraph, scroll: i32, area: Rect) {
     if area.width < 2 || area.height < 2 {
         return;
     }
     let reachable = reachable_set(graph);
-    let edges = collect_edges(graph, area, &reachable);
+    let edges = collect_edges(graph, area, scroll, &reachable);
     if edges.is_empty() {
         return;
     }
@@ -146,6 +169,7 @@ pub fn render_nodes(
     graph: &MapGraph,
     cursor: Option<NodeId>,
     pulse: f32,
+    scroll: i32,
     area: Rect,
 ) {
     if area.width == 0 || area.height == 0 {
@@ -153,7 +177,7 @@ pub fn render_nodes(
     }
     let reachable = reachable_set(graph);
     for node in &graph.nodes {
-        let Some((x, y)) = node_position(node, graph, area) else {
+        let Some((x, y)) = node_screen_position(node, area, scroll) else {
             continue;
         };
         let cell = Rect {
@@ -232,18 +256,27 @@ struct Edge {
     color: Color,
 }
 
-fn collect_edges(graph: &MapGraph, area: Rect, reachable: &HashSet<NodeId>) -> Vec<Edge> {
+fn collect_edges(
+    graph: &MapGraph,
+    area: Rect,
+    scroll: i32,
+    reachable: &HashSet<NodeId>,
+) -> Vec<Edge> {
     let current = graph.current;
     let mut edges = Vec::new();
     for node in &graph.nodes {
-        let Some((x1, y1)) = node_position(node, graph, area) else {
-            continue;
-        };
+        let (x1, sy1) = node_unclipped_position(node, area, scroll);
         for &child_id in &node.children {
             let child = graph.node(child_id);
-            let Some((x2, y2)) = node_position(child, graph, area) else {
+            let (x2, sy2) = node_unclipped_position(child, area, scroll);
+            // Skip when both endpoints are far outside viewport.
+            let h = area.height as i32;
+            let both_above = sy1 < 0 && sy2 < 0;
+            let both_below = sy1 >= h && sy2 >= h;
+            if both_above || both_below {
                 continue;
-            };
+            }
+
             let color = if Some(node.id) == current && reachable.contains(&child_id) {
                 EDGE_BRIGHT
             } else if current.is_none() && reachable.contains(&child_id) {
@@ -251,11 +284,12 @@ fn collect_edges(graph: &MapGraph, area: Rect, reachable: &HashSet<NodeId>) -> V
             } else {
                 EDGE_DIM
             };
+            let to_canvas_y = |sy: i32| (area.height as f64) - (sy as f64 + 0.5);
             edges.push(Edge {
                 x1: (x1 - area.x) as f64 + 0.5,
-                y1: (area.height as f64) - ((y1 - area.y) as f64 + 0.5),
+                y1: to_canvas_y(sy1),
                 x2: (x2 - area.x) as f64 + 0.5,
-                y2: (area.height as f64) - ((y2 - area.y) as f64 + 0.5),
+                y2: to_canvas_y(sy2),
                 color,
             });
         }
@@ -263,18 +297,24 @@ fn collect_edges(graph: &MapGraph, area: Rect, reachable: &HashSet<NodeId>) -> V
     edges
 }
 
-pub fn node_position(node: &MapNode, graph: &MapGraph, area: Rect) -> Option<(u16, u16)> {
-    let floors = graph.floor_count() as u16;
-    if floors == 0 || area.width == 0 || area.height == 0 {
+fn node_screen_position(node: &MapNode, area: Rect, scroll: i32) -> Option<(u16, u16)> {
+    let (x, sy) = node_unclipped_position(node, area, scroll);
+    if sy < 0 || sy >= area.height as i32 {
         return None;
     }
-    let columns = crate::map::generate::COLUMNS as u16;
-    let col_step = (area.width.saturating_sub(2)) as f32 / columns as f32;
-    let row_step = (area.height.saturating_sub(2)) as f32 / floors as f32;
+    Some((x, area.y + sy as u16))
+}
 
-    // Boss at top, floor 0 at bottom: invert y.
-    let inv_floor = (floors - 1) - node.floor as u16;
+fn node_unclipped_position(node: &MapNode, area: Rect, scroll: i32) -> (u16, i32) {
+    let columns = crate::map::generate::COLUMNS as u16;
+    let usable_w = area.width.saturating_sub(2);
+    let col_step = if columns == 0 {
+        0.0
+    } else {
+        usable_w as f32 / columns as f32
+    };
     let x = area.x + 1 + (col_step * (node.column as f32 + 0.5)) as u16;
-    let y = area.y + 1 + (row_step * (inv_floor as f32 + 0.5)) as u16;
-    Some((x, y))
+    let virtual_y = floor_virtual_y(node.floor as i32);
+    let sy = virtual_y - scroll;
+    (x, sy)
 }
