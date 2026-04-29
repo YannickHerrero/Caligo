@@ -1,4 +1,4 @@
-use crate::fight::{AnimationKind, Attack, Effect, Element, ProjectileKind};
+use crate::fight::{AnimationKind, Attack, BuffKind, Effect, Element, ProjectileKind};
 
 pub const STARTER_ATTACK_NAMES: [&str; 4] = ["Pinch", "Bubble", "Snip", "Cosmic Orb"];
 
@@ -117,6 +117,18 @@ fn neutral() -> Vec<Attack> {
             10,
             Element::Neutral,
             "Channels a sustained healing pulse.",
+        ),
+        Attack::with_effect(
+            "Sharpen",
+            AnimationKind::SelfCast,
+            Effect::Buff {
+                kind: BuffKind::AttackUp,
+                magnitude: 25,
+                duration: 3,
+            },
+            4,
+            Element::Neutral,
+            "Hones the claws to a razor edge.",
         ),
     ]
 }
@@ -380,6 +392,18 @@ fn earth() -> Vec<Attack> {
             12,
             Element::Earth,
             "Calls the deep earth to crush the foe.",
+        ),
+        Attack::with_effect(
+            "Carapace",
+            AnimationKind::SelfCast,
+            Effect::Buff {
+                kind: BuffKind::DefenseUp,
+                magnitude: 30,
+                duration: 3,
+            },
+            4,
+            Element::Earth,
+            "Hardens the shell against incoming blows.",
         ),
     ]
 }
