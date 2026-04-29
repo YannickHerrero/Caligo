@@ -3,6 +3,13 @@ use super::attack::Attack;
 use super::enemy::Enemy;
 use super::item::Item;
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum MenuState {
+    Main,
+    AttackSelect,
+    ItemSelect,
+}
+
 pub struct FightState {
     pub player_hp: u32,
     pub player_max_hp: u32,
@@ -11,6 +18,10 @@ pub struct FightState {
     pub selected_action: usize,
     pub attacks: Vec<Attack>,
     pub items: Vec<Item>,
+    pub menu_state: MenuState,
+    pub attack_selected: usize,
+    pub item_selected: usize,
+    pub item_scroll: usize,
 }
 
 impl FightState {
@@ -41,6 +52,10 @@ impl FightState {
                 Item::new("Driftwood"),
                 Item::new("Sand Dollar"),
             ],
+            menu_state: MenuState::Main,
+            attack_selected: 0,
+            item_selected: 0,
+            item_scroll: 0,
         }
     }
 
