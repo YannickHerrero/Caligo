@@ -169,10 +169,17 @@ impl App {
             self.last_terminal_size.0 as f32 - 2.0,
             self.last_terminal_size.1 as f32,
         );
-        if bounds.0 > 0.0 && bounds.1 > 0.0 {
+
+        if let Some(anim) = self.fight.animation.as_mut() {
+            anim.tick(dt);
+            if anim.is_done() {
+                self.fight.animation = None;
+            }
+        } else if bounds.0 > 0.0 && bounds.1 > 0.0 {
             self.crab.walk_range_x = Some((0.0, bounds.0 * 0.4));
             self.crab.update(dt, bounds);
         }
+
         self.environment.update_cycle(dt, 1.0, 1.0);
     }
 
