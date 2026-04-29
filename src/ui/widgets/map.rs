@@ -182,12 +182,13 @@ pub fn render_nodes(
     }
     let reachable = reachable_set(graph);
     for node in &graph.nodes {
-        let Some(card_rect) = card_rect(node, area, scroll) else {
+        let (top_x, top_y) = card_top_left(node, area, scroll);
+        if !card_overlaps_area(top_x, top_y, area) {
             continue;
-        };
+        }
         let state = node_state(node, graph, &reachable);
         let is_cursor = Some(node.id) == cursor;
-        render_card(frame, node, state, is_cursor, pulse, card_rect);
+        render_card(frame, node, state, is_cursor, pulse, top_x, top_y, area);
     }
 }
 
@@ -197,19 +198,23 @@ fn render_card(
     state: NodeState,
     is_cursor: bool,
     pulse: f32,
-    card_rect: Rect,
+    top_x: i32,
+    top_y: i32,
+    area: Rect,
 ) {
     let (border_color, label_color, icon_color) = card_colors(node, state, pulse);
 
     let mut border_style = Style::default().fg(border_color);
-    if state == NodeState::Reachable || state == NodeState::Current {
+    if state == NodeState::Reachable || state == NodeState::Current || is_cursor {
         border_style = border_style.add_modifier(Modifier::BOLD);
     }
-    if is_cursor {
-        border_style = border_style.add_modifier(Modifier::BOLD);
-    }
+    let icon_style = Style::default()
+        .fg(icon_color)
+        .add_modifier(Modifier::BOLD);
+    let label_style = Style::default().fg(label_color);
+    let inside_style = Style::default();
 
-    let border_set = if is_cursor {
+    let bs = if is_cursor {
         border::DOUBLE
     } else if state == NodeState::Current {
         border::ROUNDED
@@ -217,28 +222,84 @@ fn render_card(
         border::PLAIN
     };
 
-    let block = Block::default()
-        .borders(Borders::ALL)
-        .border_set(border_set)
-        .border_style(border_style);
+    let icon_chars: Vec<char> = node.kind.icon().chars().collect();
+    let label_chars: Vec<char> = node.kind.card_label().chars().collect();
 
-    let inner = block.inner(card_rect);
-    frame.render_widget(block, card_rect);
-    if inner.width == 0 || inner.height == 0 {
-        return;
+    let w = CARD_WIDTH as i32;
+    let h = CARD_HEIGHT as i32;
+    let last_col = w - 1;
+    let last_row = h - 1;
+    let inner_w = w - 2;
+    let icon_start = 1 + (inner_w - icon_chars.len() as i32) / 2;
+    let label_start = 1 + (inner_w - label_chars.len() as i32) / 2;
+
+    let view_x_min = area.x as i32;
+    let view_x_max = (area.x + area.width) as i32;
+    let view_y_min = area.y as i32;
+    let view_y_max = (area.y + area.height) as i32;
+
+    let buf = frame.buffer_mut();
+    for row in 0..h {
+        let sy = top_y + row;
+        if sy < view_y_min || sy >= view_y_max {
+            continue;
+        }
+        for col in 0..w {
+            let sx = top_x + col;
+            if sx < view_x_min || sx >= view_x_max {
+                continue;
+            }
+            let Some(cell) = buf.cell_mut((sx as u16, sy as u16)) else {
+                continue;
+            };
+
+            // Border cells
+            let border_glyph: Option<&str> = if row == 0 && col == 0 {
+                Some(bs.top_left)
+            } else if row == 0 && col == last_col {
+                Some(bs.top_right)
+            } else if row == last_row && col == 0 {
+                Some(bs.bottom_left)
+            } else if row == last_row && col == last_col {
+                Some(bs.bottom_right)
+            } else if row == 0 {
+                Some(bs.horizontal_top)
+            } else if row == last_row {
+                Some(bs.horizontal_bottom)
+            } else if col == 0 {
+                Some(bs.vertical_left)
+            } else if col == last_col {
+                Some(bs.vertical_right)
+            } else {
+                None
+            };
+
+            if let Some(g) = border_glyph {
+                cell.set_symbol(g).set_style(border_style);
+                continue;
+            }
+
+            // Inner content rows
+            if row == 1 {
+                let local = col - icon_start;
+                if local >= 0 && local < icon_chars.len() as i32 {
+                    cell.set_char(icon_chars[local as usize])
+                        .set_style(icon_style);
+                    continue;
+                }
+            } else if row == 2 {
+                let local = col - label_start;
+                if local >= 0 && local < label_chars.len() as i32 {
+                    cell.set_char(label_chars[local as usize])
+                        .set_style(label_style);
+                    continue;
+                }
+            }
+
+            // Empty inner cell — paint a space so the card stays opaque.
+            cell.set_char(' ').set_style(inside_style);
+        }
     }
-
-    let icon_style = Style::default()
-        .fg(icon_color)
-        .add_modifier(Modifier::BOLD);
-    let label_style = Style::default().fg(label_color);
-
-    let lines = vec![
-        Line::from(Span::styled(node.kind.icon(), icon_style)).alignment(Alignment::Center),
-        Line::from(Span::styled(node.kind.card_label(), label_style))
-            .alignment(Alignment::Center),
-    ];
-    frame.render_widget(Paragraph::new(lines), inner);
 }
 
 fn card_colors(node: &MapNode, state: NodeState, pulse: f32) -> (Color, Color, Color) {
@@ -262,29 +323,24 @@ fn card_colors(node: &MapNode, state: NodeState, pulse: f32) -> (Color, Color, C
     }
 }
 
-fn card_rect(node: &MapNode, area: Rect, scroll: i32) -> Option<Rect> {
+fn card_top_left(node: &MapNode, area: Rect, scroll: i32) -> (i32, i32) {
     let (cx, csy) = node_unclipped_position(node, area, scroll);
     let half_w = CARD_WIDTH as i32 / 2;
     let half_h = CARD_HEIGHT as i32 / 2;
     let top_x = cx as i32 - half_w;
-    let top_y = csy - half_h;
+    let top_y_screen = csy - half_h;
+    let top_y = area.y as i32 + top_y_screen;
+    (top_x, top_y)
+}
+
+fn card_overlaps_area(top_x: i32, top_y: i32, area: Rect) -> bool {
     let bottom_y = top_y + CARD_HEIGHT as i32;
-    if bottom_y <= 0 || top_y >= area.height as i32 {
-        return None;
-    }
-    if top_x < area.x as i32 || top_x + CARD_WIDTH as i32 > (area.x + area.width) as i32 {
-        return None;
-    }
-    if top_y < 0 || bottom_y > area.height as i32 {
-        // Skip cards that would clip vertically — keep cards intact for readability.
-        return None;
-    }
-    Some(Rect {
-        x: top_x as u16,
-        y: area.y + top_y as u16,
-        width: CARD_WIDTH,
-        height: CARD_HEIGHT,
-    })
+    let right_x = top_x + CARD_WIDTH as i32;
+    let view_x_min = area.x as i32;
+    let view_x_max = (area.x + area.width) as i32;
+    let view_y_min = area.y as i32;
+    let view_y_max = (area.y + area.height) as i32;
+    bottom_y > view_y_min && top_y < view_y_max && right_x > view_x_min && top_x < view_x_max
 }
 
 fn reachable_set(graph: &MapGraph) -> HashSet<NodeId> {
