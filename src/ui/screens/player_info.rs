@@ -54,10 +54,30 @@ impl PlayerInfoScreen {
             KeyCode::Down | KeyCode::Char('j') => self.scroll_focused(1, player),
             KeyCode::Left | KeyCode::Char('h') => self.focus = InfoFocus::Attacks,
             KeyCode::Right | KeyCode::Char('l') => self.focus = InfoFocus::Inventory,
-            KeyCode::Enter => self.start_attack_assign(player),
+            KeyCode::Enter => self.activate_focused(player),
             _ => {}
         }
         Transition::Stay
+    }
+
+    fn activate_focused(&mut self, player: &mut Player) {
+        match self.focus {
+            InfoFocus::Attacks => self.start_attack_assign(player),
+            InfoFocus::Inventory => self.use_focused_item(player),
+        }
+    }
+
+    fn use_focused_item(&mut self, player: &mut Player) {
+        if self.item_cursor >= player.inventory.len() {
+            return;
+        }
+        player.use_inventory_item(self.item_cursor);
+        if self.item_cursor >= player.inventory.len() {
+            self.item_cursor = player.inventory.len().saturating_sub(1);
+        }
+        if !player.inventory.is_empty() && self.item_cursor < self.item_scroll {
+            self.item_scroll = self.item_cursor;
+        }
     }
 
     fn start_attack_assign(&mut self, player: &Player) {

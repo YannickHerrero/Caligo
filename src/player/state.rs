@@ -1,6 +1,6 @@
 use crate::fight::{
     AnimationKind, Attack, Element, Item, ItemStack, PotionSize, ProjectileKind, TrinketKind,
-    MAX_ATTACKS,
+    UtilityKind, MAX_ATTACKS,
 };
 
 pub const MAX_TRINKETS: usize = 2;
@@ -114,4 +114,103 @@ impl Player {
         }
         self.equipped_attacks[slot] = Some(attack_idx);
     }
+
+    pub fn use_inventory_item(&mut self, idx: usize) -> ItemUseResult {
+        if idx >= self.inventory.len() {
+            return ItemUseResult::Nothing;
+        }
+        let kind_kind = self.inventory[idx].item.clone();
+        match &kind_kind {
+            Item::Trinket(kind) => {
+                let result = self.toggle_trinket(*kind);
+                return result;
+            }
+            Item::Utility(UtilityKind::Revive | UtilityKind::EscapeToken) => {
+                return ItemUseResult::CombatOnly;
+            }
+            _ => {}
+        }
+        let consumed = self.consume_one(idx);
+        match consumed {
+            Some(Item::HpPotion(size)) => {
+                let amount = match size {
+                    PotionSize::Small => 10,
+                    PotionSize::Large => 30,
+                };
+                self.hp = (self.hp + amount).min(self.max_hp());
+                ItemUseResult::Healed { hp: amount, mana: 0 }
+            }
+            Some(Item::ManaPotion(size)) => {
+                let amount = match size {
+                    PotionSize::Small => 6,
+                    PotionSize::Large => 15,
+                };
+                self.mana = (self.mana + amount).min(self.max_mana());
+                ItemUseResult::Healed { hp: 0, mana: amount }
+            }
+            Some(Item::AttackStone { attack_name }) => {
+                if !self.owned_attacks.iter().any(|a| a.name == attack_name) {
+                    self.owned_attacks.push(Attack::new(
+                        &attack_name,
+                        AnimationKind::Dash,
+                        6,
+                        2,
+                        Element::Neutral,
+                        "A new attack learned from a stone.",
+                    ));
+                    ItemUseResult::LearnedAttack(attack_name)
+                } else {
+                    ItemUseResult::AlreadyKnown(attack_name)
+                }
+            }
+            Some(Item::Utility(UtilityKind::GoldPouch)) => {
+                self.gold += 25;
+                ItemUseResult::GoldGained(25)
+            }
+            _ => ItemUseResult::Nothing,
+        }
+    }
+
+    fn consume_one(&mut self, idx: usize) -> Option<Item> {
+        if idx >= self.inventory.len() {
+            return None;
+        }
+        let item = self.inventory[idx].item.clone();
+        self.inventory[idx].count = self.inventory[idx].count.saturating_sub(1);
+        if self.inventory[idx].count == 0 {
+            self.inventory.remove(idx);
+        }
+        Some(item)
+    }
+
+    pub fn toggle_trinket(&mut self, kind: TrinketKind) -> ItemUseResult {
+        if let Some(slot) = self
+            .equipped_trinkets
+            .iter()
+            .position(|s| *s == Some(kind))
+        {
+            self.equipped_trinkets[slot] = None;
+            self.hp = self.hp.min(self.max_hp());
+            self.mana = self.mana.min(self.max_mana());
+            return ItemUseResult::TrinketUnequipped(kind);
+        }
+        if let Some(slot) = self.equipped_trinkets.iter().position(|s| s.is_none()) {
+            self.equipped_trinkets[slot] = Some(kind);
+            return ItemUseResult::TrinketEquipped(kind);
+        }
+        self.equipped_trinkets[0] = Some(kind);
+        ItemUseResult::TrinketEquipped(kind)
+    }
+}
+
+#[derive(Debug, Clone)]
+pub enum ItemUseResult {
+    Nothing,
+    Healed { hp: u32, mana: u32 },
+    LearnedAttack(String),
+    AlreadyKnown(String),
+    GoldGained(u32),
+    TrinketEquipped(TrinketKind),
+    TrinketUnequipped(TrinketKind),
+    CombatOnly,
 }
