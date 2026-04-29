@@ -1,4 +1,4 @@
-use crate::fight::{AnimationKind, Attack, Element, ProjectileKind};
+use crate::fight::{AnimationKind, Attack, Effect, Element, ProjectileKind};
 
 pub const STARTER_ATTACK_NAMES: [&str; 4] = ["Pinch", "Bubble", "Snip", "Cosmic Orb"];
 
@@ -93,6 +93,30 @@ fn neutral() -> Vec<Attack> {
             7,
             Element::Neutral,
             "Double-claw guillotine. Rare and brutal.",
+        ),
+        Attack::with_effect(
+            "Mend",
+            AnimationKind::SelfCast,
+            Effect::Heal(10),
+            4,
+            Element::Neutral,
+            "A simple restorative gesture.",
+        ),
+        Attack::with_effect(
+            "First Aid",
+            AnimationKind::SelfCast,
+            Effect::Heal(15),
+            6,
+            Element::Neutral,
+            "Bandage and brace. Pricey but solid.",
+        ),
+        Attack::with_effect(
+            "Greater Mend",
+            AnimationKind::SelfCast,
+            Effect::Heal(22),
+            10,
+            Element::Neutral,
+            "Channels a sustained healing pulse.",
         ),
     ]
 }
@@ -263,6 +287,14 @@ fn water() -> Vec<Attack> {
             12,
             Element::Water,
             "A devastating wall of water.",
+        ),
+        Attack::with_effect(
+            "Salve",
+            AnimationKind::SelfCast,
+            Effect::Heal(6),
+            2,
+            Element::Water,
+            "Cool brine soothes wounds.",
         ),
     ]
 }
