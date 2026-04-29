@@ -1,6 +1,7 @@
 pub mod fight;
 pub mod helpers;
 pub mod map;
+pub mod player_info;
 pub mod scene;
 
 pub use fight::{
@@ -12,6 +13,7 @@ pub use map::{
     render_info_panel as render_map_info, render_nodes as render_map_nodes,
     virtual_map_height as map_virtual_height,
 };
+pub use player_info::{render_crab_panel, render_stats_panel};
 pub use scene::{
     render_crab, render_enemy, render_environment_background, render_ground, render_projectile,
 };

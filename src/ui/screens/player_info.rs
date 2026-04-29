@@ -1,6 +1,8 @@
+use crate::crab::Crab;
 use crate::player::Player;
 use crate::ui::screen::{Screen, Transition};
 use crate::ui::screens::MapScreen;
+use crate::ui::widgets;
 use crossterm::event::KeyCode;
 use ratatui::{
     layout::{Constraint, Direction, Layout, Rect},
@@ -19,6 +21,7 @@ pub enum InfoFocus {
 pub struct PlayerInfoScreen {
     pub focus: InfoFocus,
     pub map: Option<Box<MapScreen>>,
+    crab: Crab,
 }
 
 impl PlayerInfoScreen {
@@ -26,13 +29,13 @@ impl PlayerInfoScreen {
         Self {
             focus: InfoFocus::Attacks,
             map: Some(Box::new(map)),
+            crab: Crab::new((0.0, 0.0), 95),
         }
     }
 
     pub fn handle_key(&mut self, key: KeyCode, _player: &mut Player) -> Transition {
         match key {
-            KeyCode::Char('q') | KeyCode::Esc => self.return_to_map(),
-            KeyCode::Tab => self.return_to_map(),
+            KeyCode::Char('q') | KeyCode::Esc | KeyCode::Tab => self.return_to_map(),
             _ => Transition::Stay,
         }
     }
@@ -48,7 +51,7 @@ impl PlayerInfoScreen {
         Transition::Stay
     }
 
-    pub fn draw(&mut self, frame: &mut Frame, _player: &Player) {
+    pub fn draw(&mut self, frame: &mut Frame, player: &Player) {
         let area = frame.area();
 
         let chunks = Layout::default()
@@ -72,8 +75,8 @@ impl PlayerInfoScreen {
             .constraints([Constraint::Ratio(1, 2), Constraint::Ratio(1, 2)])
             .split(columns[1]);
 
-        draw_panel(frame, " Crab ", left[0], false);
-        draw_panel(frame, " Stats ", left[1], false);
+        widgets::render_crab_panel(frame, &self.crab, left[0]);
+        widgets::render_stats_panel(frame, player, left[1]);
         draw_panel(
             frame,
             " Attacks ",
