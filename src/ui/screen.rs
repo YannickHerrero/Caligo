@@ -1,10 +1,11 @@
-use crate::ui::screens::{FightScreen, SelectScreen};
+use crate::ui::screens::{FightScreen, MapScreen, SelectScreen};
 use crossterm::event::KeyCode;
 use ratatui::Frame;
 
 pub enum Screen {
     Select(SelectScreen),
     Fight(FightScreen),
+    Map(MapScreen),
 }
 
 pub enum Transition {
@@ -18,6 +19,7 @@ impl Screen {
         match self {
             Screen::Select(s) => s.handle_key(key),
             Screen::Fight(s) => s.handle_key(key),
+            Screen::Map(s) => s.handle_key(key),
         }
     }
 
@@ -25,6 +27,7 @@ impl Screen {
         match self {
             Screen::Select(s) => s.update(),
             Screen::Fight(s) => s.update(),
+            Screen::Map(s) => s.update(),
         }
     }
 
@@ -32,6 +35,7 @@ impl Screen {
         match self {
             Screen::Select(s) => s.draw(frame),
             Screen::Fight(s) => s.draw(frame),
+            Screen::Map(s) => s.draw(frame),
         }
     }
 }

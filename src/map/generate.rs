@@ -5,8 +5,8 @@ use std::collections::HashMap;
 use super::graph::MapGraph;
 use super::node::{MapNode, NodeId, NodeKind};
 
-const FLOORS: u8 = 14;
-const COLUMNS: u8 = 6;
+pub const FLOORS: u8 = 14;
+pub const COLUMNS: u8 = 6;
 const PATHS: usize = 6;
 
 pub fn generate() -> MapGraph {

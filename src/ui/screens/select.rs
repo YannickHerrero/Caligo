@@ -1,5 +1,5 @@
 use crate::ui::screen::{Screen, Transition};
-use crate::ui::screens::FightScreen;
+use crate::ui::screens::{FightScreen, MapScreen};
 use crossterm::event::KeyCode;
 use ratatui::{
     layout::{Alignment, Constraint, Direction, Layout, Rect},
@@ -12,26 +12,30 @@ use ratatui::{
 #[derive(Debug, Clone, Copy)]
 pub enum ScreenKind {
     Fight,
+    Map,
 }
 
 impl ScreenKind {
-    pub const ALL: &'static [ScreenKind] = &[ScreenKind::Fight];
+    pub const ALL: &'static [ScreenKind] = &[ScreenKind::Fight, ScreenKind::Map];
 
     pub fn label(&self) -> &'static str {
         match self {
             ScreenKind::Fight => "Fight Screen",
+            ScreenKind::Map => "Map Screen",
         }
     }
 
     pub fn description(&self) -> &'static str {
         match self {
             ScreenKind::Fight => "Turn-based combat with the crab and an enemy.",
+            ScreenKind::Map => "Choose your path across the dungeon floor.",
         }
     }
 
     pub fn build(&self) -> Screen {
         match self {
             ScreenKind::Fight => Screen::Fight(FightScreen::new()),
+            ScreenKind::Map => Screen::Map(MapScreen::new()),
         }
     }
 }
