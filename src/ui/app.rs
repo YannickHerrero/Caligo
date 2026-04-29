@@ -1,5 +1,5 @@
 use crate::ui::screen::{Screen, Transition};
-use crate::ui::screens::FightScreen;
+use crate::ui::screens::SelectScreen;
 use anyhow::Result;
 use crossterm::event::{self, Event, KeyEventKind};
 use ratatui::Frame;
@@ -14,7 +14,7 @@ impl App {
     pub fn new() -> Self {
         Self {
             should_quit: false,
-            screen: Screen::Fight(FightScreen::new()),
+            screen: Screen::Select(SelectScreen::new()),
         }
     }
 

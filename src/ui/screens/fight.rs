@@ -1,7 +1,8 @@
 use crate::crab::Crab;
 use crate::environment::{Environment, GroundStyle};
 use crate::fight::{Action, Animation, FightState, MenuState};
-use crate::ui::screen::Transition;
+use crate::ui::screen::{Screen, Transition};
+use crate::ui::screens::SelectScreen;
 use crate::ui::widgets;
 use crossterm::event::KeyCode;
 use ratatui::layout::{Constraint, Direction, Layout};
@@ -40,7 +41,9 @@ impl FightScreen {
     fn handle_main_menu(&mut self, key: KeyCode) -> Transition {
         let action_count = Action::ALL.len();
         match key {
-            KeyCode::Char('q') | KeyCode::Esc => return Transition::Quit,
+            KeyCode::Char('q') | KeyCode::Esc => {
+                return Transition::Goto(Screen::Select(SelectScreen::new()));
+            }
             KeyCode::Up | KeyCode::Char('k') => {
                 self.fight.selected_action =
                     (self.fight.selected_action + action_count - 1) % action_count;
