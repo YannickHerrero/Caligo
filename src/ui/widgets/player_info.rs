@@ -83,20 +83,34 @@ pub fn render_stats_panel(frame: &mut Frame, player: &Player, area: Rect) {
             .add_modifier(Modifier::BOLD),
     )));
     for (i, slot) in player.equipped_trinkets.iter().enumerate() {
-        let label = match slot {
-            Some(t) => Span::styled(
-                t.name().to_string(),
-                Style::default().fg(Color::Rgb(220, 180, 255)),
-            ),
-            None => Span::styled("—", Style::default().fg(Color::DarkGray)),
-        };
-        lines.push(Line::from(vec![
-            Span::styled(
-                format!(" {}: ", i + 1),
-                Style::default().fg(Color::DarkGray),
-            ),
-            label,
-        ]));
+        let mut spans = vec![Span::styled(
+            format!(" {}: ", i + 1),
+            Style::default().fg(Color::DarkGray),
+        )];
+        match slot {
+            Some(t) => {
+                spans.push(Span::styled(
+                    t.name().to_string(),
+                    Style::default().fg(Color::Rgb(220, 180, 255)),
+                ));
+                let hp_bonus = t.bonus_max_hp();
+                let mana_bonus = t.bonus_max_mana();
+                if hp_bonus > 0 {
+                    spans.push(Span::styled(
+                        format!("  +{} HP", hp_bonus),
+                        Style::default().fg(Color::Rgb(255, 120, 120)),
+                    ));
+                }
+                if mana_bonus > 0 {
+                    spans.push(Span::styled(
+                        format!("  +{} MP", mana_bonus),
+                        Style::default().fg(Color::Rgb(120, 160, 255)),
+                    ));
+                }
+            }
+            None => spans.push(Span::styled("—", Style::default().fg(Color::DarkGray))),
+        }
+        lines.push(Line::from(spans));
     }
 
     frame.render_widget(Paragraph::new(lines), inner);
