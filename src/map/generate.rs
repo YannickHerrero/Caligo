@@ -1,9 +1,11 @@
 use rand::seq::SliceRandom;
 use rand::Rng;
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 
 use super::graph::MapGraph;
 use super::node::{MapNode, NodeId, NodeKind};
+
+type EdgeKey = ((u8, u8), (u8, u8));
 
 pub const FLOORS: u8 = 14;
 pub const COLUMNS: u8 = 5;
@@ -18,6 +20,7 @@ pub fn generate_with<R: Rng>(rng: &mut R) -> MapGraph {
     let mut nodes: Vec<MapNode> = Vec::new();
     let mut floor_lists: Vec<Vec<NodeId>> = vec![Vec::new(); FLOORS as usize];
     let mut cells: HashMap<(u8, u8), NodeId> = HashMap::new();
+    let mut edges: HashSet<EdgeKey> = HashSet::new();
 
     let boss_floor = FLOORS - 1;
     let boss = get_or_create(
@@ -38,16 +41,19 @@ pub fn generate_with<R: Rng>(rng: &mut R) -> MapGraph {
         let mut col = start_col;
         let mut prev = get_or_create(&mut nodes, &mut floor_lists, &mut cells, 0, col);
         for floor in 1..(FLOORS - 1) {
-            col = pick_next_column(col, rng);
-            let id = get_or_create(&mut nodes, &mut floor_lists, &mut cells, floor, col);
+            let next_col = pick_next_column(floor - 1, col, &edges, rng);
+            let id = get_or_create(&mut nodes, &mut floor_lists, &mut cells, floor, next_col);
             if !nodes[prev].children.contains(&id) {
                 nodes[prev].children.push(id);
             }
+            edges.insert(((floor - 1, col), (floor, next_col)));
             prev = id;
+            col = next_col;
         }
         if !nodes[prev].children.contains(&boss) {
             nodes[prev].children.push(boss);
         }
+        edges.insert(((boss_floor - 1, col), (boss_floor, COLUMNS / 2)));
     }
 
     assign_kinds(&mut nodes, boss, boss_floor, rng);
@@ -64,15 +70,36 @@ pub fn generate_with<R: Rng>(rng: &mut R) -> MapGraph {
     }
 }
 
-fn pick_next_column<R: Rng>(col: u8, rng: &mut R) -> u8 {
-    let mut choices: Vec<u8> = vec![col];
-    if col > 0 {
-        choices.push(col - 1);
+fn pick_next_column<R: Rng>(
+    src_floor: u8,
+    src_col: u8,
+    edges: &HashSet<EdgeKey>,
+    rng: &mut R,
+) -> u8 {
+    let mut candidates: Vec<u8> = vec![src_col];
+    if src_col > 0 {
+        candidates.push(src_col - 1);
     }
-    if col < COLUMNS - 1 {
-        choices.push(col + 1);
+    if src_col < COLUMNS - 1 {
+        candidates.push(src_col + 1);
     }
-    *choices.choose(rng).unwrap_or(&col)
+
+    // Exclude moves that would cross an existing edge. Two diagonal edges
+    // between adjacent floors cross when one goes (f, c) -> (f+1, c+1)
+    // and the other goes (f, c+1) -> (f+1, c).
+    let dst_floor = src_floor + 1;
+    let safe: Vec<u8> = candidates
+        .into_iter()
+        .filter(|&dst_col| {
+            if dst_col == src_col {
+                return true;
+            }
+            let crossing: EdgeKey = ((src_floor, dst_col), (dst_floor, src_col));
+            !edges.contains(&crossing)
+        })
+        .collect();
+
+    *safe.choose(rng).unwrap_or(&src_col)
 }
 
 fn get_or_create(
