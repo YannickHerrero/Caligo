@@ -1,5 +1,6 @@
 use crate::crab::Crab;
 use crate::environment::{Environment, GroundStyle};
+use crate::fight::FightState;
 use crate::ui::widgets;
 use anyhow::Result;
 use crossterm::event::{self, Event, KeyCode, KeyEventKind};
@@ -10,6 +11,7 @@ pub struct App {
     pub should_quit: bool,
     pub crab: Crab,
     pub environment: Environment,
+    pub fight: FightState,
     last_terminal_size: (u16, u16),
 }
 
@@ -19,6 +21,7 @@ impl App {
             should_quit: false,
             crab: Crab::new((10.0, 100.0), 95),
             environment: Environment::generate(80, 15, GroundStyle::default()),
+            fight: FightState::new(),
             last_terminal_size: (0, 0),
         }
     }
@@ -82,6 +85,7 @@ impl App {
 
         widgets::render_environment_background(frame, &self.environment, area);
         widgets::render_crab(frame, &self.crab, area);
+        widgets::render_enemy(frame, &self.fight.enemy, area);
         widgets::render_ground(frame, &self.environment, area);
     }
 }

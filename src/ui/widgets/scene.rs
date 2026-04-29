@@ -1,5 +1,6 @@
 use crate::crab::Crab;
 use crate::environment::{Environment, GroundStyle, TimeOfDay};
+use crate::fight::Enemy;
 use ratatui::{
     layout::Rect,
     style::{Color, Modifier, Style},
@@ -150,4 +151,23 @@ pub fn render_ground(frame: &mut Frame, env: &Environment, area: Rect) {
 
     let ground_widget = Paragraph::new(ground_display).style(Style::default().fg(ground_color));
     frame.render_widget(ground_widget, ground_area);
+}
+
+pub fn render_enemy(frame: &mut Frame, enemy: &Enemy, area: Rect) {
+    let sprite_width = enemy
+        .sprite
+        .iter()
+        .map(|l| l.chars().count())
+        .max()
+        .unwrap_or(0) as i32;
+    let sprite_height = enemy.sprite.len() as i32;
+
+    if sprite_width == 0 || sprite_height == 0 {
+        return;
+    }
+
+    let x = area.width as i32 - sprite_width - 4;
+    let y = area.height as i32 - sprite_height - 1;
+
+    render_element(frame, &enemy.sprite, x, y, enemy.color, area);
 }
