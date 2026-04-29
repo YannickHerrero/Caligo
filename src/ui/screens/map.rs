@@ -1,3 +1,4 @@
+use crate::environment::{Environment, GroundStyle};
 use crate::map::{self, MapGraph, NodeId};
 use crate::ui::screen::{Screen, Transition};
 use crate::ui::screens::SelectScreen;
@@ -6,16 +7,25 @@ use crossterm::event::KeyCode;
 use ratatui::layout::{Constraint, Direction, Layout};
 use ratatui::Frame;
 
+const SKY_BAND_HEIGHT: u16 = 5;
+
 pub struct MapScreen {
     pub graph: MapGraph,
     pub cursor: Option<NodeId>,
+    pub environment: Environment,
+    sky_size: (u16, u16),
 }
 
 impl MapScreen {
     pub fn new() -> Self {
         let graph = map::generate();
         let cursor = pick_default_cursor(&graph);
-        Self { graph, cursor }
+        Self {
+            graph,
+            cursor,
+            environment: Environment::generate(80, SKY_BAND_HEIGHT, GroundStyle::default()),
+            sky_size: (0, 0),
+        }
     }
 
     pub fn handle_key(&mut self, key: KeyCode) -> Transition {
@@ -54,7 +64,10 @@ impl MapScreen {
         self.cursor = Some(reachable[new_pos]);
     }
 
-    pub fn update(&mut self) {}
+    pub fn update(&mut self) {
+        let dt = 0.05;
+        self.environment.update_cycle(dt, 1.0, 1.0);
+    }
 
     pub fn draw(&mut self, frame: &mut Frame) {
         let area = frame.area();
@@ -62,14 +75,29 @@ impl MapScreen {
             .direction(Direction::Vertical)
             .constraints([
                 Constraint::Length(1),
+                Constraint::Length(SKY_BAND_HEIGHT),
                 Constraint::Min(8),
                 Constraint::Length(6),
             ])
             .split(area);
-        widgets::render_map_header(frame, &self.graph, chunks[0]);
-        widgets::render_map_edges(frame, &self.graph, chunks[1]);
-        widgets::render_map_nodes(frame, &self.graph, self.cursor, chunks[1]);
-        widgets::render_map_info(frame, &self.graph, self.cursor, chunks[2]);
+
+        let header_area = chunks[0];
+        let sky_area = chunks[1];
+        let map_area = chunks[2];
+        let info_area = chunks[3];
+
+        let sky_size = (sky_area.width, sky_area.height);
+        if sky_size != self.sky_size {
+            self.environment =
+                Environment::generate(sky_size.0, sky_size.1, self.environment.ground_style);
+            self.sky_size = sky_size;
+        }
+
+        widgets::render_map_header(frame, &self.graph, header_area);
+        widgets::render_environment_background(frame, &self.environment, sky_area);
+        widgets::render_map_edges(frame, &self.graph, map_area);
+        widgets::render_map_nodes(frame, &self.graph, self.cursor, map_area);
+        widgets::render_map_info(frame, &self.graph, self.cursor, info_area);
     }
 }
 
