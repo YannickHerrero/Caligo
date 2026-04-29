@@ -5,6 +5,7 @@ pub const STARTER_ATTACK_NAMES: [&str; 4] = ["Pinch", "Bubble", "Snip", "Cosmic 
 pub fn all_attacks() -> Vec<Attack> {
     let mut out = Vec::new();
     out.extend(neutral());
+    out.extend(fire());
     out.extend(water());
     out.extend(air());
     out
@@ -91,6 +92,91 @@ fn neutral() -> Vec<Attack> {
             7,
             Element::Neutral,
             "Double-claw guillotine. Rare and brutal.",
+        ),
+    ]
+}
+
+fn fire() -> Vec<Attack> {
+    vec![
+        Attack::new(
+            "Ember",
+            AnimationKind::Throw(ProjectileKind::Fire),
+            6,
+            2,
+            Element::Fire,
+            "A small flicker of flame.",
+        ),
+        Attack::new(
+            "Cinder Spit",
+            AnimationKind::Throw(ProjectileKind::Fire),
+            7,
+            3,
+            Element::Fire,
+            "Gobbets of glowing ember.",
+        ),
+        Attack::new(
+            "Heatwave",
+            AnimationKind::Throw(ProjectileKind::Fire),
+            8,
+            4,
+            Element::Fire,
+            "A wide, shimmering burst.",
+        ),
+        Attack::new(
+            "Flame Dash",
+            AnimationKind::Dash,
+            9,
+            4,
+            Element::Fire,
+            "Wreathed in flame, charges through.",
+        ),
+        Attack::new(
+            "Fireball",
+            AnimationKind::Throw(ProjectileKind::Fire),
+            11,
+            5,
+            Element::Fire,
+            "Classic burning sphere.",
+        ),
+        Attack::new(
+            "Sunflare",
+            AnimationKind::Throw(ProjectileKind::Fire),
+            13,
+            6,
+            Element::Fire,
+            "A blinding ball of solar fire.",
+        ),
+        Attack::new(
+            "Lava Lob",
+            AnimationKind::Throw(ProjectileKind::Fire),
+            14,
+            6,
+            Element::Fire,
+            "Splashes molten rock on the foe.",
+        ),
+        Attack::new(
+            "Pyre Charge",
+            AnimationKind::Dash,
+            15,
+            7,
+            Element::Fire,
+            "A flaming charge across the field.",
+        ),
+        Attack::new(
+            "Magma Crush",
+            AnimationKind::Jump,
+            17,
+            8,
+            Element::Fire,
+            "Glowing claws crash down.",
+        ),
+        Attack::new(
+            "Inferno",
+            AnimationKind::Throw(ProjectileKind::Fire),
+            21,
+            10,
+            Element::Fire,
+            "A roaring blast of fire.",
         ),
     ]
 }
