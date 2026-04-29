@@ -1,3 +1,4 @@
+use crate::player::Player;
 use crate::ui::screens::{DemoScreen, FightScreen, MapScreen, SelectScreen, TransitionScreen};
 use crossterm::event::KeyCode;
 use ratatui::Frame;
@@ -17,33 +18,33 @@ pub enum Transition {
 }
 
 impl Screen {
-    pub fn handle_key(&mut self, key: KeyCode) -> Transition {
+    pub fn handle_key(&mut self, key: KeyCode, player: &mut Player) -> Transition {
         match self {
-            Screen::Select(s) => s.handle_key(key),
-            Screen::Fight(s) => s.handle_key(key),
-            Screen::Map(s) => s.handle_key(key),
-            Screen::Demo(s) => s.handle_key(key),
-            Screen::Transition(s) => s.handle_key(key),
+            Screen::Select(s) => s.handle_key(key, player),
+            Screen::Fight(s) => s.handle_key(key, player),
+            Screen::Map(s) => s.handle_key(key, player),
+            Screen::Demo(s) => s.handle_key(key, player),
+            Screen::Transition(s) => s.handle_key(key, player),
         }
     }
 
-    pub fn update(&mut self) -> Transition {
+    pub fn update(&mut self, player: &mut Player) -> Transition {
         match self {
-            Screen::Select(s) => s.update(),
-            Screen::Fight(s) => s.update(),
-            Screen::Map(s) => s.update(),
-            Screen::Demo(s) => s.update(),
-            Screen::Transition(s) => s.update(),
+            Screen::Select(s) => s.update(player),
+            Screen::Fight(s) => s.update(player),
+            Screen::Map(s) => s.update(player),
+            Screen::Demo(s) => s.update(player),
+            Screen::Transition(s) => s.update(player),
         }
     }
 
-    pub fn draw(&mut self, frame: &mut Frame) {
+    pub fn draw(&mut self, frame: &mut Frame, player: &Player) {
         match self {
-            Screen::Select(s) => s.draw(frame),
-            Screen::Fight(s) => s.draw(frame),
-            Screen::Map(s) => s.draw(frame),
-            Screen::Demo(s) => s.draw(frame),
-            Screen::Transition(s) => s.draw(frame),
+            Screen::Select(s) => s.draw(frame, player),
+            Screen::Fight(s) => s.draw(frame, player),
+            Screen::Map(s) => s.draw(frame, player),
+            Screen::Demo(s) => s.draw(frame, player),
+            Screen::Transition(s) => s.draw(frame, player),
         }
     }
 }

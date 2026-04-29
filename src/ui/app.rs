@@ -1,3 +1,4 @@
+use crate::player::Player;
 use crate::ui::screen::{Screen, Transition};
 use crate::ui::screens::SelectScreen;
 use anyhow::Result;
@@ -8,6 +9,7 @@ use std::time::{Duration, Instant};
 pub struct App {
     pub should_quit: bool,
     pub screen: Screen,
+    pub player: Player,
 }
 
 impl App {
@@ -15,6 +17,7 @@ impl App {
         Self {
             should_quit: false,
             screen: Screen::Select(SelectScreen::new()),
+            player: Player::new(),
         }
     }
 
@@ -32,7 +35,7 @@ impl App {
             if event::poll(timeout)? {
                 if let Event::Key(key) = event::read()? {
                     if key.kind == KeyEventKind::Press {
-                        match self.screen.handle_key(key.code) {
+                        match self.screen.handle_key(key.code, &mut self.player) {
                             Transition::Stay => {}
                             Transition::Quit => self.should_quit = true,
                             Transition::Goto(screen) => self.screen = screen,
@@ -42,7 +45,7 @@ impl App {
             }
 
             if last_tick.elapsed() >= tick_rate {
-                match self.screen.update() {
+                match self.screen.update(&mut self.player) {
                     Transition::Stay => {}
                     Transition::Quit => self.should_quit = true,
                     Transition::Goto(screen) => self.screen = screen,
@@ -55,6 +58,6 @@ impl App {
     }
 
     fn draw(&mut self, frame: &mut Frame) {
-        self.screen.draw(frame);
+        self.screen.draw(frame, &self.player);
     }
 }

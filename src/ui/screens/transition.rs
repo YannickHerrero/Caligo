@@ -1,4 +1,5 @@
 use crate::map::NodeKind;
+use crate::player::Player;
 use crate::ui::screen::{Screen, Transition};
 use crossterm::event::KeyCode;
 use ratatui::{
@@ -243,11 +244,11 @@ impl TransitionScreen {
         (self.tick as f32 / self.duration as f32).clamp(0.0, 1.0)
     }
 
-    pub fn handle_key(&mut self, _key: KeyCode) -> Transition {
+    pub fn handle_key(&mut self, _key: KeyCode, _player: &mut Player) -> Transition {
         Transition::Stay
     }
 
-    pub fn update(&mut self) -> Transition {
+    pub fn update(&mut self, _player: &mut Player) -> Transition {
         self.tick = self.tick.saturating_add(1);
         if self.tick >= self.duration {
             if let Some(to) = self.to.take() {
@@ -257,14 +258,14 @@ impl TransitionScreen {
         Transition::Stay
     }
 
-    pub fn draw(&mut self, frame: &mut Frame) {
+    pub fn draw(&mut self, frame: &mut Frame, player: &Player) {
         let p = self.progress();
         if p < 0.5 {
-            self.from.draw(frame);
+            self.from.draw(frame, player);
             self.draw_wipe(frame, p * 2.0);
         } else {
             if let Some(to) = self.to.as_mut() {
-                to.draw(frame);
+                to.draw(frame, player);
             }
             self.draw_wipe(frame, 2.0 - p * 2.0);
         }

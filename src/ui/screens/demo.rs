@@ -1,3 +1,4 @@
+use crate::player::Player;
 use crate::ui::screen::{Screen, Transition};
 use crate::ui::screens::{SelectScreen, TransitionKind, TransitionScreen};
 use crossterm::event::KeyCode;
@@ -22,7 +23,7 @@ impl DemoScreen {
         Self { selected }
     }
 
-    pub fn handle_key(&mut self, key: KeyCode) -> Transition {
+    pub fn handle_key(&mut self, key: KeyCode, _player: &mut Player) -> Transition {
         let len = TransitionKind::ALL.len();
         match key {
             KeyCode::Char('q') | KeyCode::Esc => {
@@ -50,11 +51,11 @@ impl DemoScreen {
         }
     }
 
-    pub fn update(&mut self) -> Transition {
+    pub fn update(&mut self, _player: &mut Player) -> Transition {
         Transition::Stay
     }
 
-    pub fn draw(&mut self, frame: &mut Frame) {
+    pub fn draw(&mut self, frame: &mut Frame, _player: &Player) {
         let area = frame.area();
         let chunks = Layout::default()
             .direction(Direction::Vertical)

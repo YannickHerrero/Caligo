@@ -1,4 +1,5 @@
 use crate::map::{self, MapGraph, NodeId};
+use crate::player::Player;
 use crate::ui::screen::{Screen, Transition};
 use crate::ui::screens::{FightScreen, SelectScreen, TransitionKind, TransitionScreen};
 use crate::ui::widgets;
@@ -37,7 +38,7 @@ impl MapScreen {
         }
     }
 
-    pub fn handle_key(&mut self, key: KeyCode) -> Transition {
+    pub fn handle_key(&mut self, key: KeyCode, _player: &mut Player) -> Transition {
         match self.menu_state {
             MapMenuState::Browsing => self.handle_browsing(key),
             MapMenuState::Confirming => self.handle_confirming(key),
@@ -136,12 +137,12 @@ impl MapScreen {
         self.cursor = Some(reachable[new_pos]);
     }
 
-    pub fn update(&mut self) -> Transition {
+    pub fn update(&mut self, _player: &mut Player) -> Transition {
         self.tick = self.tick.wrapping_add(1);
         Transition::Stay
     }
 
-    pub fn draw(&mut self, frame: &mut Frame) {
+    pub fn draw(&mut self, frame: &mut Frame, _player: &Player) {
         let area = frame.area();
         let chunks = Layout::default()
             .direction(Direction::Vertical)

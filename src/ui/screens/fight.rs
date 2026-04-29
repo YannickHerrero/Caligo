@@ -1,6 +1,7 @@
 use crate::crab::Crab;
 use crate::environment::{Environment, GroundStyle};
 use crate::fight::{Action, Animation, FightState, MenuState};
+use crate::player::Player;
 use crate::ui::screen::{Screen, Transition};
 use crate::ui::screens::SelectScreen;
 use crate::ui::widgets;
@@ -27,7 +28,7 @@ impl FightScreen {
         }
     }
 
-    pub fn handle_key(&mut self, key: KeyCode) -> Transition {
+    pub fn handle_key(&mut self, key: KeyCode, _player: &mut Player) -> Transition {
         if self.fight.animation.is_some() {
             return Transition::Stay;
         }
@@ -132,7 +133,7 @@ impl FightScreen {
         Transition::Stay
     }
 
-    pub fn update(&mut self) -> Transition {
+    pub fn update(&mut self, _player: &mut Player) -> Transition {
         let dt = 0.05;
         let bounds = (
             self.last_terminal_size.0 as f32 - 2.0,
@@ -153,7 +154,7 @@ impl FightScreen {
         Transition::Stay
     }
 
-    pub fn draw(&mut self, frame: &mut Frame) {
+    pub fn draw(&mut self, frame: &mut Frame, _player: &Player) {
         let area = frame.area();
 
         let chunks = Layout::default()
