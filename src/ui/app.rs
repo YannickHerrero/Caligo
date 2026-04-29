@@ -1,6 +1,6 @@
 use crate::crab::Crab;
 use crate::environment::{Environment, GroundStyle};
-use crate::fight::FightState;
+use crate::fight::{Action, FightState};
 use crate::ui::widgets;
 use anyhow::Result;
 use crossterm::event::{self, Event, KeyCode, KeyEventKind};
@@ -56,8 +56,17 @@ impl App {
     }
 
     fn handle_key(&mut self, key: KeyCode) {
+        let action_count = Action::ALL.len();
         match key {
             KeyCode::Char('q') | KeyCode::Esc => self.should_quit = true,
+            KeyCode::Up | KeyCode::Char('k') => {
+                self.fight.selected_action =
+                    (self.fight.selected_action + action_count - 1) % action_count;
+            }
+            KeyCode::Down | KeyCode::Char('j') => {
+                self.fight.selected_action = (self.fight.selected_action + 1) % action_count;
+            }
+            KeyCode::Enter => {}
             _ => {}
         }
     }
