@@ -9,7 +9,7 @@ pub use fight::{
 pub use map::{
     compute_scroll as compute_map_scroll, render_edges as render_map_edges,
     render_header as render_map_header, render_info_panel as render_map_info,
-    render_nodes as render_map_nodes,
+    render_nodes as render_map_nodes, virtual_map_height as map_virtual_height,
 };
 pub use scene::{
     render_crab, render_enemy, render_environment_background, render_ground, render_projectile,

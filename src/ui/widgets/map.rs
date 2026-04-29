@@ -106,7 +106,9 @@ fn controls_line() -> Line<'static> {
     let dim = Style::default().fg(Color::DarkGray);
     Line::from(vec![
         Span::styled("← →", key),
-        Span::styled(" navigate   ", dim),
+        Span::styled(" cursor   ", dim),
+        Span::styled("↑ ↓", key),
+        Span::styled(" scroll   ", dim),
         Span::styled("Enter", key),
         Span::styled(" select   ", dim),
         Span::styled("q", key),

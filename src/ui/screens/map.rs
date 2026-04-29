@@ -8,12 +8,15 @@ use ratatui::layout::{Constraint, Direction, Layout};
 use ratatui::Frame;
 
 const SKY_BAND_HEIGHT: u16 = 5;
+const SCROLL_STEP: i32 = 3;
 
 pub struct MapScreen {
     pub graph: MapGraph,
     pub cursor: Option<NodeId>,
     pub environment: Environment,
     pub tick: u32,
+    scroll: i32,
+    last_viewport_height: u16,
     sky_size: (u16, u16),
 }
 
@@ -26,6 +29,8 @@ impl MapScreen {
             cursor,
             environment: Environment::generate(80, SKY_BAND_HEIGHT, GroundStyle::default()),
             tick: 0,
+            scroll: 0,
+            last_viewport_height: 0,
             sky_size: (0, 0),
         }
     }
@@ -37,18 +42,41 @@ impl MapScreen {
             }
             KeyCode::Left | KeyCode::Char('h') => self.move_cursor(-1),
             KeyCode::Right | KeyCode::Char('l') => self.move_cursor(1),
-            KeyCode::Up | KeyCode::Char('k') => self.move_cursor(1),
-            KeyCode::Down | KeyCode::Char('j') => self.move_cursor(-1),
+            KeyCode::Up | KeyCode::Char('k') => self.scroll_by(-SCROLL_STEP),
+            KeyCode::Down | KeyCode::Char('j') => self.scroll_by(SCROLL_STEP),
+            KeyCode::PageUp => self.scroll_by(-(self.last_viewport_height as i32)),
+            KeyCode::PageDown => self.scroll_by(self.last_viewport_height as i32),
+            KeyCode::Home => self.scroll = 0,
+            KeyCode::End => self.scroll = self.max_scroll(),
             KeyCode::Enter => {
                 if let Some(id) = self.cursor {
                     if self.graph.select(id) {
                         self.cursor = pick_default_cursor(&self.graph);
+                        self.center_scroll_on_cursor();
                     }
                 }
             }
             _ => {}
         }
         Transition::Stay
+    }
+
+    fn scroll_by(&mut self, delta: i32) {
+        let max = self.max_scroll();
+        self.scroll = (self.scroll + delta).clamp(0, max);
+    }
+
+    fn max_scroll(&self) -> i32 {
+        let total = widgets::map_virtual_height();
+        (total - self.last_viewport_height as i32).max(0)
+    }
+
+    fn center_scroll_on_cursor(&mut self) {
+        if self.last_viewport_height == 0 {
+            return;
+        }
+        self.scroll =
+            widgets::compute_map_scroll(&self.graph, self.cursor, self.last_viewport_height);
     }
 
     fn move_cursor(&mut self, delta: i32) {
@@ -97,7 +125,16 @@ impl MapScreen {
         }
 
         let pulse = pulse_phase(self.tick);
-        let scroll = widgets::compute_map_scroll(&self.graph, self.cursor, map_area.height);
+        if self.last_viewport_height != map_area.height {
+            self.last_viewport_height = map_area.height;
+            self.center_scroll_on_cursor();
+        }
+        // Re-clamp in case viewport shrank below current scroll.
+        let max = self.max_scroll();
+        if self.scroll > max {
+            self.scroll = max;
+        }
+        let scroll = self.scroll;
         widgets::render_map_header(frame, &self.graph, header_area);
         widgets::render_environment_background(frame, &self.environment, sky_area);
         widgets::render_map_edges(frame, &self.graph, scroll, map_area);
