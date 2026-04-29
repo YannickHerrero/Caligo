@@ -4,7 +4,7 @@ use crate::map::{generate::FLOORS, MapGraph, MapNode, NodeId};
 use ratatui::{
     layout::{Alignment, Rect},
     style::{Color, Modifier, Style},
-    symbols::Marker,
+    symbols::{border, Marker},
     text::{Line, Span},
     widgets::{
         canvas::{Canvas, Line as CanvasLine},
@@ -17,8 +17,11 @@ const EDGE_DIM: Color = Color::Rgb(60, 52, 44);
 const EDGE_BRIGHT: Color = Color::Rgb(200, 170, 110);
 const VISITED_COLOR: Color = Color::Rgb(90, 90, 96);
 const CURRENT_COLOR: Color = Color::Rgb(255, 230, 170);
+const LABEL_COLOR: Color = Color::Rgb(225, 220, 210);
 
-pub const FLOOR_ROWS: u16 = 5;
+pub const CARD_WIDTH: u16 = 9;
+pub const CARD_HEIGHT: u16 = 4;
+pub const FLOOR_ROWS: u16 = 7;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 enum NodeState {
@@ -172,39 +175,114 @@ pub fn render_nodes(
     scroll: i32,
     area: Rect,
 ) {
-    if area.width == 0 || area.height == 0 {
+    if area.width < CARD_WIDTH || area.height == 0 {
         return;
     }
     let reachable = reachable_set(graph);
     for node in &graph.nodes {
-        let Some((x, y)) = node_screen_position(node, area, scroll) else {
+        let Some(card_rect) = card_rect(node, area, scroll) else {
             continue;
         };
-        let cell = Rect {
-            x,
-            y,
-            width: 1,
-            height: 1,
-        };
         let state = node_state(node, graph, &reachable);
-        let mut style = node_style(node, state);
-        if state == NodeState::Reachable {
-            let factor = 0.7 + 0.3 * pulse;
-            style = style.fg(dim_color(node.kind.color(), factor));
-        }
-        if state == NodeState::Current {
-            let factor = 0.75 + 0.25 * pulse;
-            style = style.fg(dim_color(CURRENT_COLOR, factor));
-        }
-        if Some(node.id) == cursor {
-            style = style.add_modifier(Modifier::REVERSED);
-            if pulse > 0.5 {
-                style = style.add_modifier(Modifier::BOLD);
-            }
-        }
-        let span = Span::styled(node.kind.icon(), style);
-        frame.render_widget(Paragraph::new(span), cell);
+        let is_cursor = Some(node.id) == cursor;
+        render_card(frame, node, state, is_cursor, pulse, card_rect);
     }
+}
+
+fn render_card(
+    frame: &mut Frame,
+    node: &MapNode,
+    state: NodeState,
+    is_cursor: bool,
+    pulse: f32,
+    card_rect: Rect,
+) {
+    let (border_color, label_color, icon_color) = card_colors(node, state, pulse);
+
+    let mut border_style = Style::default().fg(border_color);
+    if state == NodeState::Reachable || state == NodeState::Current {
+        border_style = border_style.add_modifier(Modifier::BOLD);
+    }
+    if is_cursor {
+        border_style = border_style.add_modifier(Modifier::BOLD);
+    }
+
+    let border_set = if is_cursor {
+        border::DOUBLE
+    } else if state == NodeState::Current {
+        border::ROUNDED
+    } else {
+        border::PLAIN
+    };
+
+    let block = Block::default()
+        .borders(Borders::ALL)
+        .border_set(border_set)
+        .border_style(border_style);
+
+    let inner = block.inner(card_rect);
+    frame.render_widget(block, card_rect);
+    if inner.width == 0 || inner.height == 0 {
+        return;
+    }
+
+    let icon_style = Style::default()
+        .fg(icon_color)
+        .add_modifier(Modifier::BOLD);
+    let label_style = Style::default().fg(label_color);
+
+    let lines = vec![
+        Line::from(Span::styled(node.kind.icon(), icon_style)).alignment(Alignment::Center),
+        Line::from(Span::styled(node.kind.card_label(), label_style))
+            .alignment(Alignment::Center),
+    ];
+    frame.render_widget(Paragraph::new(lines), inner);
+}
+
+fn card_colors(node: &MapNode, state: NodeState, pulse: f32) -> (Color, Color, Color) {
+    match state {
+        NodeState::Visited => (VISITED_COLOR, VISITED_COLOR, VISITED_COLOR),
+        NodeState::Current => {
+            let f = 0.75 + 0.25 * pulse;
+            let c = dim_color(CURRENT_COLOR, f);
+            (c, c, c)
+        }
+        NodeState::Reachable => {
+            let f = 0.7 + 0.3 * pulse;
+            let kind_color = dim_color(node.kind.color(), f);
+            (kind_color, LABEL_COLOR, kind_color)
+        }
+        NodeState::Future => {
+            let dim = dim_color(node.kind.color(), 0.45);
+            let label = dim_color(LABEL_COLOR, 0.4);
+            (dim, label, dim)
+        }
+    }
+}
+
+fn card_rect(node: &MapNode, area: Rect, scroll: i32) -> Option<Rect> {
+    let (cx, csy) = node_unclipped_position(node, area, scroll);
+    let half_w = CARD_WIDTH as i32 / 2;
+    let half_h = CARD_HEIGHT as i32 / 2;
+    let top_x = cx as i32 - half_w;
+    let top_y = csy - half_h;
+    let bottom_y = top_y + CARD_HEIGHT as i32;
+    if bottom_y <= 0 || top_y >= area.height as i32 {
+        return None;
+    }
+    if top_x < area.x as i32 || top_x + CARD_WIDTH as i32 > (area.x + area.width) as i32 {
+        return None;
+    }
+    if top_y < 0 || bottom_y > area.height as i32 {
+        // Skip cards that would clip vertically — keep cards intact for readability.
+        return None;
+    }
+    Some(Rect {
+        x: top_x as u16,
+        y: area.y + top_y as u16,
+        width: CARD_WIDTH,
+        height: CARD_HEIGHT,
+    })
 }
 
 fn reachable_set(graph: &MapGraph) -> HashSet<NodeId> {
@@ -220,19 +298,6 @@ fn node_state(node: &MapNode, graph: &MapGraph, reachable: &HashSet<NodeId>) -> 
         NodeState::Reachable
     } else {
         NodeState::Future
-    }
-}
-
-fn node_style(node: &MapNode, state: NodeState) -> Style {
-    match state {
-        NodeState::Visited => Style::default().fg(VISITED_COLOR),
-        NodeState::Current => Style::default()
-            .fg(CURRENT_COLOR)
-            .add_modifier(Modifier::BOLD),
-        NodeState::Reachable => Style::default()
-            .fg(node.kind.color())
-            .add_modifier(Modifier::BOLD),
-        NodeState::Future => Style::default().fg(dim_color(node.kind.color(), 0.45)),
     }
 }
 
@@ -264,12 +329,17 @@ fn collect_edges(
 ) -> Vec<Edge> {
     let current = graph.current;
     let mut edges = Vec::new();
+    let half_h = CARD_HEIGHT as i32 / 2;
     for node in &graph.nodes {
-        let (x1, sy1) = node_unclipped_position(node, area, scroll);
+        let (x1, sy1_center) = node_unclipped_position(node, area, scroll);
+        // Edge starts at the top of the lower-floor card (smaller screen y).
+        let sy1 = sy1_center - half_h;
         for &child_id in &node.children {
             let child = graph.node(child_id);
-            let (x2, sy2) = node_unclipped_position(child, area, scroll);
-            // Skip when both endpoints are far outside viewport.
+            let (x2, sy2_center) = node_unclipped_position(child, area, scroll);
+            // Edge ends at the bottom of the higher-floor card.
+            let sy2 = sy2_center + half_h;
+
             let h = area.height as i32;
             let both_above = sy1 < 0 && sy2 < 0;
             let both_below = sy1 >= h && sy2 >= h;
@@ -297,23 +367,16 @@ fn collect_edges(
     edges
 }
 
-fn node_screen_position(node: &MapNode, area: Rect, scroll: i32) -> Option<(u16, u16)> {
-    let (x, sy) = node_unclipped_position(node, area, scroll);
-    if sy < 0 || sy >= area.height as i32 {
-        return None;
-    }
-    Some((x, area.y + sy as u16))
-}
-
 fn node_unclipped_position(node: &MapNode, area: Rect, scroll: i32) -> (u16, i32) {
     let columns = crate::map::generate::COLUMNS as u16;
-    let usable_w = area.width.saturating_sub(2);
-    let col_step = if columns == 0 {
+    let usable_w = area.width;
+    let col_step = if columns <= 1 {
         0.0
     } else {
-        usable_w as f32 / columns as f32
+        (usable_w.saturating_sub(CARD_WIDTH)) as f32 / (columns - 1) as f32
     };
-    let x = area.x + 1 + (col_step * (node.column as f32 + 0.5)) as u16;
+    let card_left = area.x as f32 + col_step * node.column as f32;
+    let x = (card_left + CARD_WIDTH as f32 / 2.0) as u16;
     let virtual_y = floor_virtual_y(node.floor as i32);
     let sy = virtual_y - scroll;
     (x, sy)

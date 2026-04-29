@@ -48,6 +48,18 @@ impl NodeKind {
         }
     }
 
+    pub fn card_label(&self) -> &'static str {
+        match self {
+            NodeKind::EasyFight => "Easy",
+            NodeKind::NormalFight => "Normal",
+            NodeKind::EliteFight => "Elite",
+            NodeKind::Camp => "Camp",
+            NodeKind::Shop => "Shop",
+            NodeKind::Mystery => "Mystery",
+            NodeKind::Boss => "BOSS",
+        }
+    }
+
     pub fn color(&self) -> Color {
         match self {
             NodeKind::EasyFight => Color::Rgb(120, 200, 120),
