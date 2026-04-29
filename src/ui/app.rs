@@ -1,3 +1,5 @@
+use crate::crab::Crab;
+use crate::ui::widgets;
 use anyhow::Result;
 use crossterm::event::{self, Event, KeyCode, KeyEventKind};
 use ratatui::Frame;
@@ -5,11 +7,17 @@ use std::time::{Duration, Instant};
 
 pub struct App {
     pub should_quit: bool,
+    pub crab: Crab,
+    last_terminal_size: (u16, u16),
 }
 
 impl App {
     pub fn new() -> Self {
-        Self { should_quit: false }
+        Self {
+            should_quit: false,
+            crab: Crab::new((10.0, 100.0), 95),
+            last_terminal_size: (0, 0),
+        }
     }
 
     pub fn run(
@@ -47,7 +55,20 @@ impl App {
         }
     }
 
-    fn update(&mut self) {}
+    fn update(&mut self) {
+        let dt = 0.05;
+        let bounds = (
+            self.last_terminal_size.0 as f32 - 2.0,
+            self.last_terminal_size.1 as f32,
+        );
+        if bounds.0 > 0.0 && bounds.1 > 0.0 {
+            self.crab.update(dt, bounds);
+        }
+    }
 
-    fn draw(&self, _frame: &mut Frame) {}
+    fn draw(&mut self, frame: &mut Frame) {
+        let area = frame.area();
+        self.last_terminal_size = (area.width, area.height);
+        widgets::render_crab(frame, &self.crab, area);
+    }
 }
