@@ -22,12 +22,11 @@ pub enum TransitionKind {
 
 #[derive(Debug, Clone, Copy)]
 enum TransitionEffect {
-    HorizontalBars,
-    VerticalCurtains,
     IrisClose,
     DiagonalSlash,
     RandomScatter,
     SpiralInward,
+    SpiralOutward,
     Checkerboard,
     DiamondExpand,
 }
@@ -113,7 +112,7 @@ impl TransitionKind {
             TransitionKind::Camp => TransitionEffect::IrisClose,
             TransitionKind::Shop => TransitionEffect::Checkerboard,
             TransitionKind::Mystery => TransitionEffect::DiamondExpand,
-            TransitionKind::Boss => TransitionEffect::HorizontalBars,
+            TransitionKind::Boss => TransitionEffect::SpiralOutward,
         }
     }
 }
@@ -121,20 +120,6 @@ impl TransitionKind {
 impl TransitionEffect {
     fn covers(&self, x: u16, y: u16, area: Rect, intensity: f32) -> bool {
         match self {
-            TransitionEffect::HorizontalBars => {
-                let bar_h = area.height as f32 * intensity / 2.0;
-                let dy = (y as i32 - area.y as i32) as f32;
-                let from_top = dy;
-                let from_bot = (area.height as f32 - 1.0) - dy;
-                from_top < bar_h || from_bot < bar_h
-            }
-            TransitionEffect::VerticalCurtains => {
-                let bar_w = area.width as f32 * intensity / 2.0;
-                let dx = (x as i32 - area.x as i32) as f32;
-                let from_left = dx;
-                let from_right = (area.width as f32 - 1.0) - dx;
-                from_left < bar_w || from_right < bar_w
-            }
             TransitionEffect::IrisClose => {
                 let (dx, dy) = aspect_distance(x, y, area);
                 let d = (dx * dx + dy * dy).sqrt();
@@ -173,6 +158,19 @@ impl TransitionEffect {
                 let arms = 3.0;
                 let max_fill = 1.5 + arms;
                 let fill_at = (1.5 - d) + arms * theta_norm;
+                intensity * max_fill > fill_at
+            }
+            TransitionEffect::SpiralOutward => {
+                // Mirror of SpiralInward: front starts at the center and
+                // sweeps outward as it rotates, for the boss's slow heavy
+                // build-up.
+                let (dx, dy) = aspect_distance(x, y, area);
+                let d = (dx * dx + dy * dy).sqrt().min(1.5);
+                let theta = dy.atan2(dx);
+                let theta_norm = theta / std::f32::consts::TAU + 0.5;
+                let arms = 3.0;
+                let max_fill = 1.5 + arms;
+                let fill_at = d + arms * theta_norm;
                 intensity * max_fill > fill_at
             }
             TransitionEffect::DiamondExpand => {
