@@ -1,4 +1,5 @@
 use crate::crab::Crab;
+use crate::environment::{Environment, GroundStyle};
 use crate::ui::widgets;
 use anyhow::Result;
 use crossterm::event::{self, Event, KeyCode, KeyEventKind};
@@ -8,6 +9,7 @@ use std::time::{Duration, Instant};
 pub struct App {
     pub should_quit: bool,
     pub crab: Crab,
+    pub environment: Environment,
     last_terminal_size: (u16, u16),
 }
 
@@ -16,6 +18,7 @@ impl App {
         Self {
             should_quit: false,
             crab: Crab::new((10.0, 100.0), 95),
+            environment: Environment::generate(80, 15, GroundStyle::default()),
             last_terminal_size: (0, 0),
         }
     }
@@ -64,11 +67,21 @@ impl App {
         if bounds.0 > 0.0 && bounds.1 > 0.0 {
             self.crab.update(dt, bounds);
         }
+        self.environment.update_cycle(dt, 1.0, 1.0);
     }
 
     fn draw(&mut self, frame: &mut Frame) {
         let area = frame.area();
-        self.last_terminal_size = (area.width, area.height);
+
+        let current_size = (area.width, area.height);
+        if current_size != self.last_terminal_size {
+            self.environment =
+                Environment::generate(area.width, area.height, self.environment.ground_style);
+            self.last_terminal_size = current_size;
+        }
+
+        widgets::render_environment_background(frame, &self.environment, area);
         widgets::render_crab(frame, &self.crab, area);
+        widgets::render_ground(frame, &self.environment, area);
     }
 }
