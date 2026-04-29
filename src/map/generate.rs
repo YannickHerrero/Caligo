@@ -56,7 +56,8 @@ pub fn generate_with<R: Rng>(rng: &mut R) -> MapGraph {
         edges.insert(((boss_floor - 1, col), (boss_floor, COLUMNS / 2)));
     }
 
-    assign_kinds(&mut nodes, boss, boss_floor, rng);
+    let parents = compute_parents(&nodes);
+    assign_kinds(&mut nodes, &floor_lists, &parents, boss, boss_floor, rng);
 
     for floor in floor_lists.iter_mut() {
         floor.sort_by_key(|&id| nodes[id].column);
@@ -119,60 +120,137 @@ fn get_or_create(
     id
 }
 
-fn assign_kinds<R: Rng>(nodes: &mut [MapNode], boss: NodeId, boss_floor: u8, rng: &mut R) {
-    for node in nodes.iter_mut() {
-        node.kind = if node.id == boss {
-            NodeKind::Boss
-        } else if node.floor == 0 {
-            NodeKind::NormalFight
-        } else if node.floor == boss_floor - 1 {
-            NodeKind::Camp
-        } else {
-            random_kind(node.floor, rng)
-        };
+fn compute_parents(nodes: &[MapNode]) -> HashMap<NodeId, Vec<NodeId>> {
+    let mut parents: HashMap<NodeId, Vec<NodeId>> = HashMap::new();
+    for node in nodes {
+        for &child in &node.children {
+            parents.entry(child).or_default().push(node.id);
+        }
+    }
+    parents
+}
+
+fn is_special(kind: NodeKind) -> bool {
+    matches!(
+        kind,
+        NodeKind::Camp | NodeKind::Shop | NodeKind::EliteFight | NodeKind::Mystery
+    )
+}
+
+fn banned_from_parents(
+    id: NodeId,
+    nodes: &[MapNode],
+    parents: &HashMap<NodeId, Vec<NodeId>>,
+) -> HashSet<NodeKind> {
+    let mut banned = HashSet::new();
+    if let Some(ps) = parents.get(&id) {
+        for &p in ps {
+            let k = nodes[p].kind;
+            if is_special(k) {
+                banned.insert(k);
+            }
+        }
+    }
+    banned
+}
+
+fn assign_kinds<R: Rng>(
+    nodes: &mut [MapNode],
+    floor_lists: &[Vec<NodeId>],
+    parents: &HashMap<NodeId, Vec<NodeId>>,
+    boss: NodeId,
+    boss_floor: u8,
+    rng: &mut R,
+) {
+    nodes[boss].kind = NodeKind::Boss;
+    for &id in &floor_lists[0] {
+        nodes[id].kind = NodeKind::NormalFight;
+    }
+
+    // Walk floor-by-floor so each node's parents are assigned before it,
+    // letting us forbid a child from sharing a special kind with its parent.
+    for floor in 1..boss_floor {
+        let ids = floor_lists[floor as usize].clone();
+        for id in ids {
+            if id == boss {
+                continue;
+            }
+            let kind = if floor == boss_floor - 1 {
+                NodeKind::Camp
+            } else {
+                let banned = banned_from_parents(id, nodes, parents);
+                random_kind(floor, &banned, rng)
+            };
+            nodes[id].kind = kind;
+        }
     }
 }
 
-fn random_kind<R: Rng>(floor: u8, rng: &mut R) -> NodeKind {
+fn random_kind<R: Rng>(floor: u8, banned: &HashSet<NodeKind>, rng: &mut R) -> NodeKind {
     // Early floors should ease the player in: only fights and mysteries
     // until floor 3, so the first real branching choice is between
     // combat-or-curiosity and never an elite/shop/camp by surprise.
-    if floor < 3 {
-        let r: u32 = rng.gen_range(0..100);
-        return match r {
-            0..=44 => NodeKind::EasyFight,
-            45..=79 => NodeKind::NormalFight,
-            _ => NodeKind::Mystery,
-        };
-    }
-
-    // Mid-run weights shift with depth: easy fights front-loaded, elites
-    // and normal fights back-loaded. Camps and shops stay roughly steady
-    // so the player always has rest and economy options available.
-    let weights = if floor <= 5 {
+    let table: &[(NodeKind, u32)] = if floor < 3 {
+        &[
+            (NodeKind::EasyFight, 45),
+            (NodeKind::NormalFight, 35),
+            (NodeKind::Mystery, 20),
+        ]
+    } else if floor <= 5 {
         // Easy / Normal / Elite / Camp / Shop / Mystery
-        [35, 30, 4, 12, 8, 11]
+        &[
+            (NodeKind::EasyFight, 35),
+            (NodeKind::NormalFight, 30),
+            (NodeKind::EliteFight, 4),
+            (NodeKind::Camp, 12),
+            (NodeKind::Shop, 8),
+            (NodeKind::Mystery, 11),
+        ]
     } else if floor <= 8 {
-        [22, 30, 8, 12, 10, 18]
+        &[
+            (NodeKind::EasyFight, 22),
+            (NodeKind::NormalFight, 30),
+            (NodeKind::EliteFight, 8),
+            (NodeKind::Camp, 12),
+            (NodeKind::Shop, 10),
+            (NodeKind::Mystery, 18),
+        ]
     } else {
-        [12, 32, 14, 12, 12, 18]
+        &[
+            (NodeKind::EasyFight, 12),
+            (NodeKind::NormalFight, 32),
+            (NodeKind::EliteFight, 14),
+            (NodeKind::Camp, 12),
+            (NodeKind::Shop, 12),
+            (NodeKind::Mystery, 18),
+        ]
     };
 
-    let total: u32 = weights.iter().sum();
-    let mut r: u32 = rng.gen_range(0..total);
-    let kinds = [
-        NodeKind::EasyFight,
-        NodeKind::NormalFight,
-        NodeKind::EliteFight,
-        NodeKind::Camp,
-        NodeKind::Shop,
-        NodeKind::Mystery,
-    ];
-    for (kind, w) in kinds.iter().zip(weights.iter()) {
+    weighted_pick(table, banned, rng).unwrap_or(NodeKind::NormalFight)
+}
+
+fn weighted_pick<R: Rng>(
+    table: &[(NodeKind, u32)],
+    banned: &HashSet<NodeKind>,
+    rng: &mut R,
+) -> Option<NodeKind> {
+    let total: u32 = table
+        .iter()
+        .filter(|(k, _)| !banned.contains(k))
+        .map(|(_, w)| *w)
+        .sum();
+    if total == 0 {
+        return None;
+    }
+    let mut r = rng.gen_range(0..total);
+    for (k, w) in table {
+        if banned.contains(k) {
+            continue;
+        }
         if r < *w {
-            return *kind;
+            return Some(*k);
         }
         r -= *w;
     }
-    NodeKind::NormalFight
+    None
 }

@@ -1,6 +1,6 @@
 use ratatui::style::Color;
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum NodeKind {
     EasyFight,
     NormalFight,
