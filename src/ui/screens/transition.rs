@@ -24,7 +24,7 @@ pub enum TransitionKind {
 enum TransitionEffect {
     HorizontalBars,
     VerticalCurtains,
-    RadialClose,
+    IrisClose,
     DiagonalSlash,
     RandomScatter,
     SpiralInward,
@@ -108,9 +108,9 @@ impl TransitionKind {
             TransitionKind::EasyFight => TransitionEffect::DiagonalSlash,
             TransitionKind::NormalFight => TransitionEffect::RandomScatter,
             TransitionKind::EliteFight => TransitionEffect::SpiralInward,
-            TransitionKind::Camp => TransitionEffect::RadialClose,
+            TransitionKind::Camp => TransitionEffect::IrisClose,
             TransitionKind::Shop => TransitionEffect::VerticalCurtains,
-            TransitionKind::Mystery => TransitionEffect::RadialClose,
+            TransitionKind::Mystery => TransitionEffect::IrisClose,
             TransitionKind::Boss => TransitionEffect::HorizontalBars,
         }
     }
@@ -133,7 +133,7 @@ impl TransitionEffect {
                 let from_right = (area.width as f32 - 1.0) - dx;
                 from_left < bar_w || from_right < bar_w
             }
-            TransitionEffect::RadialClose => {
+            TransitionEffect::IrisClose => {
                 let (dx, dy) = aspect_distance(x, y, area);
                 let d = (dx * dx + dy * dy).sqrt();
                 d >= (1.0 - intensity)
