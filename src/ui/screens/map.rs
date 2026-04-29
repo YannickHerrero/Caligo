@@ -29,6 +29,7 @@ impl MapScreen {
 
     pub fn draw(&mut self, frame: &mut Frame) {
         let area = frame.area();
+        widgets::render_map_edges(frame, &self.graph, area);
         widgets::render_map_nodes(frame, &self.graph, area);
     }
 }

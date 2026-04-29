@@ -2,12 +2,48 @@ use crate::map::{MapGraph, MapNode};
 use ratatui::{
     layout::Rect,
     style::{Color, Style},
+    symbols::Marker,
     text::Span,
-    widgets::Paragraph,
+    widgets::{
+        canvas::{Canvas, Line as CanvasLine},
+        Paragraph,
+    },
     Frame,
 };
 
 const NODE_GLYPH: &str = "●";
+const EDGE_COLOR: Color = Color::Rgb(80, 70, 60);
+
+pub fn render_edges(frame: &mut Frame, graph: &MapGraph, area: Rect) {
+    if area.width < 2 || area.height < 2 {
+        return;
+    }
+    let edges = collect_edges(graph, area);
+    if edges.is_empty() {
+        return;
+    }
+
+    let x_bounds = [0.0_f64, area.width as f64];
+    let y_bounds = [0.0_f64, area.height as f64];
+
+    let canvas = Canvas::default()
+        .marker(Marker::Braille)
+        .x_bounds(x_bounds)
+        .y_bounds(y_bounds)
+        .paint(move |ctx| {
+            for edge in &edges {
+                ctx.draw(&CanvasLine {
+                    x1: edge.x1,
+                    y1: edge.y1,
+                    x2: edge.x2,
+                    y2: edge.y2,
+                    color: EDGE_COLOR,
+                });
+            }
+        });
+
+    frame.render_widget(canvas, area);
+}
 
 pub fn render_nodes(frame: &mut Frame, graph: &MapGraph, area: Rect) {
     if area.width == 0 || area.height == 0 {
@@ -26,6 +62,36 @@ pub fn render_nodes(frame: &mut Frame, graph: &MapGraph, area: Rect) {
         let span = Span::styled(NODE_GLYPH, Style::default().fg(Color::Gray));
         frame.render_widget(Paragraph::new(span), cell);
     }
+}
+
+#[derive(Clone, Copy)]
+struct Edge {
+    x1: f64,
+    y1: f64,
+    x2: f64,
+    y2: f64,
+}
+
+fn collect_edges(graph: &MapGraph, area: Rect) -> Vec<Edge> {
+    let mut edges = Vec::new();
+    for node in &graph.nodes {
+        let Some((x1, y1)) = node_position(node, graph, area) else {
+            continue;
+        };
+        for &child_id in &node.children {
+            let child = graph.node(child_id);
+            let Some((x2, y2)) = node_position(child, graph, area) else {
+                continue;
+            };
+            edges.push(Edge {
+                x1: (x1 - area.x) as f64 + 0.5,
+                y1: (area.height as f64) - ((y1 - area.y) as f64 + 0.5),
+                x2: (x2 - area.x) as f64 + 0.5,
+                y2: (area.height as f64) - ((y2 - area.y) as f64 + 0.5),
+            });
+        }
+    }
+    edges
 }
 
 pub fn node_position(node: &MapNode, graph: &MapGraph, area: Rect) -> Option<(u16, u16)> {
