@@ -26,6 +26,7 @@ enum TransitionEffect {
     VerticalCurtains,
     RadialClose,
     DiagonalSlash,
+    RandomScatter,
 }
 
 impl From<NodeKind> for TransitionKind {
@@ -104,7 +105,7 @@ impl TransitionKind {
     fn effect(&self) -> TransitionEffect {
         match self {
             TransitionKind::EasyFight => TransitionEffect::DiagonalSlash,
-            TransitionKind::NormalFight => TransitionEffect::HorizontalBars,
+            TransitionKind::NormalFight => TransitionEffect::RandomScatter,
             TransitionKind::EliteFight => TransitionEffect::HorizontalBars,
             TransitionKind::Camp => TransitionEffect::RadialClose,
             TransitionKind::Shop => TransitionEffect::VerticalCurtains,
@@ -147,8 +148,25 @@ impl TransitionEffect {
                 let progress = (dx + dy) * 0.5;
                 progress < intensity
             }
+            TransitionEffect::RandomScatter => {
+                // Pokemon trainer-encounter feel: 2-wide blocks fill in a
+                // pseudo-random order driven by a per-block hash. Each block
+                // gets a stable threshold so the same cells always fill at
+                // the same point in the animation.
+                let bx = ((x as i32 - area.x as i32) / 2) as u32;
+                let by = (y as i32 - area.y as i32) as u32;
+                let threshold = scatter_threshold(bx, by);
+                threshold < intensity
+            }
         }
     }
+}
+
+fn scatter_threshold(bx: u32, by: u32) -> f32 {
+    let mut h = bx.wrapping_mul(73_856_093) ^ by.wrapping_mul(19_349_663);
+    h = h.wrapping_mul(2_654_435_761);
+    h ^= h >> 16;
+    (h % 1024) as f32 / 1024.0
 }
 
 fn aspect_distance(x: u16, y: u16, area: Rect) -> (f32, f32) {
