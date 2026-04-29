@@ -18,9 +18,11 @@ pub struct App {
 
 impl App {
     pub fn new() -> Self {
+        let mut crab = Crab::new((6.0, 100.0), 95);
+        crab.anchor_at(6.0);
         Self {
             should_quit: false,
-            crab: Crab::new((10.0, 100.0), 95),
+            crab,
             environment: Environment::generate(80, 15, GroundStyle::default()),
             fight: FightState::new(),
             last_terminal_size: (0, 0),
