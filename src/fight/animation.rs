@@ -5,6 +5,7 @@ const JUMP_DURATION: f32 = 0.8;
 const DASH_DURATION: f32 = 0.5;
 const THROW_DURATION: f32 = 0.6;
 const JUMP_HEIGHT: f32 = 4.0;
+const THROW_ARC_HEIGHT: f32 = 3.0;
 
 #[derive(Debug, Clone)]
 pub struct Animation {
@@ -72,7 +73,8 @@ impl Animation {
             AnimationKind::Throw(_) => {
                 let p = self.progress();
                 let x = self.start_x + 12.0 + (self.target_x - self.start_x - 12.0) * p;
-                Some((x, base_y + 2.0))
+                let arc = THROW_ARC_HEIGHT * (std::f32::consts::PI * p).sin();
+                Some((x, base_y + 2.0 - arc))
             }
             _ => None,
         }
