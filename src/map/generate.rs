@@ -128,12 +128,24 @@ fn assign_kinds<R: Rng>(nodes: &mut [MapNode], boss: NodeId, boss_floor: u8, rng
         } else if node.floor == boss_floor - 1 {
             NodeKind::Camp
         } else {
-            random_kind(rng)
+            random_kind(node.floor, rng)
         };
     }
 }
 
-fn random_kind<R: Rng>(rng: &mut R) -> NodeKind {
+fn random_kind<R: Rng>(floor: u8, rng: &mut R) -> NodeKind {
+    // Early floors should ease the player in: only fights and mysteries
+    // until floor 3, so the first real branching choice is between
+    // combat-or-curiosity and never an elite/shop/camp by surprise.
+    if floor < 3 {
+        let r: u32 = rng.gen_range(0..100);
+        return match r {
+            0..=44 => NodeKind::EasyFight,
+            45..=79 => NodeKind::NormalFight,
+            _ => NodeKind::Mystery,
+        };
+    }
+
     let r: u32 = rng.gen_range(0..100);
     match r {
         0..=24 => NodeKind::EasyFight,
