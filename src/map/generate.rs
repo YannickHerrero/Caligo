@@ -146,13 +146,33 @@ fn random_kind<R: Rng>(floor: u8, rng: &mut R) -> NodeKind {
         };
     }
 
-    let r: u32 = rng.gen_range(0..100);
-    match r {
-        0..=24 => NodeKind::EasyFight,
-        25..=54 => NodeKind::NormalFight,
-        55..=62 => NodeKind::EliteFight,
-        63..=74 => NodeKind::Camp,
-        75..=84 => NodeKind::Shop,
-        _ => NodeKind::Mystery,
+    // Mid-run weights shift with depth: easy fights front-loaded, elites
+    // and normal fights back-loaded. Camps and shops stay roughly steady
+    // so the player always has rest and economy options available.
+    let weights = if floor <= 5 {
+        // Easy / Normal / Elite / Camp / Shop / Mystery
+        [35, 30, 4, 12, 8, 11]
+    } else if floor <= 8 {
+        [22, 30, 8, 12, 10, 18]
+    } else {
+        [12, 32, 14, 12, 12, 18]
+    };
+
+    let total: u32 = weights.iter().sum();
+    let mut r: u32 = rng.gen_range(0..total);
+    let kinds = [
+        NodeKind::EasyFight,
+        NodeKind::NormalFight,
+        NodeKind::EliteFight,
+        NodeKind::Camp,
+        NodeKind::Shop,
+        NodeKind::Mystery,
+    ];
+    for (kind, w) in kinds.iter().zip(weights.iter()) {
+        if r < *w {
+            return *kind;
+        }
+        r -= *w;
     }
+    NodeKind::NormalFight
 }
