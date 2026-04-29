@@ -5,7 +5,7 @@ const JUMP_DURATION: f32 = 0.8;
 const DASH_DURATION: f32 = 0.5;
 const THROW_DURATION: f32 = 0.6;
 const JUMP_HEIGHT: f32 = 4.0;
-const THROW_ARC_HEIGHT: f32 = 3.0;
+const THROW_ARC_HEIGHT: f32 = 5.0;
 
 #[derive(Debug, Clone)]
 pub struct Animation {
