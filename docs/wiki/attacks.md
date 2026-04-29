@@ -1,6 +1,8 @@
 # Attacks
 
-The full attack pool, grouped by element. The player begins with **Pinch**, **Bubble**, **Snip**, and **Cosmic Orb** equipped; the remaining attacks are unlocked through Stones found during a run.
+The full attack pool, grouped by element. Both offensive and support moves live in the same Attack menu — the `Effect` column tells you what each one does.
+
+The player begins with **Pinch**, **Bubble**, **Snip**, and **Cosmic Orb** equipped; the remaining attacks are unlocked through Stones found during a run.
 
 Source of truth: [`src/data/attacks.rs`](../../src/data/attacks.rs).
 
@@ -11,6 +13,7 @@ Source of truth: [`src/data/attacks.rs`](../../src/data/attacks.rs).
 | `Dash` | Crab slides in, strikes, slides back. Typically physical and cheap. |
 | `Jump` | Crab arcs onto the target. Heavier hits, often higher cost. |
 | `Throw(kind)` | Crab launches a projectile of the given kind in an arc. |
+| `SelfCast` | Crab hops in place. Used for self-targeting healing and buffs. |
 
 ## Projectile kinds
 
@@ -21,98 +24,117 @@ Source of truth: [`src/data/attacks.rs`](../../src/data/attacks.rs).
 | `Electric` | 1×3 bolt | Yellow |
 | `EnergyBall` | 3×3 orb | Purple |
 
+## Effect kinds
+
+| Effect | Format | Meaning |
+|---|---|---|
+| Damage | `DMG n` | Removes `n` HP from the target. |
+| Heal | `HEAL n` | Restores `n` HP to the caster. |
+| Buff | `ATK +m% / dt` or `DEF +m% / dt` | Boosts the caster's attack or defense by `m%` for `d` turns. |
+
 ## Neutral
 
-Physical, mostly cheap. Reliable when mana is low.
+Physical, mostly cheap. Reliable when mana is low — plus the bulk of the support kit.
 
-| Name | Animation | Damage | Mana |
-|---|---|---:|---:|
-| Pinch ⭐ | Dash | 5 | 0 |
-| Scuttle Strike | Dash | 4 | 0 |
-| Headbutt | Dash | 6 | 0 |
-| Tail Whip | Dash | 5 | 1 |
-| Bite | Dash | 7 | 1 |
-| Snip ⭐ | Jump | 8 | 2 |
-| Shell Bash | Dash | 9 | 3 |
-| Claw Crush | Jump | 12 | 4 |
-| Double Snip | Jump | 14 | 6 |
-| Final Pinch | Jump | 18 | 7 |
+| Name | Animation | Effect | Mana |
+|---|---|---|---:|
+| Pinch ⭐ | Dash | DMG 5 | 0 |
+| Scuttle Strike | Dash | DMG 4 | 0 |
+| Headbutt | Dash | DMG 6 | 0 |
+| Tail Whip | Dash | DMG 5 | 1 |
+| Bite | Dash | DMG 7 | 1 |
+| Snip ⭐ | Jump | DMG 8 | 2 |
+| Shell Bash | Dash | DMG 9 | 3 |
+| Claw Crush | Jump | DMG 12 | 4 |
+| Double Snip | Jump | DMG 14 | 6 |
+| Final Pinch | Jump | DMG 18 | 7 |
+| Mend | SelfCast | HEAL 10 | 4 |
+| First Aid | SelfCast | HEAL 15 | 6 |
+| Greater Mend | SelfCast | HEAL 22 | 10 |
+| Sharpen | SelfCast | ATK +25% / 3t | 4 |
 
 ## Fire
 
 Aggressive, projectile-heavy. Tends toward higher cost.
 
-| Name | Animation | Damage | Mana |
-|---|---|---:|---:|
-| Ember | Throw(Fire) | 6 | 2 |
-| Cinder Spit | Throw(Fire) | 7 | 3 |
-| Heatwave | Throw(Fire) | 8 | 4 |
-| Flame Dash | Dash | 9 | 4 |
-| Fireball | Throw(Fire) | 11 | 5 |
-| Sunflare | Throw(Fire) | 13 | 6 |
-| Lava Lob | Throw(Fire) | 14 | 6 |
-| Pyre Charge | Dash | 15 | 7 |
-| Magma Crush | Jump | 17 | 8 |
-| Inferno | Throw(Fire) | 21 | 10 |
+| Name | Animation | Effect | Mana |
+|---|---|---|---:|
+| Ember | Throw(Fire) | DMG 6 | 2 |
+| Cinder Spit | Throw(Fire) | DMG 7 | 3 |
+| Heatwave | Throw(Fire) | DMG 8 | 4 |
+| Flame Dash | Dash | DMG 9 | 4 |
+| Fireball | Throw(Fire) | DMG 11 | 5 |
+| Sunflare | Throw(Fire) | DMG 13 | 6 |
+| Lava Lob | Throw(Fire) | DMG 14 | 6 |
+| Pyre Charge | Dash | DMG 15 | 7 |
+| Magma Crush | Jump | DMG 17 | 8 |
+| Inferno | Throw(Fire) | DMG 21 | 10 |
 
 ## Water
 
-Balanced. Strong efficiency at low cost; ramps to a top-tier finisher.
+Balanced. Strong efficiency at low cost; ramps to a top-tier finisher. Includes a cheap entry-level heal.
 
-| Name | Animation | Damage | Mana |
-|---|---|---:|---:|
-| Splash | Throw(Water) | 4 | 1 |
-| Bubble ⭐ | Throw(Water) | 7 | 3 |
-| Frostbite | Dash | 8 | 4 |
-| Ice Shard | Throw(Water) | 9 | 4 |
-| Riptide | Dash | 10 | 5 |
-| Whirlpool | Throw(Water) | 12 | 6 |
-| Tidal Slam | Jump | 13 | 5 |
-| Geyser | Jump | 15 | 7 |
-| Hailstorm | Throw(Water) | 17 | 9 |
-| Tsunami | Throw(Water) | 22 | 12 |
+| Name | Animation | Effect | Mana |
+|---|---|---|---:|
+| Splash | Throw(Water) | DMG 4 | 1 |
+| Bubble ⭐ | Throw(Water) | DMG 7 | 3 |
+| Frostbite | Dash | DMG 8 | 4 |
+| Ice Shard | Throw(Water) | DMG 9 | 4 |
+| Riptide | Dash | DMG 10 | 5 |
+| Whirlpool | Throw(Water) | DMG 12 | 6 |
+| Tidal Slam | Jump | DMG 13 | 5 |
+| Geyser | Jump | DMG 15 | 7 |
+| Hailstorm | Throw(Water) | DMG 17 | 9 |
+| Tsunami | Throw(Water) | DMG 22 | 12 |
+| Salve | SelfCast | HEAL 6 | 2 |
 
 ## Earth
 
-Heavy melee. Few projectiles; biggest single-hit numbers in the game.
+Heavy melee. Few projectiles; biggest single-hit numbers in the game. Also home to the defense buff.
 
-| Name | Animation | Damage | Mana |
-|---|---|---:|---:|
-| Granite Shell | Dash | 6 | 1 |
-| Sandstorm | Dash | 7 | 3 |
-| Quake Step | Dash | 9 | 4 |
-| Stone Slam | Jump | 10 | 4 |
-| Iron Pinch | Dash | 11 | 4 |
-| Crystal Spike | Jump | 13 | 6 |
-| Rockfall | Jump | 14 | 6 |
-| Boulder Press | Jump | 16 | 8 |
-| Earthquake | Jump | 18 | 9 |
-| Tectonic Crush | Jump | 24 | 12 |
+| Name | Animation | Effect | Mana |
+|---|---|---|---:|
+| Granite Shell | Dash | DMG 6 | 1 |
+| Sandstorm | Dash | DMG 7 | 3 |
+| Quake Step | Dash | DMG 9 | 4 |
+| Stone Slam | Jump | DMG 10 | 4 |
+| Iron Pinch | Dash | DMG 11 | 4 |
+| Crystal Spike | Jump | DMG 13 | 6 |
+| Rockfall | Jump | DMG 14 | 6 |
+| Boulder Press | Jump | DMG 16 | 8 |
+| Earthquake | Jump | DMG 18 | 9 |
+| Tectonic Crush | Jump | DMG 24 | 12 |
+| Carapace | SelfCast | DEF +30% / 3t | 4 |
 
 ## Air
 
 Lightning and cosmic. Heaviest mana sinks; biggest projectiles.
 
-| Name | Animation | Damage | Mana |
-|---|---|---:|---:|
-| Spark | Throw(Electric) | 5 | 2 |
-| Gust | Jump | 6 | 2 |
-| Static Charge | Dash | 7 | 3 |
-| Thunderclap | Throw(Electric) | 9 | 4 |
-| Lightning Bolt | Throw(Electric) | 12 | 6 |
-| Cosmic Orb ⭐ | Throw(EnergyBall) | 14 | 8 |
-| Tornado | Jump | 14 | 7 |
-| Storm Strike | Throw(Electric) | 16 | 8 |
-| Star Lance | Throw(EnergyBall) | 19 | 10 |
-| Sky Splitter | Throw(Electric) | 22 | 11 |
+| Name | Animation | Effect | Mana |
+|---|---|---|---:|
+| Spark | Throw(Electric) | DMG 5 | 2 |
+| Gust | Jump | DMG 6 | 2 |
+| Static Charge | Dash | DMG 7 | 3 |
+| Thunderclap | Throw(Electric) | DMG 9 | 4 |
+| Lightning Bolt | Throw(Electric) | DMG 12 | 6 |
+| Cosmic Orb ⭐ | Throw(EnergyBall) | DMG 14 | 8 |
+| Tornado | Jump | DMG 14 | 7 |
+| Storm Strike | Throw(Electric) | DMG 16 | 8 |
+| Star Lance | Throw(EnergyBall) | DMG 19 | 10 |
+| Sky Splitter | Throw(Electric) | DMG 22 | 11 |
 
 ⭐ = starter attack, equipped from the start of a run.
 
 ## Balance notes
 
+### Damage
 - **Free attacks (cost 0)** sit in the 4–6 damage range — meant as a fallback when out of mana.
 - **Cheap (1–3 mana)** ranges 5–9 damage; the most efficient damage-per-mana lives here.
 - **Mid (4–7 mana)** ranges 8–15 damage; the workhorse band.
 - **Heavy (8–10 mana)** ranges 14–21 damage; commits a turn to a big hit.
 - **Ultimate (11–12 mana)** ranges 22–24 damage; one-per-fight finishers.
+
+### Support
+- **Heals** scale at roughly *2 HP per mana* (Salve 6/2, Mend 10/4, First Aid 15/6, Greater Mend 22/10) — slightly worse than damage-per-mana on offensive attacks, since the trade is "save your run" not "kill faster."
+- **Buffs** cost a flat 4 mana for a 3-turn window. Profitable when you expect to take or land at least three turns; a wasted activation is a real cost.
 - Within each band, *efficient* picks (high damage-for-cost) are typically `Dash` or short `Throw`s; *flashy* picks (lower efficiency) trade numbers for animation impact and will pick up status effects in future updates.
