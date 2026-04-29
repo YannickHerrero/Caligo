@@ -29,6 +29,7 @@ enum TransitionEffect {
     RandomScatter,
     SpiralInward,
     Checkerboard,
+    DiamondExpand,
 }
 
 impl From<NodeKind> for TransitionKind {
@@ -111,7 +112,7 @@ impl TransitionKind {
             TransitionKind::EliteFight => TransitionEffect::SpiralInward,
             TransitionKind::Camp => TransitionEffect::IrisClose,
             TransitionKind::Shop => TransitionEffect::Checkerboard,
-            TransitionKind::Mystery => TransitionEffect::IrisClose,
+            TransitionKind::Mystery => TransitionEffect::DiamondExpand,
             TransitionKind::Boss => TransitionEffect::HorizontalBars,
         }
     }
@@ -173,6 +174,14 @@ impl TransitionEffect {
                 let max_fill = 1.5 + arms;
                 let fill_at = (1.5 - d) + arms * theta_norm;
                 intensity * max_fill > fill_at
+            }
+            TransitionEffect::DiamondExpand => {
+                // Diamond (Manhattan distance) grows from center outward.
+                // Manhattan max is 2.0 in aspect-corrected coords (corner);
+                // we cap so corners get covered at intensity 1.
+                let (dx, dy) = aspect_distance(x, y, area);
+                let manhattan = (dx.abs() + dy.abs()).min(2.0);
+                intensity * 2.0 >= manhattan
             }
             TransitionEffect::Checkerboard => {
                 // Two-pass tile fill in 2x1 squares (the cell aspect makes
