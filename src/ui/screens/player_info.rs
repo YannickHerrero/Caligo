@@ -23,6 +23,7 @@ pub struct PlayerInfoScreen {
     pub attack_scroll: usize,
     pub item_cursor: usize,
     pub item_scroll: usize,
+    pub pending_assign_attack: Option<usize>,
     last_attacks_height: u16,
     last_inventory_height: u16,
 }
@@ -37,18 +38,48 @@ impl PlayerInfoScreen {
             attack_scroll: 0,
             item_cursor: 0,
             item_scroll: 0,
+            pending_assign_attack: None,
             last_attacks_height: 0,
             last_inventory_height: 0,
         }
     }
 
     pub fn handle_key(&mut self, key: KeyCode, player: &mut Player) -> Transition {
+        if self.pending_assign_attack.is_some() {
+            return self.handle_assign_key(key, player);
+        }
         match key {
             KeyCode::Char('q') | KeyCode::Esc | KeyCode::Tab => return self.return_to_map(),
             KeyCode::Up | KeyCode::Char('k') => self.scroll_focused(-1, player),
             KeyCode::Down | KeyCode::Char('j') => self.scroll_focused(1, player),
             KeyCode::Left | KeyCode::Char('h') => self.focus = InfoFocus::Attacks,
             KeyCode::Right | KeyCode::Char('l') => self.focus = InfoFocus::Inventory,
+            KeyCode::Enter => self.start_attack_assign(player),
+            _ => {}
+        }
+        Transition::Stay
+    }
+
+    fn start_attack_assign(&mut self, player: &Player) {
+        if self.focus != InfoFocus::Attacks {
+            return;
+        }
+        if self.attack_cursor < player.owned_attacks.len() {
+            self.pending_assign_attack = Some(self.attack_cursor);
+        }
+    }
+
+    fn handle_assign_key(&mut self, key: KeyCode, player: &mut Player) -> Transition {
+        match key {
+            KeyCode::Esc | KeyCode::Char('q') | KeyCode::Backspace => {
+                self.pending_assign_attack = None;
+            }
+            KeyCode::Char(c @ '1'..='4') => {
+                if let Some(attack_idx) = self.pending_assign_attack.take() {
+                    let slot = (c as u8 - b'1') as usize;
+                    player.assign_attack_to_slot(attack_idx, slot);
+                }
+            }
             _ => {}
         }
         Transition::Stay
@@ -132,6 +163,12 @@ impl PlayerInfoScreen {
             inventory_area,
         );
 
+        if let Some(attack_idx) = self.pending_assign_attack {
+            if let Some(attack) = player.owned_attacks.get(attack_idx) {
+                widgets::render_assign_strip(frame, attack, info_strip);
+                return;
+            }
+        }
         match self.focus {
             InfoFocus::Attacks => {
                 let popup_attack = player.owned_attacks.get(self.attack_cursor);

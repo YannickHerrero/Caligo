@@ -306,6 +306,40 @@ fn is_trinket_equipped(stack: &ItemStack, player: &Player) -> bool {
     }
 }
 
+pub fn render_assign_strip(frame: &mut Frame, attack: &Attack, area: Rect) {
+    let block = Block::default()
+        .borders(Borders::ALL)
+        .border_style(Style::default().fg(Color::Yellow))
+        .title(Span::styled(
+            " Equip ",
+            Style::default()
+                .fg(Color::Yellow)
+                .add_modifier(Modifier::BOLD),
+        ));
+    let inner = block.inner(area);
+    frame.render_widget(block, area);
+    if inner.height == 0 {
+        return;
+    }
+    let line = Line::from(vec![
+        Span::styled(
+            "Press 1–4 to equip ",
+            Style::default().fg(Color::Gray),
+        ),
+        Span::styled(
+            attack.name.clone(),
+            Style::default()
+                .fg(Color::Yellow)
+                .add_modifier(Modifier::BOLD),
+        ),
+        Span::styled(
+            "  ·  Esc cancels",
+            Style::default().fg(Color::DarkGray),
+        ),
+    ]);
+    frame.render_widget(Paragraph::new(line), inner);
+}
+
 pub fn render_item_info_strip(frame: &mut Frame, item: &Item, area: Rect) {
     let block = Block::default()
         .borders(Borders::ALL)
