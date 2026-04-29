@@ -1,4 +1,6 @@
-# Rusty
+# Caligo
+
+> *cāligō*, Latin: gloom, fog, dark mist; mental obscurity.
 
 A roguelike crab dungeon crawler that runs in your terminal.
 
@@ -6,7 +8,7 @@ A roguelike crab dungeon crawler that runs in your terminal.
 
 ## About
 
-Rusty is a turn-based roguelike where you guide a crab through a series of dungeons. Each run takes you across a branching map of rooms — fights, shops, events — building toward a boss at the floor's end. Combat plays out in a JRPG-style fight scene: you pick from a menu of attacks, items, or flee, while animations play in the scene above.
+Caligo is a turn-based roguelike where you guide a crab through a series of dungeons. Each run takes you across a branching map of rooms — fights, shops, events — building toward a boss at the floor's end. Combat plays out in a JRPG-style fight scene: you pick from a menu of attacks, items, or flee, while animations play in the scene above.
 
 The art style is intentionally minimalist — ASCII art rendered through [ratatui](https://github.com/ratatui/ratatui), with a focus on snappy animations and terminal-friendly visuals.
 
@@ -53,7 +55,7 @@ You'll need a Rust toolchain (1.74 or later recommended).
 
 ```bash
 git clone <this-repo>
-cd Rusty
+cd caligo
 cargo run
 ```
 
