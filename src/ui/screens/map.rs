@@ -13,6 +13,7 @@ pub struct MapScreen {
     pub graph: MapGraph,
     pub cursor: Option<NodeId>,
     pub environment: Environment,
+    pub tick: u32,
     sky_size: (u16, u16),
 }
 
@@ -24,6 +25,7 @@ impl MapScreen {
             graph,
             cursor,
             environment: Environment::generate(80, SKY_BAND_HEIGHT, GroundStyle::default()),
+            tick: 0,
             sky_size: (0, 0),
         }
     }
@@ -67,6 +69,7 @@ impl MapScreen {
     pub fn update(&mut self) {
         let dt = 0.05;
         self.environment.update_cycle(dt, 1.0, 1.0);
+        self.tick = self.tick.wrapping_add(1);
     }
 
     pub fn draw(&mut self, frame: &mut Frame) {
@@ -93,12 +96,19 @@ impl MapScreen {
             self.sky_size = sky_size;
         }
 
+        let pulse = pulse_phase(self.tick);
         widgets::render_map_header(frame, &self.graph, header_area);
         widgets::render_environment_background(frame, &self.environment, sky_area);
         widgets::render_map_edges(frame, &self.graph, map_area);
-        widgets::render_map_nodes(frame, &self.graph, self.cursor, map_area);
+        widgets::render_map_nodes(frame, &self.graph, self.cursor, pulse, map_area);
         widgets::render_map_info(frame, &self.graph, self.cursor, info_area);
     }
+}
+
+fn pulse_phase(tick: u32) -> f32 {
+    let t = (tick % 24) as f32 / 24.0;
+    let s = (t * std::f32::consts::TAU).sin();
+    0.5 + 0.5 * s
 }
 
 fn sorted_reachable(graph: &MapGraph) -> Vec<NodeId> {

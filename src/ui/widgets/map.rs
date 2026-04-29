@@ -141,7 +141,13 @@ pub fn render_edges(frame: &mut Frame, graph: &MapGraph, area: Rect) {
     frame.render_widget(canvas, area);
 }
 
-pub fn render_nodes(frame: &mut Frame, graph: &MapGraph, cursor: Option<NodeId>, area: Rect) {
+pub fn render_nodes(
+    frame: &mut Frame,
+    graph: &MapGraph,
+    cursor: Option<NodeId>,
+    pulse: f32,
+    area: Rect,
+) {
     if area.width == 0 || area.height == 0 {
         return;
     }
@@ -158,8 +164,19 @@ pub fn render_nodes(frame: &mut Frame, graph: &MapGraph, cursor: Option<NodeId>,
         };
         let state = node_state(node, graph, &reachable);
         let mut style = node_style(node, state);
+        if state == NodeState::Reachable {
+            let factor = 0.7 + 0.3 * pulse;
+            style = style.fg(dim_color(node.kind.color(), factor));
+        }
+        if state == NodeState::Current {
+            let factor = 0.75 + 0.25 * pulse;
+            style = style.fg(dim_color(CURRENT_COLOR, factor));
+        }
         if Some(node.id) == cursor {
             style = style.add_modifier(Modifier::REVERSED);
+            if pulse > 0.5 {
+                style = style.add_modifier(Modifier::BOLD);
+            }
         }
         let span = Span::styled(node.kind.icon(), style);
         frame.render_widget(Paragraph::new(span), cell);
