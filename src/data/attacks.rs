@@ -353,12 +353,86 @@ fn earth() -> Vec<Attack> {
 }
 
 fn air() -> Vec<Attack> {
-    vec![Attack::new(
-        "Cosmic Orb",
-        AnimationKind::Throw(ProjectileKind::EnergyBall),
-        14,
-        8,
-        Element::Air,
-        "A heavy orb of cosmic energy. High cost, high damage.",
-    )]
+    vec![
+        Attack::new(
+            "Spark",
+            AnimationKind::Throw(ProjectileKind::Electric),
+            5,
+            2,
+            Element::Air,
+            "A small static jolt.",
+        ),
+        Attack::new(
+            "Gust",
+            AnimationKind::Jump,
+            6,
+            2,
+            Element::Air,
+            "A sudden upward burst of wind.",
+        ),
+        Attack::new(
+            "Static Charge",
+            AnimationKind::Dash,
+            7,
+            3,
+            Element::Air,
+            "Crackles with electricity on impact.",
+        ),
+        Attack::new(
+            "Thunderclap",
+            AnimationKind::Throw(ProjectileKind::Electric),
+            9,
+            4,
+            Element::Air,
+            "An ear-splitting boom.",
+        ),
+        Attack::new(
+            "Lightning Bolt",
+            AnimationKind::Throw(ProjectileKind::Electric),
+            12,
+            6,
+            Element::Air,
+            "A crackling arc of lightning.",
+        ),
+        Attack::new(
+            "Cosmic Orb",
+            AnimationKind::Throw(ProjectileKind::EnergyBall),
+            14,
+            8,
+            Element::Air,
+            "A heavy orb of cosmic energy. High cost, high damage.",
+        ),
+        Attack::new(
+            "Tornado",
+            AnimationKind::Jump,
+            14,
+            7,
+            Element::Air,
+            "Spins up a cyclone around the foe.",
+        ),
+        Attack::new(
+            "Storm Strike",
+            AnimationKind::Throw(ProjectileKind::Electric),
+            16,
+            8,
+            Element::Air,
+            "Lightning answers the call.",
+        ),
+        Attack::new(
+            "Star Lance",
+            AnimationKind::Throw(ProjectileKind::EnergyBall),
+            19,
+            10,
+            Element::Air,
+            "A spear of starlight.",
+        ),
+        Attack::new(
+            "Sky Splitter",
+            AnimationKind::Throw(ProjectileKind::Electric),
+            22,
+            11,
+            Element::Air,
+            "A pillar of lightning rips the sky.",
+        ),
+    ]
 }
