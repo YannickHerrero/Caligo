@@ -7,6 +7,7 @@ pub fn all_attacks() -> Vec<Attack> {
     out.extend(neutral());
     out.extend(fire());
     out.extend(water());
+    out.extend(earth());
     out.extend(air());
     out
 }
@@ -262,6 +263,91 @@ fn water() -> Vec<Attack> {
             12,
             Element::Water,
             "A devastating wall of water.",
+        ),
+    ]
+}
+
+fn earth() -> Vec<Attack> {
+    vec![
+        Attack::new(
+            "Granite Shell",
+            AnimationKind::Dash,
+            6,
+            1,
+            Element::Earth,
+            "Charges in with shell hardened to stone.",
+        ),
+        Attack::new(
+            "Sandstorm",
+            AnimationKind::Dash,
+            7,
+            3,
+            Element::Earth,
+            "A blinding rush of sand and grit.",
+        ),
+        Attack::new(
+            "Quake Step",
+            AnimationKind::Dash,
+            9,
+            4,
+            Element::Earth,
+            "Each footfall sends a tremor.",
+        ),
+        Attack::new(
+            "Stone Slam",
+            AnimationKind::Jump,
+            10,
+            4,
+            Element::Earth,
+            "Crashes down with stone-hard claws.",
+        ),
+        Attack::new(
+            "Iron Pinch",
+            AnimationKind::Dash,
+            11,
+            4,
+            Element::Earth,
+            "Claws of steel close in.",
+        ),
+        Attack::new(
+            "Crystal Spike",
+            AnimationKind::Jump,
+            13,
+            6,
+            Element::Earth,
+            "Skewers the foe with a crystalline shard.",
+        ),
+        Attack::new(
+            "Rockfall",
+            AnimationKind::Jump,
+            14,
+            6,
+            Element::Earth,
+            "Boulders rain on the foe.",
+        ),
+        Attack::new(
+            "Boulder Press",
+            AnimationKind::Jump,
+            16,
+            8,
+            Element::Earth,
+            "A crushing weight from above.",
+        ),
+        Attack::new(
+            "Earthquake",
+            AnimationKind::Jump,
+            18,
+            9,
+            Element::Earth,
+            "The ground shakes the enemy off-balance.",
+        ),
+        Attack::new(
+            "Tectonic Crush",
+            AnimationKind::Jump,
+            24,
+            12,
+            Element::Earth,
+            "Calls the deep earth to crush the foe.",
         ),
     ]
 }
