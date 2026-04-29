@@ -1,4 +1,6 @@
-use crate::map::{MapGraph, MapNode};
+use std::collections::HashSet;
+
+use crate::map::{MapGraph, MapNode, NodeId};
 use ratatui::{
     layout::Rect,
     style::{Color, Modifier, Style},
@@ -11,13 +13,23 @@ use ratatui::{
     Frame,
 };
 
-const EDGE_COLOR: Color = Color::Rgb(80, 70, 60);
+const EDGE_DIM: Color = Color::Rgb(60, 52, 44);
+const EDGE_BRIGHT: Color = Color::Rgb(200, 170, 110);
+const VISITED_COLOR: Color = Color::Rgb(90, 90, 96);
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum NodeState {
+    Visited,
+    Reachable,
+    Future,
+}
 
 pub fn render_edges(frame: &mut Frame, graph: &MapGraph, area: Rect) {
     if area.width < 2 || area.height < 2 {
         return;
     }
-    let edges = collect_edges(graph, area);
+    let reachable = reachable_set(graph);
+    let edges = collect_edges(graph, area, &reachable);
     if edges.is_empty() {
         return;
     }
@@ -36,7 +48,7 @@ pub fn render_edges(frame: &mut Frame, graph: &MapGraph, area: Rect) {
                     y1: edge.y1,
                     x2: edge.x2,
                     y2: edge.y2,
-                    color: EDGE_COLOR,
+                    color: edge.color,
                 });
             }
         });
@@ -48,6 +60,7 @@ pub fn render_nodes(frame: &mut Frame, graph: &MapGraph, area: Rect) {
     if area.width == 0 || area.height == 0 {
         return;
     }
+    let reachable = reachable_set(graph);
     for node in &graph.nodes {
         let Some((x, y)) = node_position(node, graph, area) else {
             continue;
@@ -58,11 +71,45 @@ pub fn render_nodes(frame: &mut Frame, graph: &MapGraph, area: Rect) {
             width: 1,
             height: 1,
         };
-        let style = Style::default()
-            .fg(node.kind.color())
-            .add_modifier(Modifier::BOLD);
+        let state = node_state(node, &reachable);
+        let style = node_style(node, state);
         let span = Span::styled(node.kind.icon(), style);
         frame.render_widget(Paragraph::new(span), cell);
+    }
+}
+
+fn reachable_set(graph: &MapGraph) -> HashSet<NodeId> {
+    graph.reachable().into_iter().collect()
+}
+
+fn node_state(node: &MapNode, reachable: &HashSet<NodeId>) -> NodeState {
+    if node.visited {
+        NodeState::Visited
+    } else if reachable.contains(&node.id) {
+        NodeState::Reachable
+    } else {
+        NodeState::Future
+    }
+}
+
+fn node_style(node: &MapNode, state: NodeState) -> Style {
+    match state {
+        NodeState::Visited => Style::default().fg(VISITED_COLOR),
+        NodeState::Reachable => Style::default()
+            .fg(node.kind.color())
+            .add_modifier(Modifier::BOLD),
+        NodeState::Future => Style::default().fg(dim_color(node.kind.color(), 0.45)),
+    }
+}
+
+fn dim_color(color: Color, factor: f32) -> Color {
+    match color {
+        Color::Rgb(r, g, b) => Color::Rgb(
+            (r as f32 * factor) as u8,
+            (g as f32 * factor) as u8,
+            (b as f32 * factor) as u8,
+        ),
+        other => other,
     }
 }
 
@@ -72,9 +119,11 @@ struct Edge {
     y1: f64,
     x2: f64,
     y2: f64,
+    color: Color,
 }
 
-fn collect_edges(graph: &MapGraph, area: Rect) -> Vec<Edge> {
+fn collect_edges(graph: &MapGraph, area: Rect, reachable: &HashSet<NodeId>) -> Vec<Edge> {
+    let current = graph.current;
     let mut edges = Vec::new();
     for node in &graph.nodes {
         let Some((x1, y1)) = node_position(node, graph, area) else {
@@ -85,11 +134,19 @@ fn collect_edges(graph: &MapGraph, area: Rect) -> Vec<Edge> {
             let Some((x2, y2)) = node_position(child, graph, area) else {
                 continue;
             };
+            let color = if Some(node.id) == current && reachable.contains(&child_id) {
+                EDGE_BRIGHT
+            } else if current.is_none() && reachable.contains(&child_id) {
+                EDGE_BRIGHT
+            } else {
+                EDGE_DIM
+            };
             edges.push(Edge {
                 x1: (x1 - area.x) as f64 + 0.5,
                 y1: (area.height as f64) - ((y1 - area.y) as f64 + 0.5),
                 x2: (x2 - area.x) as f64 + 0.5,
                 y2: (area.height as f64) - ((y2 - area.y) as f64 + 0.5),
+                color,
             });
         }
     }
