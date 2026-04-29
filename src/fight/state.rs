@@ -1,0 +1,19 @@
+use super::enemy::Enemy;
+
+pub struct FightState {
+    pub player_hp: u32,
+    pub player_max_hp: u32,
+    pub enemy: Enemy,
+    pub floor: u32,
+}
+
+impl FightState {
+    pub fn new() -> Self {
+        Self {
+            player_hp: 50,
+            player_max_hp: 50,
+            enemy: Enemy::slime(),
+            floor: 1,
+        }
+    }
+}

@@ -1,5 +1,6 @@
 mod crab;
 mod environment;
+mod fight;
 mod ui;
 
 use anyhow::Result;
