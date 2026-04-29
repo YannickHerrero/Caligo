@@ -2,6 +2,7 @@ mod crab;
 mod environment;
 mod fight;
 mod map;
+mod player;
 mod ui;
 
 use anyhow::Result;
