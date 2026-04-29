@@ -179,29 +179,16 @@ pub fn render_enemy(frame: &mut Frame, enemy: &Enemy, area: Rect) {
 }
 
 pub fn render_projectile(frame: &mut Frame, anim: &Animation, ground_y: f32, area: Rect) {
-    let Some((x, y)) = anim.projectile_position(ground_y) else {
+    let Some((cx, cy)) = anim.projectile_position(ground_y) else {
         return;
     };
-    if x < 0.0 || y < 0.0 {
+    let Some(kind) = anim.projectile_kind() else {
         return;
-    }
-    let xi = x.round() as u16;
-    let yi = y.round() as u16;
-    if xi >= area.width || yi >= area.height {
-        return;
-    }
-    let cell = Rect {
-        x: area.x + xi,
-        y: area.y + yi,
-        width: 1,
-        height: 1,
     };
-    let color = anim
-        .projectile_kind()
-        .map(|k| k.color())
-        .unwrap_or(Color::White);
-    frame.render_widget(
-        Paragraph::new("●").style(Style::default().fg(color).add_modifier(Modifier::BOLD)),
-        cell,
-    );
+    let sprite: Vec<String> = kind.sprite().iter().map(|s| s.to_string()).collect();
+    let width = kind.width() as f32;
+    let height = kind.height() as f32;
+    let x = (cx - width / 2.0).round() as i32;
+    let y = (cy - height / 2.0).round() as i32;
+    render_element(frame, &sprite, x, y, kind.color(), area);
 }
