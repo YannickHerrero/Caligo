@@ -1,4 +1,5 @@
 use crate::crab::Crab;
+use crate::fight::Attack;
 use crate::player::Player;
 use ratatui::{
     layout::{Alignment, Rect},
@@ -127,3 +128,131 @@ fn stat_bar(label: &str, current: u32, max: u32, color: Color) -> Line<'static> 
         ),
     ])
 }
+
+pub fn render_attacks_panel(
+    frame: &mut Frame,
+    player: &Player,
+    cursor: usize,
+    scroll: usize,
+    focused: bool,
+    area: Rect,
+) {
+    let border_color = if focused {
+        Color::Yellow
+    } else {
+        Color::DarkGray
+    };
+    let block = Block::default()
+        .borders(Borders::ALL)
+        .border_style(Style::default().fg(border_color))
+        .title(Span::styled(
+            " Attacks ",
+            Style::default().fg(if focused { Color::Yellow } else { Color::Gray }),
+        ));
+    let inner = block.inner(area);
+    frame.render_widget(block, area);
+    if inner.height == 0 || player.owned_attacks.is_empty() {
+        return;
+    }
+
+    let visible = inner.height as usize;
+    let scroll = scroll.min(player.owned_attacks.len().saturating_sub(1));
+    let end = (scroll + visible).min(player.owned_attacks.len());
+
+    let has_more_above = scroll > 0;
+    let has_more_below = end < player.owned_attacks.len();
+
+    let mut lines: Vec<Line> = Vec::with_capacity(end - scroll);
+    for (i, attack) in player.owned_attacks[scroll..end].iter().enumerate() {
+        let global_idx = scroll + i;
+        let is_selected = global_idx == cursor && focused;
+        let cursor_str = if is_selected { "> " } else { "  " };
+
+        let equipped_slot = player
+            .equipped_attacks
+            .iter()
+            .position(|s| *s == Some(global_idx));
+        let slot_marker = match equipped_slot {
+            Some(s) => format!("[{}] ", s + 1),
+            None => "    ".to_string(),
+        };
+
+        let style = if is_selected {
+            Style::default()
+                .fg(Color::Yellow)
+                .add_modifier(Modifier::BOLD)
+        } else if equipped_slot.is_some() {
+            Style::default().fg(Color::White)
+        } else {
+            Style::default().fg(Color::Gray)
+        };
+
+        let mut spans = vec![
+            Span::styled(cursor_str, style),
+            Span::styled(slot_marker, Style::default().fg(Color::DarkGray)),
+            Span::styled(attack.name.clone(), style),
+        ];
+        if i == 0 && has_more_above {
+            spans.push(Span::styled(
+                "  ↑",
+                Style::default().fg(Color::DarkGray),
+            ));
+        } else if i == visible.saturating_sub(1) && has_more_below {
+            spans.push(Span::styled(
+                "  ↓",
+                Style::default().fg(Color::DarkGray),
+            ));
+        }
+        lines.push(Line::from(spans));
+    }
+    frame.render_widget(Paragraph::new(lines), inner);
+}
+
+pub fn render_info_strip(frame: &mut Frame, attack: Option<&Attack>, area: Rect) {
+    let block = Block::default()
+        .borders(Borders::ALL)
+        .border_style(Style::default().fg(Color::DarkGray))
+        .title(Span::styled(
+            " Info ",
+            Style::default().fg(Color::Gray),
+        ));
+    let inner = block.inner(area);
+    frame.render_widget(block, area);
+    if inner.height == 0 {
+        return;
+    }
+
+    let line = match attack {
+        Some(a) => Line::from(vec![
+            Span::styled(
+                a.name.clone(),
+                Style::default()
+                    .fg(Color::Yellow)
+                    .add_modifier(Modifier::BOLD),
+            ),
+            Span::styled("  ", Style::default()),
+            Span::styled(
+                format!("DMG {}", a.damage),
+                Style::default().fg(Color::Rgb(255, 140, 90)),
+            ),
+            Span::styled("  ", Style::default()),
+            Span::styled(
+                format!("MP {}", a.mana_cost),
+                Style::default().fg(Color::Rgb(120, 160, 255)),
+            ),
+            Span::styled("  ", Style::default()),
+            Span::styled(
+                a.element.label().to_string(),
+                Style::default().fg(a.element.color()),
+            ),
+            Span::styled("  —  ", Style::default().fg(Color::DarkGray)),
+            Span::styled(a.description.clone(), Style::default().fg(Color::Gray)),
+        ]),
+        None => Line::from(Span::styled(
+            "Tab to map · ←/→ switch panel · ↑/↓ scroll",
+            Style::default().fg(Color::DarkGray),
+        )),
+    };
+    frame.render_widget(Paragraph::new(line), inner);
+}
+

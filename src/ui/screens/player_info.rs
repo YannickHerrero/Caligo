@@ -22,6 +22,9 @@ pub struct PlayerInfoScreen {
     pub focus: InfoFocus,
     pub map: Option<Box<MapScreen>>,
     crab: Crab,
+    pub attack_cursor: usize,
+    pub attack_scroll: usize,
+    last_attacks_height: u16,
 }
 
 impl PlayerInfoScreen {
@@ -30,13 +33,41 @@ impl PlayerInfoScreen {
             focus: InfoFocus::Attacks,
             map: Some(Box::new(map)),
             crab: Crab::new((0.0, 0.0), 95),
+            attack_cursor: 0,
+            attack_scroll: 0,
+            last_attacks_height: 0,
         }
     }
 
-    pub fn handle_key(&mut self, key: KeyCode, _player: &mut Player) -> Transition {
+    pub fn handle_key(&mut self, key: KeyCode, player: &mut Player) -> Transition {
         match key {
-            KeyCode::Char('q') | KeyCode::Esc | KeyCode::Tab => self.return_to_map(),
-            _ => Transition::Stay,
+            KeyCode::Char('q') | KeyCode::Esc | KeyCode::Tab => return self.return_to_map(),
+            KeyCode::Up | KeyCode::Char('k') => self.scroll_focused(-1, player),
+            KeyCode::Down | KeyCode::Char('j') => self.scroll_focused(1, player),
+            _ => {}
+        }
+        Transition::Stay
+    }
+
+    fn scroll_focused(&mut self, delta: i32, player: &Player) {
+        if self.focus != InfoFocus::Attacks {
+            return;
+        }
+        let len = player.owned_attacks.len();
+        if len == 0 {
+            self.attack_cursor = 0;
+            self.attack_scroll = 0;
+            return;
+        }
+        let new_cursor = (self.attack_cursor as i32 + delta).clamp(0, len as i32 - 1) as usize;
+        self.attack_cursor = new_cursor;
+        let visible = self.last_attacks_height as usize;
+        if visible > 0 {
+            if self.attack_cursor < self.attack_scroll {
+                self.attack_scroll = self.attack_cursor;
+            } else if self.attack_cursor >= self.attack_scroll + visible {
+                self.attack_scroll = self.attack_cursor + 1 - visible;
+            }
         }
     }
 
@@ -75,13 +106,18 @@ impl PlayerInfoScreen {
             .constraints([Constraint::Ratio(1, 2), Constraint::Ratio(1, 2)])
             .split(columns[1]);
 
+        let attacks_area = right[0];
+        self.last_attacks_height = attacks_area.height.saturating_sub(2);
+
         widgets::render_crab_panel(frame, &self.crab, left[0]);
         widgets::render_stats_panel(frame, player, left[1]);
-        draw_panel(
+        widgets::render_attacks_panel(
             frame,
-            " Attacks ",
-            right[0],
+            player,
+            self.attack_cursor,
+            self.attack_scroll,
             self.focus == InfoFocus::Attacks,
+            attacks_area,
         );
         draw_panel(
             frame,
@@ -89,7 +125,13 @@ impl PlayerInfoScreen {
             right[1],
             self.focus == InfoFocus::Inventory,
         );
-        draw_panel(frame, " Info ", info_strip, false);
+
+        let popup_attack = if self.focus == InfoFocus::Attacks {
+            player.owned_attacks.get(self.attack_cursor)
+        } else {
+            None
+        };
+        widgets::render_info_strip(frame, popup_attack, info_strip);
     }
 }
 
