@@ -1,6 +1,7 @@
+use crate::data::attacks as attack_lib;
 use crate::fight::{
-    AnimationKind, Attack, Element, Item, ItemStack, PotionSize, ProjectileKind, TrinketKind,
-    UtilityKind, MAX_ATTACKS,
+    AnimationKind, Attack, Element, Item, ItemStack, PotionSize, TrinketKind, UtilityKind,
+    MAX_ATTACKS,
 };
 
 pub const MAX_TRINKETS: usize = 2;
@@ -21,41 +22,8 @@ pub struct Player {
 
 impl Player {
     pub fn new() -> Self {
-        let owned_attacks = vec![
-            Attack::new(
-                "Pinch",
-                AnimationKind::Dash,
-                5,
-                0,
-                Element::Neutral,
-                "A quick claw pinch. No mana cost, modest damage.",
-            ),
-            Attack::new(
-                "Bubble",
-                AnimationKind::Throw(ProjectileKind::Water),
-                7,
-                3,
-                Element::Water,
-                "Lobs a bubble that splashes the enemy.",
-            ),
-            Attack::new(
-                "Snip",
-                AnimationKind::Jump,
-                8,
-                2,
-                Element::Neutral,
-                "Leaping snip with both claws.",
-            ),
-            Attack::new(
-                "Cosmic Orb",
-                AnimationKind::Throw(ProjectileKind::EnergyBall),
-                14,
-                8,
-                Element::Air,
-                "A heavy orb of cosmic energy. High cost, high damage.",
-            ),
-        ];
-        let equipped_attacks = [Some(0), Some(1), Some(2), Some(3)];
+        let owned_attacks = attack_lib::all_attacks();
+        let equipped_attacks = resolve_starter_slots(&owned_attacks);
 
         let inventory = vec![ItemStack::new(Item::HpPotion(PotionSize::Small), 2)];
 
@@ -201,6 +169,17 @@ impl Player {
         self.equipped_trinkets[0] = Some(kind);
         ItemUseResult::TrinketEquipped(kind)
     }
+}
+
+fn resolve_starter_slots(attacks: &[Attack]) -> [Option<usize>; MAX_ATTACKS] {
+    let mut slots = [None; MAX_ATTACKS];
+    for (slot, name) in attack_lib::STARTER_ATTACK_NAMES.iter().enumerate() {
+        if slot >= MAX_ATTACKS {
+            break;
+        }
+        slots[slot] = attacks.iter().position(|a| a.name == *name);
+    }
+    slots
 }
 
 #[derive(Debug, Clone)]

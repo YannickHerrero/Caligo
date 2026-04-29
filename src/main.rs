@@ -1,4 +1,5 @@
 mod crab;
+mod data;
 mod environment;
 mod fight;
 mod map;
