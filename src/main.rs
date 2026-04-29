@@ -1,3 +1,4 @@
+mod crab;
 mod ui;
 
 use anyhow::Result;
