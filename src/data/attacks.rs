@@ -182,14 +182,88 @@ fn fire() -> Vec<Attack> {
 }
 
 fn water() -> Vec<Attack> {
-    vec![Attack::new(
-        "Bubble",
-        AnimationKind::Throw(ProjectileKind::Water),
-        7,
-        3,
-        Element::Water,
-        "Lobs a bubble that splashes the enemy.",
-    )]
+    vec![
+        Attack::new(
+            "Splash",
+            AnimationKind::Throw(ProjectileKind::Water),
+            4,
+            1,
+            Element::Water,
+            "A spray of cold seawater.",
+        ),
+        Attack::new(
+            "Bubble",
+            AnimationKind::Throw(ProjectileKind::Water),
+            7,
+            3,
+            Element::Water,
+            "Lobs a bubble that splashes the enemy.",
+        ),
+        Attack::new(
+            "Frostbite",
+            AnimationKind::Dash,
+            8,
+            4,
+            Element::Water,
+            "Chilling claws sap the enemy's vigor.",
+        ),
+        Attack::new(
+            "Ice Shard",
+            AnimationKind::Throw(ProjectileKind::Water),
+            9,
+            4,
+            Element::Water,
+            "A jagged splinter of ice.",
+        ),
+        Attack::new(
+            "Riptide",
+            AnimationKind::Dash,
+            10,
+            5,
+            Element::Water,
+            "Surges in on a slick of seawater.",
+        ),
+        Attack::new(
+            "Whirlpool",
+            AnimationKind::Throw(ProjectileKind::Water),
+            12,
+            6,
+            Element::Water,
+            "A swirling vortex of brine.",
+        ),
+        Attack::new(
+            "Tidal Slam",
+            AnimationKind::Jump,
+            13,
+            5,
+            Element::Water,
+            "Brings a wave down on the foe.",
+        ),
+        Attack::new(
+            "Geyser",
+            AnimationKind::Jump,
+            15,
+            7,
+            Element::Water,
+            "A column of scalding water erupts beneath.",
+        ),
+        Attack::new(
+            "Hailstorm",
+            AnimationKind::Throw(ProjectileKind::Water),
+            17,
+            9,
+            Element::Water,
+            "Pummels the foe with hail.",
+        ),
+        Attack::new(
+            "Tsunami",
+            AnimationKind::Throw(ProjectileKind::Water),
+            22,
+            12,
+            Element::Water,
+            "A devastating wall of water.",
+        ),
+    ]
 }
 
 fn air() -> Vec<Attack> {
