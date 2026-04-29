@@ -121,7 +121,7 @@ impl App {
             MenuState::AttackSelect => {
                 widgets::render_attack_menu(frame, &self.fight, action_area)
             }
-            MenuState::ItemSelect => widgets::render_action_menu(frame, &self.fight, action_area),
+            MenuState::ItemSelect => widgets::render_item_menu(frame, &self.fight, action_area),
         }
     }
 }

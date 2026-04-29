@@ -186,3 +186,65 @@ pub fn render_attack_menu(frame: &mut Frame, fight: &FightState, area: Rect) {
         }
     }
 }
+
+pub fn render_item_menu(frame: &mut Frame, fight: &FightState, area: Rect) {
+    use ratatui::widgets::{Block, Borders};
+
+    let block = Block::default()
+        .borders(Borders::ALL)
+        .border_style(Style::default().fg(Color::DarkGray))
+        .title(Span::styled(
+            " Items ",
+            Style::default()
+                .fg(Color::Yellow)
+                .add_modifier(Modifier::BOLD),
+        ));
+    let inner = block.inner(area);
+    frame.render_widget(block, area);
+
+    if fight.items.is_empty() || inner.height == 0 {
+        return;
+    }
+
+    let visible = inner.height as usize;
+    let scroll = fight.item_scroll.min(fight.items.len().saturating_sub(1));
+    let end = (scroll + visible).min(fight.items.len());
+
+    let has_more_above = scroll > 0;
+    let has_more_below = end < fight.items.len();
+
+    let mut lines: Vec<Line> = Vec::with_capacity(visible);
+    for (idx, item) in fight.items[scroll..end].iter().enumerate() {
+        let global_idx = scroll + idx;
+        let is_selected = global_idx == fight.item_selected;
+        let cursor = if is_selected { "> " } else { "  " };
+        let style = if is_selected {
+            Style::default()
+                .fg(Color::Yellow)
+                .add_modifier(Modifier::BOLD)
+        } else {
+            Style::default().fg(Color::Gray)
+        };
+
+        let mut spans = vec![
+            Span::styled(cursor, style),
+            Span::styled(item.name.clone(), style),
+        ];
+
+        if idx == 0 && has_more_above {
+            spans.push(Span::styled(
+                "  ↑",
+                Style::default().fg(Color::DarkGray),
+            ));
+        } else if idx == visible.saturating_sub(1) && has_more_below {
+            spans.push(Span::styled(
+                "  ↓",
+                Style::default().fg(Color::DarkGray),
+            ));
+        }
+
+        lines.push(Line::from(spans));
+    }
+
+    frame.render_widget(Paragraph::new(lines), inner);
+}
