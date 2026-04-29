@@ -1,6 +1,6 @@
 use super::actions::Action;
 use super::animation::Animation;
-use super::attack::{AnimationKind, Attack};
+use super::attack::{AnimationKind, Attack, Element};
 use super::enemy::Enemy;
 use super::item::Item;
 use super::projectile::ProjectileKind;
@@ -36,10 +36,38 @@ impl FightState {
             floor: 1,
             selected_action: 0,
             attacks: vec![
-                Attack::new("Pinch", AnimationKind::Dash),
-                Attack::new("Bubble", AnimationKind::Throw(ProjectileKind::Water)),
-                Attack::new("Snip", AnimationKind::Jump),
-                Attack::new("Cosmic Orb", AnimationKind::Throw(ProjectileKind::EnergyBall)),
+                Attack::new(
+                    "Pinch",
+                    AnimationKind::Dash,
+                    5,
+                    0,
+                    Element::Neutral,
+                    "A quick claw pinch. No mana cost, modest damage.",
+                ),
+                Attack::new(
+                    "Bubble",
+                    AnimationKind::Throw(ProjectileKind::Water),
+                    7,
+                    3,
+                    Element::Water,
+                    "Lobs a bubble that splashes the enemy.",
+                ),
+                Attack::new(
+                    "Snip",
+                    AnimationKind::Jump,
+                    8,
+                    2,
+                    Element::Neutral,
+                    "Leaping snip with both claws.",
+                ),
+                Attack::new(
+                    "Cosmic Orb",
+                    AnimationKind::Throw(ProjectileKind::EnergyBall),
+                    14,
+                    8,
+                    Element::Air,
+                    "A heavy orb of cosmic energy. High cost, high damage.",
+                ),
             ],
             items: vec![
                 Item::new("Small Potion"),

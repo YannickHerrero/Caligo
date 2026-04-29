@@ -8,7 +8,7 @@ pub mod state;
 
 pub use actions::Action;
 pub use animation::Animation;
-pub use attack::{AnimationKind, Attack, MAX_ATTACKS};
+pub use attack::{AnimationKind, Attack, Element, MAX_ATTACKS};
 pub use enemy::Enemy;
 pub use item::Item;
 pub use projectile::ProjectileKind;
