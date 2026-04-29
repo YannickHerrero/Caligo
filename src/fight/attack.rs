@@ -14,18 +14,21 @@ pub enum AnimationKind {
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Effect {
     Damage(u32),
+    Heal(u32),
 }
 
 impl Effect {
     pub fn label(&self) -> String {
         match self {
             Effect::Damage(n) => format!("DMG {}", n),
+            Effect::Heal(n) => format!("HEAL {}", n),
         }
     }
 
     pub fn color(&self) -> Color {
         match self {
             Effect::Damage(_) => Color::Rgb(255, 140, 90),
+            Effect::Heal(_) => Color::Rgb(140, 230, 160),
         }
     }
 }
