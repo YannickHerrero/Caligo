@@ -214,7 +214,7 @@ pub fn render_item_menu(frame: &mut Frame, fight: &FightState, area: Rect) {
     let has_more_below = end < fight.items.len();
 
     let mut lines: Vec<Line> = Vec::with_capacity(visible);
-    for (idx, item) in fight.items[scroll..end].iter().enumerate() {
+    for (idx, stack) in fight.items[scroll..end].iter().enumerate() {
         let global_idx = scroll + idx;
         let is_selected = global_idx == fight.item_selected;
         let cursor = if is_selected { "> " } else { "  " };
@@ -226,9 +226,14 @@ pub fn render_item_menu(frame: &mut Frame, fight: &FightState, area: Rect) {
             Style::default().fg(Color::Gray)
         };
 
+        let label = if stack.count > 1 {
+            format!("{}  x{}", stack.item.name(), stack.count)
+        } else {
+            stack.item.name()
+        };
         let mut spans = vec![
             Span::styled(cursor, style),
-            Span::styled(item.name.clone(), style),
+            Span::styled(label, style),
         ];
 
         if idx == 0 && has_more_above {

@@ -2,7 +2,7 @@ use super::actions::Action;
 use super::animation::Animation;
 use super::attack::{AnimationKind, Attack, Element};
 use super::enemy::Enemy;
-use super::item::Item;
+use super::item::{Item, ItemStack, PotionSize, TrinketKind, UtilityKind};
 use super::projectile::ProjectileKind;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -19,7 +19,7 @@ pub struct FightState {
     pub floor: u32,
     pub selected_action: usize,
     pub attacks: Vec<Attack>,
-    pub items: Vec<Item>,
+    pub items: Vec<ItemStack>,
     pub menu_state: MenuState,
     pub attack_selected: usize,
     pub item_selected: usize,
@@ -70,18 +70,22 @@ impl FightState {
                 ),
             ],
             items: vec![
-                Item::new("Small Potion"),
-                Item::new("Medium Potion"),
-                Item::new("Large Potion"),
-                Item::new("Antidote"),
-                Item::new("Smoke Bomb"),
-                Item::new("Throwing Knife"),
-                Item::new("Pearl"),
-                Item::new("Lucky Shell"),
-                Item::new("Sea Salt"),
-                Item::new("Kelp Wrap"),
-                Item::new("Driftwood"),
-                Item::new("Sand Dollar"),
+                ItemStack::new(Item::HpPotion(PotionSize::Small), 3),
+                ItemStack::new(Item::HpPotion(PotionSize::Large), 1),
+                ItemStack::new(Item::ManaPotion(PotionSize::Small), 2),
+                ItemStack::new(Item::ManaPotion(PotionSize::Large), 1),
+                ItemStack::new(
+                    Item::AttackStone {
+                        attack_name: "Tide Slam".to_string(),
+                    },
+                    1,
+                ),
+                ItemStack::new(Item::Trinket(TrinketKind::HeartCharm), 1),
+                ItemStack::new(Item::Trinket(TrinketKind::ManaPearl), 1),
+                ItemStack::new(Item::Trinket(TrinketKind::LuckyShell), 1),
+                ItemStack::new(Item::Utility(UtilityKind::Revive), 1),
+                ItemStack::new(Item::Utility(UtilityKind::EscapeToken), 2),
+                ItemStack::new(Item::Utility(UtilityKind::GoldPouch), 1),
             ],
             menu_state: MenuState::Main,
             attack_selected: 0,
