@@ -87,5 +87,6 @@ impl App {
         widgets::render_crab(frame, &self.crab, area);
         widgets::render_enemy(frame, &self.fight.enemy, area);
         widgets::render_ground(frame, &self.environment, area);
+        widgets::render_hp_bars(frame, &self.fight, area);
     }
 }
