@@ -1,6 +1,6 @@
 use crate::map::{self, MapGraph, NodeId};
 use crate::ui::screen::{Screen, Transition};
-use crate::ui::screens::{FightScreen, SelectScreen};
+use crate::ui::screens::{FightScreen, SelectScreen, TransitionKind, TransitionScreen};
 use crate::ui::widgets;
 use crossterm::event::KeyCode;
 use ratatui::layout::{Constraint, Direction, Layout};
@@ -81,13 +81,23 @@ impl MapScreen {
                 Transition::Stay
             }
             KeyCode::Enter => {
-                if let Some(id) = self.cursor {
-                    if self.graph.select(id) {
-                        return Transition::Goto(Screen::Fight(FightScreen::new()));
-                    }
+                let Some(id) = self.cursor else {
+                    self.menu_state = MapMenuState::Browsing;
+                    return Transition::Stay;
+                };
+                let kind = self.graph.node(id).kind;
+                if !self.graph.select(id) {
+                    self.menu_state = MapMenuState::Browsing;
+                    return Transition::Stay;
                 }
                 self.menu_state = MapMenuState::Browsing;
-                Transition::Stay
+                let from = std::mem::replace(self, MapScreen::new());
+                let transition = TransitionScreen::new(
+                    Screen::Map(from),
+                    Screen::Fight(FightScreen::new()),
+                    TransitionKind::from(kind),
+                );
+                Transition::Goto(Screen::Transition(transition))
             }
             _ => Transition::Stay,
         }
