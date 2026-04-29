@@ -1,5 +1,5 @@
 use super::actions::Action;
-use super::attack::Attack;
+use super::attack::{AnimationKind, Attack};
 use super::enemy::Enemy;
 use super::item::Item;
 
@@ -33,10 +33,10 @@ impl FightState {
             floor: 1,
             selected_action: 0,
             attacks: vec![
-                Attack::new("Pinch"),
-                Attack::new("Bubble"),
-                Attack::new("Snip"),
-                Attack::new("Shell Bash"),
+                Attack::new("Pinch", AnimationKind::Dash),
+                Attack::new("Bubble", AnimationKind::EnergyBall),
+                Attack::new("Snip", AnimationKind::Jump),
+                Attack::new("Shell Bash", AnimationKind::Dash),
             ],
             items: vec![
                 Item::new("Small Potion"),

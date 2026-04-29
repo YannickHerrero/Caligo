@@ -5,7 +5,7 @@ pub mod item;
 pub mod state;
 
 pub use actions::Action;
-pub use attack::{Attack, MAX_ATTACKS};
+pub use attack::{AnimationKind, Attack, MAX_ATTACKS};
 pub use enemy::Enemy;
 pub use item::Item;
 pub use state::{FightState, MenuState};
