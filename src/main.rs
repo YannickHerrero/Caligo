@@ -1,4 +1,5 @@
 mod crab;
+mod environment;
 mod ui;
 
 use anyhow::Result;
