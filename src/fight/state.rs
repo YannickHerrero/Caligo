@@ -1,4 +1,5 @@
 use super::actions::Action;
+use super::animation::Animation;
 use super::attack::{AnimationKind, Attack};
 use super::enemy::Enemy;
 use super::item::Item;
@@ -22,6 +23,7 @@ pub struct FightState {
     pub attack_selected: usize,
     pub item_selected: usize,
     pub item_scroll: usize,
+    pub animation: Option<Animation>,
 }
 
 impl FightState {
@@ -56,6 +58,7 @@ impl FightState {
             attack_selected: 0,
             item_selected: 0,
             item_scroll: 0,
+            animation: None,
         }
     }
 
