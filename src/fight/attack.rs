@@ -12,9 +12,29 @@ pub enum AnimationKind {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum BuffKind {
+    AttackUp,
+    DefenseUp,
+}
+
+impl BuffKind {
+    pub fn label(&self) -> &'static str {
+        match self {
+            BuffKind::AttackUp => "ATK",
+            BuffKind::DefenseUp => "DEF",
+        }
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Effect {
     Damage(u32),
     Heal(u32),
+    Buff {
+        kind: BuffKind,
+        magnitude: u32,
+        duration: u32,
+    },
 }
 
 impl Effect {
@@ -22,6 +42,11 @@ impl Effect {
         match self {
             Effect::Damage(n) => format!("DMG {}", n),
             Effect::Heal(n) => format!("HEAL {}", n),
+            Effect::Buff {
+                kind,
+                magnitude,
+                duration,
+            } => format!("{} +{}% / {}t", kind.label(), magnitude, duration),
         }
     }
 
@@ -29,6 +54,7 @@ impl Effect {
         match self {
             Effect::Damage(_) => Color::Rgb(255, 140, 90),
             Effect::Heal(_) => Color::Rgb(140, 230, 160),
+            Effect::Buff { .. } => Color::Rgb(230, 200, 120),
         }
     }
 }
