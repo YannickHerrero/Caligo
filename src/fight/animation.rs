@@ -72,7 +72,7 @@ impl Animation {
             AnimationKind::Throw(_) => {
                 let p = self.progress();
                 let x = self.start_x + 12.0 + (self.target_x - self.start_x - 12.0) * p;
-                Some((x, base_y - 1.0))
+                Some((x, base_y + 2.0))
             }
             _ => None,
         }
