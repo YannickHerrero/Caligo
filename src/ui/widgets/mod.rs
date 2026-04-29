@@ -14,7 +14,8 @@ pub use map::{
     virtual_map_height as map_virtual_height,
 };
 pub use player_info::{
-    render_attacks_panel, render_crab_panel, render_info_strip, render_stats_panel,
+    render_attacks_panel, render_crab_panel, render_info_strip, render_inventory_panel,
+    render_item_info_strip, render_stats_panel,
 };
 pub use scene::{
     render_crab, render_enemy, render_environment_background, render_ground, render_projectile,

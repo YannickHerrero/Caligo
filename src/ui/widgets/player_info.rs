@@ -1,5 +1,5 @@
 use crate::crab::Crab;
-use crate::fight::Attack;
+use crate::fight::{Attack, Item, ItemStack};
 use crate::player::Player;
 use ratatui::{
     layout::{Alignment, Rect},
@@ -206,6 +206,128 @@ pub fn render_attacks_panel(
         lines.push(Line::from(spans));
     }
     frame.render_widget(Paragraph::new(lines), inner);
+}
+
+pub fn render_inventory_panel(
+    frame: &mut Frame,
+    player: &Player,
+    cursor: usize,
+    scroll: usize,
+    focused: bool,
+    area: Rect,
+) {
+    let border_color = if focused {
+        Color::Yellow
+    } else {
+        Color::DarkGray
+    };
+    let block = Block::default()
+        .borders(Borders::ALL)
+        .border_style(Style::default().fg(border_color))
+        .title(Span::styled(
+            " Inventory ",
+            Style::default().fg(if focused { Color::Yellow } else { Color::Gray }),
+        ));
+    let inner = block.inner(area);
+    frame.render_widget(block, area);
+    if inner.height == 0 {
+        return;
+    }
+    if player.inventory.is_empty() {
+        let line = Line::from(Span::styled(
+            "  (empty)",
+            Style::default().fg(Color::DarkGray),
+        ));
+        frame.render_widget(Paragraph::new(line), inner);
+        return;
+    }
+
+    let visible = inner.height as usize;
+    let scroll = scroll.min(player.inventory.len().saturating_sub(1));
+    let end = (scroll + visible).min(player.inventory.len());
+    let has_more_above = scroll > 0;
+    let has_more_below = end < player.inventory.len();
+
+    let mut lines: Vec<Line> = Vec::with_capacity(end - scroll);
+    for (i, stack) in player.inventory[scroll..end].iter().enumerate() {
+        let global_idx = scroll + i;
+        let is_selected = global_idx == cursor && focused;
+        let cursor_str = if is_selected { "> " } else { "  " };
+
+        let trinket_equipped = is_trinket_equipped(stack, player);
+        let style = if is_selected {
+            Style::default()
+                .fg(Color::Yellow)
+                .add_modifier(Modifier::BOLD)
+        } else {
+            Style::default().fg(stack.item.color())
+        };
+
+        let count_label = if stack.count > 1 {
+            format!("  x{}", stack.count)
+        } else {
+            String::new()
+        };
+        let equipped_marker = if trinket_equipped { " ★" } else { "" };
+
+        let mut spans = vec![
+            Span::styled(cursor_str, style),
+            Span::styled(stack.item.name(), style),
+            Span::styled(count_label, Style::default().fg(Color::DarkGray)),
+            Span::styled(
+                equipped_marker,
+                Style::default().fg(Color::Rgb(220, 180, 255)),
+            ),
+        ];
+        if i == 0 && has_more_above {
+            spans.push(Span::styled(
+                "  ↑",
+                Style::default().fg(Color::DarkGray),
+            ));
+        } else if i == visible.saturating_sub(1) && has_more_below {
+            spans.push(Span::styled(
+                "  ↓",
+                Style::default().fg(Color::DarkGray),
+            ));
+        }
+        lines.push(Line::from(spans));
+    }
+    frame.render_widget(Paragraph::new(lines), inner);
+}
+
+fn is_trinket_equipped(stack: &ItemStack, player: &Player) -> bool {
+    if let Item::Trinket(kind) = &stack.item {
+        player
+            .equipped_trinkets
+            .iter()
+            .any(|slot| slot.as_ref() == Some(kind))
+    } else {
+        false
+    }
+}
+
+pub fn render_item_info_strip(frame: &mut Frame, item: &Item, area: Rect) {
+    let block = Block::default()
+        .borders(Borders::ALL)
+        .border_style(Style::default().fg(Color::DarkGray))
+        .title(Span::styled(
+            " Info ",
+            Style::default().fg(Color::Gray),
+        ));
+    let inner = block.inner(area);
+    frame.render_widget(block, area);
+    if inner.height == 0 {
+        return;
+    }
+    let line = Line::from(vec![
+        Span::styled(
+            item.name(),
+            Style::default().fg(item.color()).add_modifier(Modifier::BOLD),
+        ),
+        Span::styled("  —  ", Style::default().fg(Color::DarkGray)),
+        Span::styled(item.description(), Style::default().fg(Color::Gray)),
+    ]);
+    frame.render_widget(Paragraph::new(line), inner);
 }
 
 pub fn render_info_strip(frame: &mut Frame, attack: Option<&Attack>, area: Rect) {

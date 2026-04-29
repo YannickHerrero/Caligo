@@ -5,10 +5,7 @@ use crate::ui::screens::MapScreen;
 use crate::ui::widgets;
 use crossterm::event::KeyCode;
 use ratatui::{
-    layout::{Constraint, Direction, Layout, Rect},
-    style::{Color, Style},
-    text::Span,
-    widgets::{Block, Borders},
+    layout::{Constraint, Direction, Layout},
     Frame,
 };
 
@@ -24,7 +21,10 @@ pub struct PlayerInfoScreen {
     crab: Crab,
     pub attack_cursor: usize,
     pub attack_scroll: usize,
+    pub item_cursor: usize,
+    pub item_scroll: usize,
     last_attacks_height: u16,
+    last_inventory_height: u16,
 }
 
 impl PlayerInfoScreen {
@@ -35,7 +35,10 @@ impl PlayerInfoScreen {
             crab: Crab::new((0.0, 0.0), 95),
             attack_cursor: 0,
             attack_scroll: 0,
+            item_cursor: 0,
+            item_scroll: 0,
             last_attacks_height: 0,
+            last_inventory_height: 0,
         }
     }
 
@@ -50,24 +53,21 @@ impl PlayerInfoScreen {
     }
 
     fn scroll_focused(&mut self, delta: i32, player: &Player) {
-        if self.focus != InfoFocus::Attacks {
-            return;
-        }
-        let len = player.owned_attacks.len();
-        if len == 0 {
-            self.attack_cursor = 0;
-            self.attack_scroll = 0;
-            return;
-        }
-        let new_cursor = (self.attack_cursor as i32 + delta).clamp(0, len as i32 - 1) as usize;
-        self.attack_cursor = new_cursor;
-        let visible = self.last_attacks_height as usize;
-        if visible > 0 {
-            if self.attack_cursor < self.attack_scroll {
-                self.attack_scroll = self.attack_cursor;
-            } else if self.attack_cursor >= self.attack_scroll + visible {
-                self.attack_scroll = self.attack_cursor + 1 - visible;
-            }
+        match self.focus {
+            InfoFocus::Attacks => scroll_list(
+                &mut self.attack_cursor,
+                &mut self.attack_scroll,
+                player.owned_attacks.len(),
+                self.last_attacks_height as usize,
+                delta,
+            ),
+            InfoFocus::Inventory => scroll_list(
+                &mut self.item_cursor,
+                &mut self.item_scroll,
+                player.inventory.len(),
+                self.last_inventory_height as usize,
+                delta,
+            ),
         }
     }
 
@@ -107,7 +107,9 @@ impl PlayerInfoScreen {
             .split(columns[1]);
 
         let attacks_area = right[0];
+        let inventory_area = right[1];
         self.last_attacks_height = attacks_area.height.saturating_sub(2);
+        self.last_inventory_height = inventory_area.height.saturating_sub(2);
 
         widgets::render_crab_panel(frame, &self.crab, left[0]);
         widgets::render_stats_panel(frame, player, left[1]);
@@ -119,34 +121,41 @@ impl PlayerInfoScreen {
             self.focus == InfoFocus::Attacks,
             attacks_area,
         );
-        draw_panel(
+        widgets::render_inventory_panel(
             frame,
-            " Inventory ",
-            right[1],
+            player,
+            self.item_cursor,
+            self.item_scroll,
             self.focus == InfoFocus::Inventory,
+            inventory_area,
         );
 
-        let popup_attack = if self.focus == InfoFocus::Attacks {
-            player.owned_attacks.get(self.attack_cursor)
-        } else {
-            None
-        };
-        widgets::render_info_strip(frame, popup_attack, info_strip);
+        match self.focus {
+            InfoFocus::Attacks => {
+                let popup_attack = player.owned_attacks.get(self.attack_cursor);
+                widgets::render_info_strip(frame, popup_attack, info_strip);
+            }
+            InfoFocus::Inventory => match player.inventory.get(self.item_cursor) {
+                Some(stack) => widgets::render_item_info_strip(frame, &stack.item, info_strip),
+                None => widgets::render_info_strip(frame, None, info_strip),
+            },
+        }
     }
 }
 
-fn draw_panel(frame: &mut Frame, title: &str, area: Rect, focused: bool) {
-    let border_color = if focused {
-        Color::Yellow
-    } else {
-        Color::DarkGray
-    };
-    let block = Block::default()
-        .borders(Borders::ALL)
-        .border_style(Style::default().fg(border_color))
-        .title(Span::styled(
-            title.to_string(),
-            Style::default().fg(if focused { Color::Yellow } else { Color::Gray }),
-        ));
-    frame.render_widget(block, area);
+fn scroll_list(cursor: &mut usize, scroll: &mut usize, len: usize, visible: usize, delta: i32) {
+    if len == 0 {
+        *cursor = 0;
+        *scroll = 0;
+        return;
+    }
+    let new_cursor = (*cursor as i32 + delta).clamp(0, len as i32 - 1) as usize;
+    *cursor = new_cursor;
+    if visible > 0 {
+        if *cursor < *scroll {
+            *scroll = *cursor;
+        } else if *cursor >= *scroll + visible {
+            *scroll = *cursor + 1 - visible;
+        }
+    }
 }
