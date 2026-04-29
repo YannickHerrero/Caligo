@@ -36,9 +36,9 @@ impl ScreenKind {
         }
     }
 
-    pub fn build(&self) -> Screen {
+    pub fn build(&self, player: &Player) -> Screen {
         match self {
-            ScreenKind::Fight => Screen::Fight(FightScreen::new()),
+            ScreenKind::Fight => Screen::Fight(FightScreen::new(player)),
             ScreenKind::Map => Screen::Map(MapScreen::new()),
             ScreenKind::Demo => Screen::Demo(DemoScreen::new()),
         }
@@ -54,7 +54,7 @@ impl SelectScreen {
         Self { selected: 0 }
     }
 
-    pub fn handle_key(&mut self, key: KeyCode, _player: &mut Player) -> Transition {
+    pub fn handle_key(&mut self, key: KeyCode, player: &mut Player) -> Transition {
         let len = ScreenKind::ALL.len();
         match key {
             KeyCode::Char('q') | KeyCode::Esc => Transition::Quit,
@@ -66,7 +66,7 @@ impl SelectScreen {
                 self.selected = (self.selected + 1) % len;
                 Transition::Stay
             }
-            KeyCode::Enter => Transition::Goto(ScreenKind::ALL[self.selected].build()),
+            KeyCode::Enter => Transition::Goto(ScreenKind::ALL[self.selected].build(player)),
             _ => Transition::Stay,
         }
     }

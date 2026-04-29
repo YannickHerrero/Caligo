@@ -18,11 +18,11 @@ pub struct FightScreen {
 }
 
 impl FightScreen {
-    pub fn new() -> Self {
+    pub fn new(player: &Player) -> Self {
         Self {
             crab: Crab::new((6.0, 100.0), 95),
             environment: Environment::generate(80, 15, GroundStyle::default()),
-            fight: FightState::new(),
+            fight: FightState::from_player(player),
             last_terminal_size: (0, 0),
             last_action_height: 0,
         }
@@ -133,7 +133,7 @@ impl FightScreen {
         Transition::Stay
     }
 
-    pub fn update(&mut self, _player: &mut Player) -> Transition {
+    pub fn update(&mut self, player: &mut Player) -> Transition {
         let dt = 0.05;
         let bounds = (
             self.last_terminal_size.0 as f32 - 2.0,
@@ -151,6 +151,7 @@ impl FightScreen {
         }
 
         self.environment.update_cycle(dt, 1.0, 1.0);
+        self.fight.commit_to_player(player);
         Transition::Stay
     }
 

@@ -38,10 +38,10 @@ impl MapScreen {
         }
     }
 
-    pub fn handle_key(&mut self, key: KeyCode, _player: &mut Player) -> Transition {
+    pub fn handle_key(&mut self, key: KeyCode, player: &mut Player) -> Transition {
         match self.menu_state {
             MapMenuState::Browsing => self.handle_browsing(key),
-            MapMenuState::Confirming => self.handle_confirming(key),
+            MapMenuState::Confirming => self.handle_confirming(key, player),
         }
     }
 
@@ -75,7 +75,7 @@ impl MapScreen {
         Transition::Stay
     }
 
-    fn handle_confirming(&mut self, key: KeyCode) -> Transition {
+    fn handle_confirming(&mut self, key: KeyCode, player: &Player) -> Transition {
         match key {
             KeyCode::Esc | KeyCode::Backspace | KeyCode::Char('q') => {
                 self.menu_state = MapMenuState::Browsing;
@@ -95,7 +95,7 @@ impl MapScreen {
                 let from = std::mem::replace(self, MapScreen::new());
                 let transition = TransitionScreen::new(
                     Screen::Map(from),
-                    Screen::Fight(FightScreen::new()),
+                    Screen::Fight(FightScreen::new(player)),
                     TransitionKind::from(kind),
                 );
                 Transition::Goto(Screen::Transition(transition))

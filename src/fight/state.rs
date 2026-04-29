@@ -1,9 +1,9 @@
 use super::actions::Action;
 use super::animation::Animation;
-use super::attack::{AnimationKind, Attack, Element};
+use super::attack::Attack;
 use super::enemy::Enemy;
-use super::item::{Item, ItemStack, PotionSize, TrinketKind, UtilityKind};
-use super::projectile::ProjectileKind;
+use super::item::ItemStack;
+use crate::player::Player;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum MenuState {
@@ -15,6 +15,8 @@ pub enum MenuState {
 pub struct FightState {
     pub player_hp: u32,
     pub player_max_hp: u32,
+    pub player_mana: u32,
+    pub player_max_mana: u32,
     pub enemy: Enemy,
     pub floor: u32,
     pub selected_action: usize,
@@ -28,71 +30,35 @@ pub struct FightState {
 }
 
 impl FightState {
-    pub fn new() -> Self {
+    pub fn from_player(player: &Player) -> Self {
+        let attacks: Vec<Attack> = player
+            .equipped_attacks_resolved()
+            .into_iter()
+            .flatten()
+            .cloned()
+            .collect();
         Self {
-            player_hp: 50,
-            player_max_hp: 50,
+            player_hp: player.hp,
+            player_max_hp: player.max_hp(),
+            player_mana: player.mana,
+            player_max_mana: player.max_mana(),
             enemy: Enemy::slime(),
             floor: 1,
             selected_action: 0,
-            attacks: vec![
-                Attack::new(
-                    "Pinch",
-                    AnimationKind::Dash,
-                    5,
-                    0,
-                    Element::Neutral,
-                    "A quick claw pinch. No mana cost, modest damage.",
-                ),
-                Attack::new(
-                    "Bubble",
-                    AnimationKind::Throw(ProjectileKind::Water),
-                    7,
-                    3,
-                    Element::Water,
-                    "Lobs a bubble that splashes the enemy.",
-                ),
-                Attack::new(
-                    "Snip",
-                    AnimationKind::Jump,
-                    8,
-                    2,
-                    Element::Neutral,
-                    "Leaping snip with both claws.",
-                ),
-                Attack::new(
-                    "Cosmic Orb",
-                    AnimationKind::Throw(ProjectileKind::EnergyBall),
-                    14,
-                    8,
-                    Element::Air,
-                    "A heavy orb of cosmic energy. High cost, high damage.",
-                ),
-            ],
-            items: vec![
-                ItemStack::new(Item::HpPotion(PotionSize::Small), 3),
-                ItemStack::new(Item::HpPotion(PotionSize::Large), 1),
-                ItemStack::new(Item::ManaPotion(PotionSize::Small), 2),
-                ItemStack::new(Item::ManaPotion(PotionSize::Large), 1),
-                ItemStack::new(
-                    Item::AttackStone {
-                        attack_name: "Tide Slam".to_string(),
-                    },
-                    1,
-                ),
-                ItemStack::new(Item::Trinket(TrinketKind::HeartCharm), 1),
-                ItemStack::new(Item::Trinket(TrinketKind::ManaPearl), 1),
-                ItemStack::new(Item::Trinket(TrinketKind::LuckyShell), 1),
-                ItemStack::new(Item::Utility(UtilityKind::Revive), 1),
-                ItemStack::new(Item::Utility(UtilityKind::EscapeToken), 2),
-                ItemStack::new(Item::Utility(UtilityKind::GoldPouch), 1),
-            ],
+            attacks,
+            items: player.inventory.clone(),
             menu_state: MenuState::Main,
             attack_selected: 0,
             item_selected: 0,
             item_scroll: 0,
             animation: None,
         }
+    }
+
+    pub fn commit_to_player(&self, player: &mut Player) {
+        player.hp = self.player_hp.min(player.max_hp());
+        player.mana = self.player_mana.min(player.max_mana());
+        player.inventory = self.items.clone();
     }
 
     pub fn selected(&self) -> Action {
