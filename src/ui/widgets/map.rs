@@ -2,13 +2,13 @@ use std::collections::HashSet;
 
 use crate::map::{MapGraph, MapNode, NodeId};
 use ratatui::{
-    layout::Rect,
+    layout::{Alignment, Rect},
     style::{Color, Modifier, Style},
     symbols::Marker,
-    text::Span,
+    text::{Line, Span},
     widgets::{
         canvas::{Canvas, Line as CanvasLine},
-        Paragraph,
+        Block, Borders, Paragraph,
     },
     Frame,
 };
@@ -24,6 +24,89 @@ enum NodeState {
     Current,
     Reachable,
     Future,
+}
+
+pub fn render_header(frame: &mut Frame, graph: &MapGraph, area: Rect) {
+    let total = graph.floor_count() as i32;
+    let position_label: String = match graph.current {
+        Some(id) => format!("Floor {} / {}", graph.node(id).floor as i32 + 1, total),
+        None => format!("Floor 0 / {}  (start)", total),
+    };
+    let line = Line::from(vec![
+        Span::styled(
+            "Caligo — Map",
+            Style::default()
+                .fg(Color::Rgb(255, 140, 90))
+                .add_modifier(Modifier::BOLD),
+        ),
+        Span::styled("   ·   ", Style::default().fg(Color::DarkGray)),
+        Span::styled(position_label, Style::default().fg(Color::Gray)),
+    ]);
+    frame.render_widget(Paragraph::new(line).alignment(Alignment::Center), area);
+}
+
+pub fn render_info_panel(
+    frame: &mut Frame,
+    graph: &MapGraph,
+    cursor: Option<NodeId>,
+    area: Rect,
+) {
+    let block = Block::default()
+        .borders(Borders::ALL)
+        .border_style(Style::default().fg(Color::DarkGray));
+
+    let inner = block.inner(area);
+    frame.render_widget(block, area);
+    if inner.height == 0 {
+        return;
+    }
+
+    let mut lines: Vec<Line> = Vec::new();
+    if let Some(id) = cursor {
+        let node = graph.node(id);
+        lines.push(Line::from(vec![
+            Span::styled(
+                node.kind.icon(),
+                Style::default()
+                    .fg(node.kind.color())
+                    .add_modifier(Modifier::BOLD),
+            ),
+            Span::raw("  "),
+            Span::styled(
+                node.kind.label(),
+                Style::default()
+                    .fg(node.kind.color())
+                    .add_modifier(Modifier::BOLD),
+            ),
+        ]));
+        lines.push(Line::from(Span::styled(
+            node.kind.description(),
+            Style::default().fg(Color::Gray),
+        )));
+    } else {
+        lines.push(Line::from(Span::styled(
+            "No reachable nodes.",
+            Style::default().fg(Color::DarkGray),
+        )));
+        lines.push(Line::from(""));
+    }
+    lines.push(Line::from(""));
+    lines.push(controls_line());
+
+    frame.render_widget(Paragraph::new(lines), inner);
+}
+
+fn controls_line() -> Line<'static> {
+    let key = Style::default().fg(Color::Yellow);
+    let dim = Style::default().fg(Color::DarkGray);
+    Line::from(vec![
+        Span::styled("← →", key),
+        Span::styled(" navigate   ", dim),
+        Span::styled("Enter", key),
+        Span::styled(" select   ", dim),
+        Span::styled("q", key),
+        Span::styled(" back", dim),
+    ])
 }
 
 pub fn render_edges(frame: &mut Frame, graph: &MapGraph, area: Rect) {

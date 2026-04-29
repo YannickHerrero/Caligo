@@ -3,6 +3,7 @@ use crate::ui::screen::{Screen, Transition};
 use crate::ui::screens::SelectScreen;
 use crate::ui::widgets;
 use crossterm::event::KeyCode;
+use ratatui::layout::{Constraint, Direction, Layout};
 use ratatui::Frame;
 
 pub struct MapScreen {
@@ -57,8 +58,18 @@ impl MapScreen {
 
     pub fn draw(&mut self, frame: &mut Frame) {
         let area = frame.area();
-        widgets::render_map_edges(frame, &self.graph, area);
-        widgets::render_map_nodes(frame, &self.graph, self.cursor, area);
+        let chunks = Layout::default()
+            .direction(Direction::Vertical)
+            .constraints([
+                Constraint::Length(1),
+                Constraint::Min(8),
+                Constraint::Length(6),
+            ])
+            .split(area);
+        widgets::render_map_header(frame, &self.graph, chunks[0]);
+        widgets::render_map_edges(frame, &self.graph, chunks[1]);
+        widgets::render_map_nodes(frame, &self.graph, self.cursor, chunks[1]);
+        widgets::render_map_info(frame, &self.graph, self.cursor, chunks[2]);
     }
 }
 
