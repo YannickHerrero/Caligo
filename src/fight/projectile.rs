@@ -44,18 +44,16 @@ impl ProjectileKind {
                 &["  /", " / ", "/  ", " \\ ", "/  "]
             }
 
-            (ProjectileKind::EnergyBall, ProjectileSize::Small) => &[".*.", "*●*", ".*."],
+            (ProjectileKind::EnergyBall, ProjectileSize::Small) => &[".*.", "*●*"],
             (ProjectileKind::EnergyBall, ProjectileSize::Medium) => {
-                &["..*..", ".***.", "**●**", ".***.", "..*.."]
+                &[".***.", "*●●●*", ".***."]
             }
             (ProjectileKind::EnergyBall, ProjectileSize::Large) => &[
-                "...*...",
                 "..***..",
-                ".*****.",
-                "**●●●**",
-                ".*****.",
+                ".*●●●*.",
+                "*●●●●●*",
+                ".*●●●*.",
                 "..***..",
-                "...*...",
             ],
         }
     }
