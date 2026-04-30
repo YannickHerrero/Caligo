@@ -2,7 +2,7 @@
 name = "caligo"
 version = "0.1.0"
 edition = "2021"
-description = "A roguelike crab dungeon crawler"
+description = "A roguelike dungeon crawler"
 
 [dependencies]
 ratatui = "0.29"
