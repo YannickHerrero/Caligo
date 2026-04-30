@@ -19,7 +19,7 @@ pub fn render_top_bar(frame: &mut Frame, fight: &FightState, area: Rect) {
         Span::styled(
             fight.enemy.name.clone(),
             Style::default()
-                .fg(fight.enemy.color)
+                .fg(fight.enemy.color())
                 .add_modifier(Modifier::BOLD),
         ),
     ]);
@@ -78,7 +78,7 @@ pub fn render_hp_bars(frame: &mut Frame, fight: &FightState, area: Rect) {
         &fight.enemy.name,
         fight.enemy.hp,
         fight.enemy.max_hp,
-        fight.enemy.color,
+        fight.enemy.color(),
     );
     let enemy_width = 32u16.min(area.width);
     let enemy_area = Rect {

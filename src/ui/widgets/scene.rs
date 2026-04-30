@@ -175,7 +175,7 @@ pub fn render_enemy(frame: &mut Frame, enemy: &Enemy, area: Rect) {
     let x = area.width as i32 - sprite_width - 4;
     let y = area.height as i32 - sprite_height - 1;
 
-    render_element(frame, &enemy.sprite, x, y, enemy.color, area);
+    render_element(frame, &enemy.sprite, x, y, enemy.color(), area);
 }
 
 pub fn render_projectile(frame: &mut Frame, anim: &Animation, ground_y: f32, area: Rect) {

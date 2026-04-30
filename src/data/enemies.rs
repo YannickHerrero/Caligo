@@ -1,4 +1,4 @@
-use crate::fight::{Element, Enemy};
+use crate::fight::{Element, Enemy, EnemyColor};
 use ratatui::style::Color;
 
 pub fn all_enemies() -> Vec<Enemy> {
@@ -20,7 +20,7 @@ pub fn slime() -> Enemy {
             " | o   o | ".to_string(),
             "  \\__~__/  ".to_string(),
         ],
-        color: Color::Rgb(120, 200, 220),
+        palette: EnemyColor::Fixed(Color::Rgb(120, 200, 220)),
         is_boss: false,
         description: "A wobbling blob of seawater. Bops more than it bites.".to_string(),
     }
@@ -41,7 +41,7 @@ pub fn fire_slime() -> Enemy {
             " | >   < | ".to_string(),
             "  \\_~~~_/  ".to_string(),
         ],
-        color: Color::Rgb(220, 100, 60),
+        palette: EnemyColor::Fixed(Color::Rgb(220, 100, 60)),
         is_boss: false,
         description: "Hot to the touch. Leaves scorch marks where it scoots.".to_string(),
     }
@@ -62,7 +62,10 @@ pub fn frost_slime() -> Enemy {
             " | x   x | ".to_string(),
             "  \\..-../  ".to_string(),
         ],
-        color: Color::Rgb(180, 220, 255),
+        palette: EnemyColor::Themed {
+            dark: Color::Rgb(180, 220, 255),
+            light: Color::Rgb(60, 140, 190),
+        },
         is_boss: false,
         description: "Half ice, all attitude. Slows down the unwary.".to_string(),
     }
@@ -83,7 +86,7 @@ pub fn sandling() -> Enemy {
             " | o   o | ".to_string(),
             "  \\\\___//  ".to_string(),
         ],
-        color: Color::Rgb(200, 170, 110),
+        palette: EnemyColor::Fixed(Color::Rgb(200, 170, 110)),
         is_boss: false,
         description: "A pebble that decided to walk. Surprisingly tough.".to_string(),
     }
@@ -105,7 +108,7 @@ pub fn crab_king() -> Enemy {
             "  \\\\__o__//  ".to_string(),
             "  '-------'  ".to_string(),
         ],
-        color: Color::Rgb(180, 60, 60),
+        palette: EnemyColor::Fixed(Color::Rgb(180, 60, 60)),
         is_boss: true,
         description: "An ancient ruler of the tidepools, returned to claim what is his.".to_string(),
     }

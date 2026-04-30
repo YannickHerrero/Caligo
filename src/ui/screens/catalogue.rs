@@ -490,7 +490,7 @@ fn render_enemy_visual(frame: &mut Frame, enemy: &Enemy, area: Rect) {
     for row in &enemy.sprite {
         lines.push(Line::from(Span::styled(
             row.clone(),
-            Style::default().fg(enemy.color),
+            Style::default().fg(enemy.color()),
         )));
     }
 
