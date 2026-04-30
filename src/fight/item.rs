@@ -115,10 +115,6 @@ impl Item {
             Item::Utility(_) => Color::Rgb(200, 200, 160),
         }
     }
-
-    pub fn is_trinket(&self) -> bool {
-        matches!(self, Item::Trinket(_))
-    }
 }
 
 #[derive(Debug, Clone)]
