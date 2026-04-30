@@ -1,5 +1,7 @@
 use crate::data::attacks as attack_lib;
 use crate::data::enemies as enemy_lib;
+use crate::data::starters as starter_lib;
+use crate::data::starters::Starter;
 use crate::environment::{Environment, GroundStyle, TimeOfDay};
 use crate::fight::{
     impact_for, trail_for, AnimationKind, Attack, Effect, Element, Enemy, ParticleKind,
@@ -23,6 +25,7 @@ pub enum CatalogueTab {
     Attacks,
     Environments,
     Bestiary,
+    Starters,
 }
 
 impl CatalogueTab {
@@ -30,6 +33,7 @@ impl CatalogueTab {
         CatalogueTab::Attacks,
         CatalogueTab::Environments,
         CatalogueTab::Bestiary,
+        CatalogueTab::Starters,
     ];
 
     fn label(&self) -> &'static str {
@@ -37,6 +41,7 @@ impl CatalogueTab {
             CatalogueTab::Attacks => "Attacks",
             CatalogueTab::Environments => "Environments",
             CatalogueTab::Bestiary => "Bestiary",
+            CatalogueTab::Starters => "Starters",
         }
     }
 
@@ -632,11 +637,214 @@ fn format_mult(m: f32) -> String {
     }
 }
 
+struct StartersTab {
+    starters: Vec<Starter>,
+    selected: usize,
+    scroll: usize,
+    last_list_height: u16,
+}
+
+impl StartersTab {
+    fn new() -> Self {
+        Self {
+            starters: starter_lib::all_starters(),
+            selected: 0,
+            scroll: 0,
+            last_list_height: 0,
+        }
+    }
+
+    fn handle_key(&mut self, key: KeyCode) {
+        let len = self.starters.len();
+        match key {
+            KeyCode::Up | KeyCode::Char('k') => {
+                if self.selected > 0 {
+                    self.selected -= 1;
+                    if self.selected < self.scroll {
+                        self.scroll = self.selected;
+                    }
+                }
+            }
+            KeyCode::Down | KeyCode::Char('j') => {
+                if self.selected + 1 < len {
+                    self.selected += 1;
+                    let visible = self.last_list_height as usize;
+                    if visible > 0 && self.selected >= self.scroll + visible {
+                        self.scroll = self.selected + 1 - visible;
+                    }
+                }
+            }
+            _ => {}
+        }
+    }
+
+    fn draw(&mut self, frame: &mut Frame, area: Rect) {
+        let main_chunks = Layout::default()
+            .direction(Direction::Horizontal)
+            .constraints([Constraint::Percentage(33), Constraint::Percentage(67)])
+            .split(area);
+        let list_area = main_chunks[0];
+        let right_area = main_chunks[1];
+
+        let right_chunks = Layout::default()
+            .direction(Direction::Vertical)
+            .constraints([Constraint::Percentage(55), Constraint::Percentage(45)])
+            .split(right_area);
+        let visual_area = right_chunks[0];
+        let info_area = right_chunks[1];
+
+        self.last_list_height = list_area.height.saturating_sub(2);
+        render_starter_list(
+            frame,
+            &self.starters,
+            self.selected,
+            self.scroll,
+            list_area,
+        );
+
+        if let Some(starter) = self.starters.get(self.selected) {
+            render_starter_visual(frame, starter, visual_area);
+            render_starter_info(frame, starter, info_area);
+        }
+    }
+}
+
+fn render_starter_list(
+    frame: &mut Frame,
+    starters: &[Starter],
+    selected: usize,
+    scroll: usize,
+    area: Rect,
+) {
+    let block = Block::default()
+        .borders(Borders::ALL)
+        .border_style(Style::default().fg(Color::DarkGray))
+        .title(Span::styled(
+            " Starters ",
+            Style::default()
+                .fg(Color::Yellow)
+                .add_modifier(Modifier::BOLD),
+        ));
+    let inner = block.inner(area);
+    frame.render_widget(block, area);
+
+    let visible = inner.height as usize;
+    if visible == 0 {
+        return;
+    }
+    let end = (scroll + visible).min(starters.len());
+
+    let mut lines: Vec<Line> = Vec::with_capacity(end - scroll);
+    for (offset, starter) in starters[scroll..end].iter().enumerate() {
+        let idx = scroll + offset;
+        let is_selected = idx == selected;
+        let cursor = if is_selected { "▶ " } else { "  " };
+        let style = if is_selected {
+            Style::default()
+                .fg(starter.primary_type.color())
+                .add_modifier(Modifier::BOLD)
+        } else {
+            Style::default().fg(Color::Gray)
+        };
+        lines.push(Line::from(vec![
+            Span::styled(cursor, style),
+            Span::styled(starter.name.clone(), style),
+        ]));
+    }
+    frame.render_widget(Paragraph::new(lines), inner);
+}
+
+fn render_starter_visual(frame: &mut Frame, starter: &Starter, area: Rect) {
+    let block = Block::default()
+        .borders(Borders::ALL)
+        .border_style(Style::default().fg(Color::DarkGray))
+        .title(Span::styled(
+            format!(" {} ", starter.name),
+            Style::default()
+                .fg(starter.primary_type.color())
+                .add_modifier(Modifier::BOLD),
+        ));
+    let inner = block.inner(area);
+    frame.render_widget(block, area);
+    if inner.width == 0 || inner.height == 0 {
+        return;
+    }
+
+    let mut lines: Vec<Line> = Vec::new();
+    lines.push(Line::from(Span::styled(
+        starter.primary_type.label().to_string(),
+        Style::default()
+            .fg(starter.primary_type.color())
+            .add_modifier(Modifier::BOLD),
+    )));
+    lines.push(Line::from(""));
+
+    let sprite_height = starter.sprite.len() as u16;
+    let pad = inner.height.saturating_sub(sprite_height + 2) / 2;
+    for _ in 0..pad {
+        lines.push(Line::from(""));
+    }
+    for row in &starter.sprite {
+        lines.push(Line::from(Span::styled(
+            row.clone(),
+            Style::default()
+                .fg(starter.color())
+                .add_modifier(Modifier::BOLD),
+        )));
+    }
+
+    frame.render_widget(
+        Paragraph::new(lines).alignment(Alignment::Center),
+        inner,
+    );
+}
+
+fn render_starter_info(frame: &mut Frame, starter: &Starter, area: Rect) {
+    let block = Block::default()
+        .borders(Borders::ALL)
+        .border_style(Style::default().fg(Color::DarkGray))
+        .title(Span::styled(
+            " Info ",
+            Style::default()
+                .fg(Color::Yellow)
+                .add_modifier(Modifier::BOLD),
+        ));
+    let inner = block.inner(area);
+    frame.render_widget(block, area);
+
+    let mut lines: Vec<Line> = Vec::new();
+    lines.push(Line::from(vec![
+        Span::styled("Type   ", Style::default().fg(Color::DarkGray)),
+        Span::styled(
+            starter.primary_type.label().to_string(),
+            Style::default()
+                .fg(starter.primary_type.color())
+                .add_modifier(Modifier::BOLD),
+        ),
+    ]));
+    if !starter.starting_attacks.is_empty() {
+        lines.push(Line::from(vec![
+            Span::styled("Moves  ", Style::default().fg(Color::DarkGray)),
+            Span::styled(
+                starter.starting_attacks.join(", "),
+                Style::default().fg(Color::Gray),
+            ),
+        ]));
+    }
+    lines.push(Line::from(""));
+    lines.push(Line::from(Span::styled(
+        starter.description.clone(),
+        Style::default().fg(Color::Gray),
+    )));
+    frame.render_widget(Paragraph::new(lines), inner);
+}
+
 pub struct CatalogueScreen {
     tab: CatalogueTab,
     attacks: AttacksTab,
     environments: EnvironmentsTab,
     bestiary: BestiaryTab,
+    starters: StartersTab,
 }
 
 impl CatalogueScreen {
@@ -646,6 +854,7 @@ impl CatalogueScreen {
             attacks: AttacksTab::new(),
             environments: EnvironmentsTab::new(),
             bestiary: BestiaryTab::new(),
+            starters: StartersTab::new(),
         }
     }
 
@@ -664,6 +873,7 @@ impl CatalogueScreen {
             CatalogueTab::Attacks => self.attacks.handle_key(key),
             CatalogueTab::Environments => self.environments.handle_key(key),
             CatalogueTab::Bestiary => self.bestiary.handle_key(key),
+            CatalogueTab::Starters => self.starters.handle_key(key),
         }
         Transition::Stay
     }
@@ -698,6 +908,7 @@ impl CatalogueScreen {
             CatalogueTab::Attacks => self.attacks.draw(frame, body_area),
             CatalogueTab::Environments => self.environments.draw(frame, body_area),
             CatalogueTab::Bestiary => self.bestiary.draw(frame, body_area),
+            CatalogueTab::Starters => self.starters.draw(frame, body_area),
         }
 
         render_hint(frame, hint_area);
