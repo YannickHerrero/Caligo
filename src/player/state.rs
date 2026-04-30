@@ -30,6 +30,12 @@ impl Player {
             ItemStack::new(Item::HpPotion(PotionSize::Large), 1),
             ItemStack::new(Item::ManaPotion(PotionSize::Small), 2),
             ItemStack::new(Item::ManaPotion(PotionSize::Large), 1),
+            ItemStack::new(
+                Item::AttackStone {
+                    attack_name: "Bramble Trap".to_string(),
+                },
+                1,
+            ),
         ];
 
         Self {
