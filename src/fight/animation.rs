@@ -33,10 +33,6 @@ pub struct Animation {
 }
 
 impl Animation {
-    pub fn new(kind: AnimationKind, start_x: f32, target_x: f32) -> Self {
-        Self::build(kind, ProjectileSize::Small, None, None, start_x, target_x)
-    }
-
     pub fn for_attack(attack: &Attack, start_x: f32, target_x: f32) -> Self {
         let size = match attack.effect {
             Effect::Damage(d) => ProjectileSize::for_damage(d),
