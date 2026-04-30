@@ -43,6 +43,9 @@ Dual-type defenders multiply the per-type multipliers — a Water/Ground enemy h
 
 ## Roster
 
+### Slime family
+Round, gelatinous, ground-bound. Mid-range speed.
+
 | Enemy | Type(s) | HP | Speed | Moveset |
 |---|---|---:|---:|---|
 | Slime | Water | 30 | 12 | Splash, Bubble |
@@ -51,7 +54,17 @@ Dual-type defenders multiply the per-type multipliers — a Water/Ground enemy h
 | Sandling | Ground | 40 | 6 | Granite Shell, Sandstorm, Stone Slam |
 | ★ Crab King | Water / Ground | 120 | 10 | Tidal Slam, Stone Slam, Boulder Press, Tsunami |
 
-★ = boss.
+### Wisp family
+Small floating creatures. Fast and fragile.
+
+| Enemy | Type(s) | HP | Speed | Moveset |
+|---|---|---:|---:|---|
+| Wisp | Flying | 22 | 18 | Gust, Tornado |
+| Volt Wisp | Electric | 24 | 20 | Spark, Thunderclap |
+| Mind Wisp | Psychic | 26 | 16 | Gust, Cosmic Orb |
+| ★ Wisp Lord | Flying / Psychic | 100 | 18 | Tornado, Cosmic Orb, Star Lance, Sky Splitter |
+
+★ = boss. Sandling currently sits in the Slime table for type/floor coherence; it's structurally a solo entry that pairs with the Crab King boss.
 
 ## Roadmap
 
