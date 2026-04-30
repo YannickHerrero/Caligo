@@ -1,11 +1,52 @@
 use super::actions::Action;
 use super::animation::Animation;
-use super::attack::{Attack, Effect, Element};
+use super::attack::{Attack, BuffKind, Effect, Element};
 use super::enemy::Enemy;
 use super::item::ItemStack;
 use crate::data::enemies;
 use crate::player::Player;
 use rand::Rng;
+
+#[derive(Debug, Clone, Copy)]
+pub struct ActiveBuff {
+    pub kind: BuffKind,
+    pub magnitude: u32,
+    pub turns_remaining: u32,
+}
+
+impl ActiveBuff {
+    /// Returns the additive percentage represented by this buff (e.g.
+    /// magnitude 25 → 0.25). Sign is positive for both ATK-up and DEF-up;
+    /// callers compose them based on context.
+    pub fn pct(&self) -> f32 {
+        self.magnitude as f32 / 100.0
+    }
+}
+
+/// Sum the AttackUp percentage across an active-buff list.
+pub fn sum_attack_pct(buffs: &[ActiveBuff]) -> f32 {
+    buffs
+        .iter()
+        .filter(|b| b.kind == BuffKind::AttackUp)
+        .map(|b| b.pct())
+        .sum()
+}
+
+/// Sum the DefenseUp percentage across an active-buff list.
+pub fn sum_defense_pct(buffs: &[ActiveBuff]) -> f32 {
+    buffs
+        .iter()
+        .filter(|b| b.kind == BuffKind::DefenseUp)
+        .map(|b| b.pct())
+        .sum()
+}
+
+fn tick_buff_list(buffs: &mut Vec<ActiveBuff>) {
+    for b in buffs.iter_mut() {
+        b.turns_remaining = b.turns_remaining.saturating_sub(1);
+    }
+    buffs.retain(|b| b.turns_remaining > 0);
+}
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum MenuState {
@@ -51,6 +92,11 @@ pub struct FightState {
     /// Whose turn comes first in the current round, rolled at round
     /// start (random tie-break when speeds match).
     pub enemy_first_this_round: bool,
+    /// Active buffs on the player (self-targeted from moves like Sharpen
+    /// and Carapace). Apply during damage calc, tick down at round end.
+    pub player_buffs: Vec<ActiveBuff>,
+    /// Active buffs on the enemy.
+    pub enemy_buffs: Vec<ActiveBuff>,
 }
 
 impl FightState {
@@ -86,6 +132,8 @@ impl FightState {
             player_type: None,
             player_speed: player.speed,
             enemy_first_this_round: false,
+            player_buffs: Vec::new(),
+            enemy_buffs: Vec::new(),
         }
     }
 
@@ -126,11 +174,19 @@ impl FightState {
     pub fn resolve_player_attack<R: Rng>(&mut self, attack: &Attack, rng: &mut R) -> u32 {
         match attack.effect {
             Effect::Damage(base) => {
-                let mult = attack
+                let type_mult = attack
                     .element
                     .effectiveness_vs(self.enemy.primary_type, self.enemy.secondary_type);
+                let atk_pct = sum_attack_pct(&self.player_buffs);
+                let def_pct = sum_defense_pct(&self.enemy_buffs);
                 let variance = rng.gen_range(0.9..=1.1);
-                let damage = ((base as f32) * mult * variance).round().max(1.0) as u32;
+                let damage = ((base as f32)
+                    * type_mult
+                    * (1.0 + atk_pct)
+                    * (1.0 - def_pct).max(0.0)
+                    * variance)
+                    .round()
+                    .max(1.0) as u32;
                 self.enemy.hp = self.enemy.hp.saturating_sub(damage);
                 damage
             }
@@ -138,7 +194,18 @@ impl FightState {
                 self.player_hp = (self.player_hp + amount).min(self.player_max_hp);
                 0
             }
-            Effect::Buff { .. } => 0,
+            Effect::Buff {
+                kind,
+                magnitude,
+                duration,
+            } => {
+                self.player_buffs.push(ActiveBuff {
+                    kind,
+                    magnitude,
+                    turns_remaining: duration,
+                });
+                0
+            }
         }
     }
 
@@ -148,12 +215,20 @@ impl FightState {
     pub fn resolve_enemy_attack<R: Rng>(&mut self, attack: &Attack, rng: &mut R) -> u32 {
         match attack.effect {
             Effect::Damage(base) => {
-                let mult = match self.player_type {
+                let type_mult = match self.player_type {
                     Some(t) => attack.element.effectiveness_vs(t, None),
                     None => 1.0,
                 };
+                let atk_pct = sum_attack_pct(&self.enemy_buffs);
+                let def_pct = sum_defense_pct(&self.player_buffs);
                 let variance = rng.gen_range(0.9..=1.1);
-                let damage = ((base as f32) * mult * variance).round().max(1.0) as u32;
+                let damage = ((base as f32)
+                    * type_mult
+                    * (1.0 + atk_pct)
+                    * (1.0 - def_pct).max(0.0)
+                    * variance)
+                    .round()
+                    .max(1.0) as u32;
                 self.player_hp = self.player_hp.saturating_sub(damage);
                 damage
             }
@@ -161,8 +236,26 @@ impl FightState {
                 self.enemy.hp = (self.enemy.hp + amount).min(self.enemy.max_hp);
                 0
             }
-            Effect::Buff { .. } => 0,
+            Effect::Buff {
+                kind,
+                magnitude,
+                duration,
+            } => {
+                self.enemy_buffs.push(ActiveBuff {
+                    kind,
+                    magnitude,
+                    turns_remaining: duration,
+                });
+                0
+            }
         }
+    }
+
+    /// Decrement remaining turns on every active buff and prune expired
+    /// ones. Call at the end of each round.
+    pub fn tick_buffs(&mut self) {
+        tick_buff_list(&mut self.player_buffs);
+        tick_buff_list(&mut self.enemy_buffs);
     }
 
     pub fn commit_to_player(&self, player: &mut Player) {

@@ -259,14 +259,26 @@ impl FightScreen {
                 self.fight.animation = None;
                 if let Some(attack) = self.fight.pending_player_attack.take() {
                     let mut rng = rand::thread_rng();
+                    let hp_before = self.fight.player_hp;
                     let damage = self.fight.resolve_player_attack(&attack, &mut rng);
                     let enemy_name = self.fight.enemy.name.clone();
-                    let msg = if self.fight.enemy.hp == 0 {
-                        format!("{} fainted!", enemy_name)
-                    } else if damage > 0 {
-                        format!("{} took {} damage!", enemy_name, damage)
-                    } else {
-                        format!("It had no effect on {}.", enemy_name)
+                    let msg = match attack.effect {
+                        crate::fight::Effect::Damage(_) => {
+                            if self.fight.enemy.hp == 0 {
+                                format!("{} fainted!", enemy_name)
+                            } else if damage > 0 {
+                                format!("{} took {} damage!", enemy_name, damage)
+                            } else {
+                                format!("It had no effect on {}.", enemy_name)
+                            }
+                        }
+                        crate::fight::Effect::Heal(_) => {
+                            let healed = self.fight.player_hp.saturating_sub(hp_before);
+                            format!("Recovered {} HP.", healed)
+                        }
+                        crate::fight::Effect::Buff { kind, magnitude, .. } => {
+                            format!("Your {} rose by {}%!", kind.label(), magnitude)
+                        }
                     };
                     self.fight.set_message(msg, 1.0);
                     if self.fight.enemy.hp == 0 {
@@ -315,7 +327,8 @@ impl FightScreen {
 
         if idle {
             if self.player_acted && self.enemy_acted {
-                // Round complete; reroll for the next round.
+                // Round complete; tick buffs and reroll for the next round.
+                self.fight.tick_buffs();
                 let mut rng = rand::thread_rng();
                 self.fight.roll_round_order(&mut rng);
                 self.player_acted = false;
