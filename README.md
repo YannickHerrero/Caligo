@@ -49,17 +49,29 @@ The art style is intentionally minimalist — ASCII art rendered through [ratatu
 - Multiple enemy types with their own sprites and movesets
 - Dungeon generation and persistent run state
 
-## Getting started
+## Installation
 
-You'll need a Rust toolchain (1.74 or later recommended).
+You'll need a Rust toolchain (1.74 or later recommended). Install the latest version directly from the repository:
 
 ```bash
-git clone <this-repo>
-cd caligo
-cargo run
+cargo install --git https://github.com/YannickHerrero/Caligo
+```
+
+This builds and installs the `caligo` binary into `~/.cargo/bin`. Make sure that directory is on your `PATH`, then run:
+
+```bash
+caligo
 ```
 
 A reasonably wide terminal (≥80 columns) is recommended.
+
+## Building from source
+
+```bash
+git clone https://github.com/YannickHerrero/Caligo
+cd Caligo
+cargo run
+```
 
 ## Controls
 
