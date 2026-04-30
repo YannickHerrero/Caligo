@@ -123,7 +123,7 @@ impl Player {
                         AnimationKind::Dash,
                         6,
                         2,
-                        Element::Neutral,
+                        Element::Normal,
                         "A new attack learned from a stone.",
                     ));
                     ItemUseResult::LearnedAttack(attack_name)

@@ -62,32 +62,32 @@ impl Effect {
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Element {
-    Neutral,
+    Normal,
     Fire,
     Water,
-    Earth,
-    Air,
+    Ground,
+    Flying,
 }
 
 impl Element {
     pub fn label(&self) -> &'static str {
         match self {
-            Element::Neutral => "Neutral",
+            Element::Normal => "Normal",
             Element::Fire => "Fire",
             Element::Water => "Water",
-            Element::Earth => "Earth",
-            Element::Air => "Air",
+            Element::Ground => "Ground",
+            Element::Flying => "Flying",
         }
     }
 
     pub fn color(&self) -> Color {
         use crate::settings::{theme, Theme};
         match self {
-            Element::Neutral => Color::Gray,
+            Element::Normal => Color::Gray,
             Element::Fire => Color::Rgb(255, 140, 60),
             Element::Water => Color::Rgb(100, 180, 255),
-            Element::Earth => Color::Rgb(170, 130, 80),
-            Element::Air => match theme() {
+            Element::Ground => Color::Rgb(170, 130, 80),
+            Element::Flying => match theme() {
                 Theme::Dark => Color::Rgb(190, 230, 240),
                 Theme::Light => Color::Rgb(70, 130, 180),
             },

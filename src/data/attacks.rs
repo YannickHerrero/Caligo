@@ -19,7 +19,7 @@ fn neutral() -> Vec<Attack> {
             AnimationKind::Dash,
             5,
             0,
-            Element::Neutral,
+            Element::Normal,
             "A quick claw pinch. No mana cost, modest damage.",
         ),
         Attack::new(
@@ -27,7 +27,7 @@ fn neutral() -> Vec<Attack> {
             AnimationKind::Jump,
             8,
             2,
-            Element::Neutral,
+            Element::Normal,
             "Leaping snip with both claws.",
         ),
         Attack::new(
@@ -35,7 +35,7 @@ fn neutral() -> Vec<Attack> {
             AnimationKind::Dash,
             4,
             0,
-            Element::Neutral,
+            Element::Normal,
             "Quick sideways jab. Free, but light.",
         ),
         Attack::new(
@@ -43,7 +43,7 @@ fn neutral() -> Vec<Attack> {
             AnimationKind::Dash,
             6,
             0,
-            Element::Neutral,
+            Element::Normal,
             "A blunt charge with the shell.",
         ),
         Attack::new(
@@ -51,7 +51,7 @@ fn neutral() -> Vec<Attack> {
             AnimationKind::Dash,
             5,
             1,
-            Element::Neutral,
+            Element::Normal,
             "Sweeping rear-leg trip.",
         ),
         Attack::new(
@@ -59,7 +59,7 @@ fn neutral() -> Vec<Attack> {
             AnimationKind::Dash,
             7,
             1,
-            Element::Neutral,
+            Element::Normal,
             "A nasty mandible chomp.",
         ),
         Attack::new(
@@ -67,7 +67,7 @@ fn neutral() -> Vec<Attack> {
             AnimationKind::Dash,
             9,
             3,
-            Element::Neutral,
+            Element::Normal,
             "Spins shell-first into the foe.",
         ),
         Attack::new(
@@ -75,7 +75,7 @@ fn neutral() -> Vec<Attack> {
             AnimationKind::Jump,
             12,
             4,
-            Element::Neutral,
+            Element::Normal,
             "Heavy two-clawed slam.",
         ),
         Attack::new(
@@ -83,7 +83,7 @@ fn neutral() -> Vec<Attack> {
             AnimationKind::Jump,
             14,
             6,
-            Element::Neutral,
+            Element::Normal,
             "Two leaping snips in quick succession.",
         ),
         Attack::new(
@@ -91,7 +91,7 @@ fn neutral() -> Vec<Attack> {
             AnimationKind::Jump,
             18,
             7,
-            Element::Neutral,
+            Element::Normal,
             "Double-claw guillotine. Rare and brutal.",
         ),
         Attack::with_effect(
@@ -99,7 +99,7 @@ fn neutral() -> Vec<Attack> {
             AnimationKind::SelfCast(ParticleKind::Hearts),
             Effect::Heal(10),
             4,
-            Element::Neutral,
+            Element::Normal,
             "A simple restorative gesture.",
         ),
         Attack::with_effect(
@@ -107,7 +107,7 @@ fn neutral() -> Vec<Attack> {
             AnimationKind::SelfCast(ParticleKind::Hearts),
             Effect::Heal(15),
             6,
-            Element::Neutral,
+            Element::Normal,
             "Bandage and brace. Pricey but solid.",
         ),
         Attack::with_effect(
@@ -115,7 +115,7 @@ fn neutral() -> Vec<Attack> {
             AnimationKind::SelfCast(ParticleKind::Hearts),
             Effect::Heal(22),
             10,
-            Element::Neutral,
+            Element::Normal,
             "Channels a sustained healing pulse.",
         ),
         Attack::with_effect(
@@ -127,7 +127,7 @@ fn neutral() -> Vec<Attack> {
                 duration: 3,
             },
             4,
-            Element::Neutral,
+            Element::Normal,
             "Hones the claws to a razor edge.",
         ),
     ]
@@ -318,7 +318,7 @@ fn earth() -> Vec<Attack> {
             AnimationKind::Dash,
             6,
             1,
-            Element::Earth,
+            Element::Ground,
             "Charges in with shell hardened to stone.",
         ),
         Attack::new(
@@ -326,7 +326,7 @@ fn earth() -> Vec<Attack> {
             AnimationKind::Dash,
             7,
             3,
-            Element::Earth,
+            Element::Ground,
             "A blinding rush of sand and grit.",
         ),
         Attack::new(
@@ -334,7 +334,7 @@ fn earth() -> Vec<Attack> {
             AnimationKind::Dash,
             9,
             4,
-            Element::Earth,
+            Element::Ground,
             "Each footfall sends a tremor.",
         ),
         Attack::new(
@@ -342,7 +342,7 @@ fn earth() -> Vec<Attack> {
             AnimationKind::Jump,
             10,
             4,
-            Element::Earth,
+            Element::Ground,
             "Crashes down with stone-hard claws.",
         ),
         Attack::new(
@@ -350,7 +350,7 @@ fn earth() -> Vec<Attack> {
             AnimationKind::Dash,
             11,
             4,
-            Element::Earth,
+            Element::Ground,
             "Claws of steel close in.",
         ),
         Attack::new(
@@ -358,7 +358,7 @@ fn earth() -> Vec<Attack> {
             AnimationKind::Jump,
             13,
             6,
-            Element::Earth,
+            Element::Ground,
             "Skewers the foe with a crystalline shard.",
         ),
         Attack::new(
@@ -366,7 +366,7 @@ fn earth() -> Vec<Attack> {
             AnimationKind::Jump,
             14,
             6,
-            Element::Earth,
+            Element::Ground,
             "Boulders rain on the foe.",
         ),
         Attack::new(
@@ -374,7 +374,7 @@ fn earth() -> Vec<Attack> {
             AnimationKind::Jump,
             16,
             8,
-            Element::Earth,
+            Element::Ground,
             "A crushing weight from above.",
         ),
         Attack::new(
@@ -382,7 +382,7 @@ fn earth() -> Vec<Attack> {
             AnimationKind::Jump,
             18,
             9,
-            Element::Earth,
+            Element::Ground,
             "The ground shakes the enemy off-balance.",
         ),
         Attack::new(
@@ -390,7 +390,7 @@ fn earth() -> Vec<Attack> {
             AnimationKind::Jump,
             24,
             12,
-            Element::Earth,
+            Element::Ground,
             "Calls the deep earth to crush the foe.",
         ),
         Attack::with_effect(
@@ -402,7 +402,7 @@ fn earth() -> Vec<Attack> {
                 duration: 3,
             },
             4,
-            Element::Earth,
+            Element::Ground,
             "Hardens the shell against incoming blows.",
         ),
     ]
@@ -415,7 +415,7 @@ fn air() -> Vec<Attack> {
             AnimationKind::Throw(ProjectileKind::Electric),
             5,
             2,
-            Element::Air,
+            Element::Flying,
             "A small static jolt.",
         ),
         Attack::new(
@@ -423,7 +423,7 @@ fn air() -> Vec<Attack> {
             AnimationKind::Jump,
             6,
             2,
-            Element::Air,
+            Element::Flying,
             "A sudden upward burst of wind.",
         ),
         Attack::new(
@@ -431,7 +431,7 @@ fn air() -> Vec<Attack> {
             AnimationKind::Dash,
             7,
             3,
-            Element::Air,
+            Element::Flying,
             "Crackles with electricity on impact.",
         ),
         Attack::new(
@@ -439,7 +439,7 @@ fn air() -> Vec<Attack> {
             AnimationKind::Throw(ProjectileKind::Electric),
             9,
             4,
-            Element::Air,
+            Element::Flying,
             "An ear-splitting boom.",
         ),
         Attack::new(
@@ -447,7 +447,7 @@ fn air() -> Vec<Attack> {
             AnimationKind::Throw(ProjectileKind::Electric),
             12,
             6,
-            Element::Air,
+            Element::Flying,
             "A crackling arc of lightning.",
         ),
         Attack::new(
@@ -455,7 +455,7 @@ fn air() -> Vec<Attack> {
             AnimationKind::Throw(ProjectileKind::EnergyBall),
             14,
             8,
-            Element::Air,
+            Element::Flying,
             "A heavy orb of cosmic energy. High cost, high damage.",
         ),
         Attack::new(
@@ -463,7 +463,7 @@ fn air() -> Vec<Attack> {
             AnimationKind::Jump,
             14,
             7,
-            Element::Air,
+            Element::Flying,
             "Spins up a cyclone around the foe.",
         ),
         Attack::new(
@@ -471,7 +471,7 @@ fn air() -> Vec<Attack> {
             AnimationKind::Throw(ProjectileKind::Electric),
             16,
             8,
-            Element::Air,
+            Element::Flying,
             "Lightning answers the call.",
         ),
         Attack::new(
@@ -479,7 +479,7 @@ fn air() -> Vec<Attack> {
             AnimationKind::Throw(ProjectileKind::EnergyBall),
             19,
             10,
-            Element::Air,
+            Element::Flying,
             "A spear of starlight.",
         ),
         Attack::new(
@@ -487,7 +487,7 @@ fn air() -> Vec<Attack> {
             AnimationKind::Throw(ProjectileKind::Electric),
             22,
             11,
-            Element::Air,
+            Element::Flying,
             "A pillar of lightning rips the sky.",
         ),
     ]
