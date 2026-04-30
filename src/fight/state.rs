@@ -67,7 +67,10 @@ impl FightState {
     pub fn resolve_player_attack(&mut self, attack: &Attack) -> u32 {
         match attack.effect {
             Effect::Damage(base) => {
-                let damage = base;
+                let mult = attack
+                    .element
+                    .effectiveness_vs(self.enemy.primary_type, self.enemy.secondary_type);
+                let damage = ((base as f32) * mult).round().max(1.0) as u32;
                 self.enemy.hp = self.enemy.hp.saturating_sub(damage);
                 damage
             }
