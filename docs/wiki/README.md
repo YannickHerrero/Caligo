@@ -8,6 +8,7 @@ Reference for the game's content and systems. Pages are kept in sync with the da
 - [Items](items.md) — consumables, attack stones, and utility items.
 - [Trinkets](trinkets.md) — equippable trinkets and their bonuses.
 - [Enemies](enemies.md) — bestiary of foes encountered on the map.
+- [Settings](settings.md) — theme and other user preferences.
 
 ## Conventions
 
