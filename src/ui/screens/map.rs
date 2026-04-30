@@ -257,6 +257,35 @@ fn render_abandon_popup(frame: &mut Frame, origin: MapOrigin, area: Rect) {
         height: popup_h,
     };
 
+    // Dim everything outside the popup so it feels modal, then clear the
+    // popup area so map glyphs don't bleed through.
+    let buf = frame.buffer_mut();
+    for y in area.y..(area.y + area.height) {
+        for x in area.x..(area.x + area.width) {
+            if x >= popup.x
+                && x < popup.x + popup.width
+                && y >= popup.y
+                && y < popup.y + popup.height
+            {
+                continue;
+            }
+            if let Some(cell) = buf.cell_mut((x, y)) {
+                let fg = match cell.fg {
+                    Color::Rgb(r, g, b) => Color::Rgb(r / 3, g / 3, b / 3),
+                    other => other,
+                };
+                cell.set_fg(fg);
+            }
+        }
+    }
+    for y in popup.y..(popup.y + popup.height) {
+        for x in popup.x..(popup.x + popup.width) {
+            if let Some(cell) = buf.cell_mut((x, y)) {
+                cell.set_char(' ').set_style(Style::default());
+            }
+        }
+    }
+
     let block = Block::default()
         .borders(Borders::ALL)
         .border_style(Style::default().fg(Color::Rgb(220, 80, 80)))
