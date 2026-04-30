@@ -1,10 +1,7 @@
-use crate::data::starters;
-use crate::map;
 use crate::player::Player;
-use crate::run::Run;
 use crate::ui::screen::{Screen, Transition};
 use crate::ui::screens::settings::SettingsOrigin;
-use crate::ui::screens::{MapScreen, SettingsScreen};
+use crate::ui::screens::{SettingsScreen, StarterSelectScreen};
 use crossterm::event::KeyCode;
 use ratatui::{
     layout::{Alignment, Rect},
@@ -49,7 +46,7 @@ impl StartScreen {
         Self { selected: 0 }
     }
 
-    pub fn handle_key(&mut self, key: KeyCode, player: &mut Player) -> Transition {
+    pub fn handle_key(&mut self, key: KeyCode, _player: &mut Player) -> Transition {
         let len = StartChoice::ALL.len();
         match key {
             KeyCode::Char('q') | KeyCode::Esc => Transition::Quit,
@@ -63,11 +60,7 @@ impl StartScreen {
             }
             KeyCode::Enter => match StartChoice::ALL[self.selected] {
                 StartChoice::Play => {
-                    // TODO: route through StarterSelect once it exists.
-                    let starter = starters::all_starters().remove(0);
-                    *player = Player::for_starter(&starter);
-                    let run = Run::new(starter, map::generate());
-                    Transition::Goto(Screen::Map(MapScreen::with_run(run)))
+                    Transition::Goto(Screen::StarterSelect(StarterSelectScreen::new()))
                 }
                 StartChoice::Settings => Transition::Goto(Screen::Settings(
                     SettingsScreen::new(SettingsOrigin::Start),
