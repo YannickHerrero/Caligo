@@ -27,10 +27,12 @@ Each kind has three sizes. The size used for a `Throw` attack is derived from th
 
 | Kind | Small | Medium | Large | Color |
 |---|---|---|---|---|
-| `Water` | 1×1 | 2×2 | 3×3 | Blue |
+| `Water` | 1×1 | 3×2 | 5×3 | Blue |
 | `Fire` | 2×2 | 3×3 | 4×4 | Orange |
 | `Electric` | 1×3 | 2×4 | 3×5 | Yellow |
-| `EnergyBall` | 3×3 | 5×5 | 7×7 | Purple |
+| `EnergyBall` | 3×2 | 5×3 | 7×5 | Purple |
+
+Sprite dimensions are *width × height* in characters. Round projectiles (Water and EnergyBall) are deliberately wider than tall because terminal cells render at roughly a 2:1 height:width ratio — a square sprite reads as a vertical bar on screen, so the round shapes are flattened to look round once rendered. Fire and Electric are kept tall on purpose (flames rise, lightning is a vertical bolt).
 
 So Ember (DMG 6) and Bubble (DMG 7) keep the small sprites, Fireball (DMG 11) and Cosmic Orb (DMG 14) get the medium versions, and Inferno (DMG 21), Tsunami (DMG 22), Sky Splitter (DMG 22), and Star Lance (DMG 19) get the large ones.
 
