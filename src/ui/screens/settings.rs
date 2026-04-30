@@ -3,6 +3,19 @@ use crate::settings;
 use crate::ui::screen::{Screen, Transition};
 use crate::ui::screens::SelectScreen;
 use crossterm::event::KeyCode;
+
+#[derive(Debug, Clone, Copy)]
+pub enum SettingsOrigin {
+    Select,
+}
+
+impl SettingsOrigin {
+    fn back(self) -> Screen {
+        match self {
+            SettingsOrigin::Select => Screen::Select(SelectScreen::new()),
+        }
+    }
+}
 use ratatui::{
     layout::{Alignment, Constraint, Direction, Layout, Rect},
     style::{Color, Modifier, Style},
@@ -48,19 +61,21 @@ impl SettingItem {
 
 pub struct SettingsScreen {
     pub selected: usize,
+    origin: SettingsOrigin,
 }
 
 impl SettingsScreen {
-    pub fn new() -> Self {
-        Self { selected: 0 }
+    pub fn new(origin: SettingsOrigin) -> Self {
+        Self {
+            selected: 0,
+            origin,
+        }
     }
 
     pub fn handle_key(&mut self, key: KeyCode, _player: &mut Player) -> Transition {
         let len = SettingItem::ALL.len();
         match key {
-            KeyCode::Char('q') | KeyCode::Esc => {
-                Transition::Goto(Screen::Select(SelectScreen::new()))
-            }
+            KeyCode::Char('q') | KeyCode::Esc => Transition::Goto(self.origin.back()),
             KeyCode::Up | KeyCode::Char('k') => {
                 self.selected = (self.selected + len - 1) % len;
                 Transition::Stay

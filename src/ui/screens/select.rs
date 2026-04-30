@@ -1,5 +1,6 @@
 use crate::player::Player;
 use crate::ui::screen::{Screen, Transition};
+use crate::ui::screens::settings::SettingsOrigin;
 use crate::ui::screens::{
     AttackPreviewScreen, CatalogueScreen, DemoScreen, FightScreen, MapScreen, SettingsScreen,
 };
@@ -61,7 +62,9 @@ impl ScreenKind {
             ScreenKind::Demo => Screen::Demo(DemoScreen::new()),
             ScreenKind::AttackPreview => Screen::AttackPreview(AttackPreviewScreen::new()),
             ScreenKind::Catalogue => Screen::Catalogue(CatalogueScreen::new()),
-            ScreenKind::Settings => Screen::Settings(SettingsScreen::new()),
+            ScreenKind::Settings => {
+                Screen::Settings(SettingsScreen::new(SettingsOrigin::Select))
+            }
         }
     }
 }
