@@ -19,6 +19,8 @@ use std::io;
 use ui::app::App;
 
 fn main() -> Result<()> {
+    let debug = std::env::args().any(|arg| arg == "--debug");
+
     settings::init();
     enable_raw_mode()?;
     let mut stdout = io::stdout();
@@ -26,7 +28,7 @@ fn main() -> Result<()> {
     let backend = CrosstermBackend::new(stdout);
     let mut terminal = Terminal::new(backend)?;
 
-    let mut app = App::new();
+    let mut app = App::new(debug);
     let result = app.run(&mut terminal);
 
     disable_raw_mode()?;

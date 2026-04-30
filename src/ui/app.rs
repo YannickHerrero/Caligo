@@ -1,6 +1,6 @@
 use crate::player::Player;
 use crate::ui::screen::{Screen, Transition};
-use crate::ui::screens::SelectScreen;
+use crate::ui::screens::{SelectScreen, StartScreen};
 use anyhow::Result;
 use crossterm::event::{self, Event, KeyEventKind};
 use ratatui::Frame;
@@ -13,10 +13,15 @@ pub struct App {
 }
 
 impl App {
-    pub fn new() -> Self {
+    pub fn new(debug: bool) -> Self {
+        let screen = if debug {
+            Screen::Select(SelectScreen::new())
+        } else {
+            Screen::Start(StartScreen::new())
+        };
         Self {
             should_quit: false,
-            screen: Screen::Select(SelectScreen::new()),
+            screen,
             player: Player::new(),
         }
     }
