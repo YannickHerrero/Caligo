@@ -4,7 +4,8 @@ use crate::player::Player;
 use crate::run::Run;
 use crate::ui::screen::{Screen, Transition};
 use crate::ui::screens::{
-    FightScreen, PlayerInfoScreen, SelectScreen, TransitionKind, TransitionScreen,
+    FightScreen, PlaceholderNodeScreen, PlayerInfoScreen, SelectScreen, TransitionKind,
+    TransitionScreen,
 };
 use crate::ui::widgets;
 use crossterm::event::KeyCode;
@@ -91,7 +92,7 @@ impl MapScreen {
         Transition::Stay
     }
 
-    fn handle_confirming(&mut self, key: KeyCode, player: &Player) -> Transition {
+    fn handle_confirming(&mut self, key: KeyCode, player: &mut Player) -> Transition {
         match key {
             KeyCode::Esc | KeyCode::Backspace | KeyCode::Char('q') => {
                 self.menu_state = MapMenuState::Browsing;
@@ -201,7 +202,7 @@ impl MapScreen {
     }
 }
 
-fn build_node_screen(player: &Player, map: Box<MapScreen>, kind: NodeKind) -> Screen {
+fn build_node_screen(player: &mut Player, map: Box<MapScreen>, kind: NodeKind) -> Screen {
     let mut rng = rand::thread_rng();
     match kind {
         NodeKind::EasyFight | NodeKind::NormalFight | NodeKind::EliteFight | NodeKind::Boss => {
@@ -209,11 +210,8 @@ fn build_node_screen(player: &Player, map: Box<MapScreen>, kind: NodeKind) -> Sc
                 .unwrap_or_else(crate::data::enemies::slime);
             Screen::Fight(FightScreen::from_map(player, map, enemy, kind))
         }
-        // Camp / Shop / Mystery don't have placeholder screens yet — for
-        // now route them back through a fight so the loop is testable.
         NodeKind::Camp | NodeKind::Shop | NodeKind::Mystery => {
-            let enemy = crate::data::enemies::slime();
-            Screen::Fight(FightScreen::from_map(player, map, enemy, kind))
+            Screen::PlaceholderNode(PlaceholderNodeScreen::new(map, kind, player))
         }
     }
 }
