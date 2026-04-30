@@ -1,4 +1,5 @@
-use crate::fight::{Element, Enemy, EnemyColor};
+use crate::fight::{Element, Enemy};
+use crate::palette::ThemedColor;
 use ratatui::style::Color;
 
 pub fn all_enemies() -> Vec<Enemy> {
@@ -30,7 +31,7 @@ pub fn slime() -> Enemy {
             " | o   o | ".to_string(),
             "  \\__~__/  ".to_string(),
         ],
-        palette: EnemyColor::Fixed(Color::Rgb(120, 200, 220)),
+        palette: ThemedColor::Fixed(Color::Rgb(120, 200, 220)),
         is_boss: false,
         description: "A wobbling blob of seawater. Bops more than it bites.".to_string(),
     }
@@ -51,7 +52,7 @@ pub fn fire_slime() -> Enemy {
             " | >   < | ".to_string(),
             "  \\_~~~_/  ".to_string(),
         ],
-        palette: EnemyColor::Fixed(Color::Rgb(220, 100, 60)),
+        palette: ThemedColor::Fixed(Color::Rgb(220, 100, 60)),
         is_boss: false,
         description: "Hot to the touch. Leaves scorch marks where it scoots.".to_string(),
     }
@@ -72,7 +73,7 @@ pub fn frost_slime() -> Enemy {
             " | x   x | ".to_string(),
             "  \\..-../  ".to_string(),
         ],
-        palette: EnemyColor::Themed {
+        palette: ThemedColor::Themed {
             dark: Color::Rgb(180, 220, 255),
             light: Color::Rgb(60, 140, 190),
         },
@@ -96,7 +97,7 @@ pub fn sandling() -> Enemy {
             " | o   o | ".to_string(),
             "  \\\\___//  ".to_string(),
         ],
-        palette: EnemyColor::Fixed(Color::Rgb(200, 170, 110)),
+        palette: ThemedColor::Fixed(Color::Rgb(200, 170, 110)),
         is_boss: false,
         description: "A pebble that decided to walk. Surprisingly tough.".to_string(),
     }
@@ -118,7 +119,7 @@ pub fn crab_king() -> Enemy {
             "  \\\\__o__//  ".to_string(),
             "  '-------'  ".to_string(),
         ],
-        palette: EnemyColor::Fixed(Color::Rgb(180, 60, 60)),
+        palette: ThemedColor::Fixed(Color::Rgb(180, 60, 60)),
         is_boss: true,
         description: "An ancient ruler of the tidepools, returned to claim what is his.".to_string(),
     }
@@ -139,7 +140,7 @@ pub fn wisp() -> Enemy {
             "  \\  -  /  ".to_string(),
             "   '. .'   ".to_string(),
         ],
-        palette: EnemyColor::Themed {
+        palette: ThemedColor::Themed {
             dark: Color::Rgb(220, 230, 245),
             light: Color::Rgb(90, 120, 160),
         },
@@ -163,7 +164,7 @@ pub fn volt_wisp() -> Enemy {
             "  \\//=\\\\/  ".to_string(),
             "   '! !'   ".to_string(),
         ],
-        palette: EnemyColor::Themed {
+        palette: ThemedColor::Themed {
             dark: Color::Rgb(255, 230, 80),
             light: Color::Rgb(180, 130, 10),
         },
@@ -187,7 +188,7 @@ pub fn mind_wisp() -> Enemy {
             "   ' v '   ".to_string(),
             "   ~ . ~   ".to_string(),
         ],
-        palette: EnemyColor::Fixed(Color::Rgb(220, 130, 220)),
+        palette: ThemedColor::Fixed(Color::Rgb(220, 130, 220)),
         is_boss: false,
         description: "Watches you from a distance you can't quite measure.".to_string(),
     }
@@ -211,7 +212,7 @@ pub fn wisp_lord() -> Enemy {
             "    \\  ___  /    ".to_string(),
             "     '-----'     ".to_string(),
         ],
-        palette: EnemyColor::Fixed(Color::Rgb(150, 100, 200)),
+        palette: ThemedColor::Fixed(Color::Rgb(150, 100, 200)),
         is_boss: true,
         description: "The eldest of the wisps. Its gaze pries memories loose.".to_string(),
     }

@@ -3,6 +3,7 @@ mod data;
 mod environment;
 mod fight;
 mod map;
+mod palette;
 mod player;
 mod settings;
 mod ui;
