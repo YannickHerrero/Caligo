@@ -1,5 +1,7 @@
 use crate::fight::{Element, Enemy};
+use crate::map::NodeKind;
 use crate::palette::ThemedColor;
+use rand::Rng;
 use ratatui::style::Color;
 
 pub fn all_enemies() -> Vec<Enemy> {
@@ -16,6 +18,28 @@ pub fn all_enemies() -> Vec<Enemy> {
         mind_wisp(),
         wisp_lord(),
     ]
+}
+
+/// Pick a random enemy appropriate for the given map node kind. Elite
+/// fights reuse the Normal pool with a stat boost (HP +50%) until a
+/// dedicated elite roster exists.
+pub fn pick_for_node<R: Rng>(kind: NodeKind, rng: &mut R) -> Option<Enemy> {
+    let pool: &[fn() -> Enemy] = match kind {
+        NodeKind::EasyFight => &[slime, fire_slime, frost_slime, wisp, volt_wisp, mind_wisp],
+        NodeKind::NormalFight => &[sandling, shark, cataphract],
+        NodeKind::EliteFight => &[sandling, shark, cataphract],
+        NodeKind::Boss => &[crab_king, wisp_lord],
+        NodeKind::Camp | NodeKind::Shop | NodeKind::Mystery => return None,
+    };
+    if pool.is_empty() {
+        return None;
+    }
+    let mut enemy = pool[rng.gen_range(0..pool.len())]();
+    if matches!(kind, NodeKind::EliteFight) {
+        enemy.max_hp = (enemy.max_hp * 3) / 2;
+        enemy.hp = enemy.max_hp;
+    }
+    Some(enemy)
 }
 
 pub fn slime() -> Enemy {

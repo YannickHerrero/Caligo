@@ -1,5 +1,5 @@
-use crate::data::starters;
-use crate::map::{self, MapGraph, NodeId};
+use crate::data::{enemies, starters};
+use crate::map::{self, MapGraph, NodeId, NodeKind};
 use crate::player::Player;
 use crate::run::Run;
 use crate::ui::screen::{Screen, Transition};
@@ -109,14 +109,14 @@ impl MapScreen {
                 }
                 self.menu_state = MapMenuState::Browsing;
 
-                // Move the current map forward into the FightScreen so the
-                // run persists; clone for the transition's fade visual.
+                // Move the current map forward so the run persists; clone
+                // for the transition's fade visual.
                 let map_owned = std::mem::replace(self, MapScreen::new());
                 let map_for_fade = map_owned.clone();
-                let fight = FightScreen::from_map(player, Box::new(map_owned));
+                let to = build_node_screen(player, Box::new(map_owned), kind);
                 let transition = TransitionScreen::new(
                     Screen::Map(map_for_fade),
-                    Screen::Fight(fight),
+                    to,
                     TransitionKind::from(kind),
                 );
                 Transition::Goto(Screen::Transition(transition))
@@ -197,6 +197,26 @@ impl MapScreen {
             if let Some(id) = self.cursor {
                 widgets::render_map_confirm(frame, self.run.map.node(id), area);
             }
+        }
+    }
+}
+
+fn build_node_screen(player: &Player, map: Box<MapScreen>, kind: NodeKind) -> Screen {
+    let mut rng = rand::thread_rng();
+    match kind {
+        NodeKind::EasyFight | NodeKind::NormalFight | NodeKind::EliteFight | NodeKind::Boss => {
+            let enemy = enemies::pick_for_node(kind, &mut rng).unwrap_or_else(|| {
+                // Fallback should be unreachable for fight kinds, but keep a
+                // safe default so the fight still launches.
+                crate::data::enemies::slime()
+            });
+            Screen::Fight(FightScreen::from_map(player, map, enemy))
+        }
+        // Camp / Shop / Mystery don't have placeholder screens yet — for
+        // now route them back through a fight so the loop is testable.
+        NodeKind::Camp | NodeKind::Shop | NodeKind::Mystery => {
+            let enemy = crate::data::enemies::slime();
+            Screen::Fight(FightScreen::from_map(player, map, enemy))
         }
     }
 }

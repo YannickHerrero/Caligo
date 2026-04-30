@@ -31,6 +31,10 @@ pub struct FightState {
 
 impl FightState {
     pub fn from_player(player: &Player) -> Self {
+        Self::from_player_with_enemy(player, enemies::slime())
+    }
+
+    pub fn from_player_with_enemy(player: &Player, enemy: Enemy) -> Self {
         let attacks: Vec<Attack> = player
             .equipped_attacks_resolved()
             .into_iter()
@@ -41,7 +45,7 @@ impl FightState {
             player_hp: player.hp,
             player_max_hp: player.max_hp(),
             player_mana: player.mana,
-            enemy: enemies::slime(),
+            enemy,
             floor: 1,
             selected_action: 0,
             attacks,

@@ -1,6 +1,6 @@
 use crate::crab::Crab;
 use crate::environment::{Environment, GroundStyle};
-use crate::fight::{Action, Animation, FightState, MenuState};
+use crate::fight::{Action, Animation, Enemy, FightState, MenuState};
 use crate::player::Player;
 use crate::ui::screen::{Screen, Transition};
 use crate::ui::screens::{MapScreen, SelectScreen};
@@ -34,10 +34,15 @@ impl FightScreen {
 
     /// Variant entered from a real map node — the fight carries the map
     /// forward so it can hand control back when the fight ends.
-    pub fn from_map(player: &Player, map: Box<MapScreen>) -> Self {
-        let mut me = Self::new(player);
-        me.map = Some(map);
-        me
+    pub fn from_map(player: &Player, map: Box<MapScreen>, enemy: Enemy) -> Self {
+        Self {
+            crab: Crab::new((6.0, 100.0), 95),
+            environment: Environment::generate(80, 15, GroundStyle::default()),
+            fight: FightState::from_player_with_enemy(player, enemy),
+            map: Some(map),
+            last_terminal_size: (0, 0),
+            last_action_height: 0,
+        }
     }
 
     pub fn handle_key(&mut self, key: KeyCode, _player: &mut Player) -> Transition {
