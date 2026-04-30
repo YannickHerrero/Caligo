@@ -25,7 +25,10 @@ impl Player {
         let owned_attacks = attack_lib::all_attacks();
         let equipped_attacks = resolve_starter_slots(&owned_attacks);
 
-        let inventory = vec![ItemStack::new(Item::HpPotion(PotionSize::Small), 2)];
+        let inventory = vec![
+            ItemStack::new(Item::HpPotion(PotionSize::Small), 2),
+            ItemStack::new(Item::HpPotion(PotionSize::Large), 1),
+        ];
 
         Self {
             hp: 25,
