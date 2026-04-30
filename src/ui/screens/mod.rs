@@ -1,4 +1,5 @@
 pub mod attack_preview;
+pub mod catalogue;
 pub mod demo;
 pub mod fight;
 pub mod map;
@@ -8,6 +9,7 @@ pub mod settings;
 pub mod transition;
 
 pub use attack_preview::AttackPreviewScreen;
+pub use catalogue::CatalogueScreen;
 pub use demo::DemoScreen;
 pub use fight::FightScreen;
 pub use map::MapScreen;

@@ -253,7 +253,7 @@ pub struct Particle {
     pub kind: ParticleKind,
 }
 
-fn trail_for(kind: AnimationKind, element: Element) -> Option<ParticleKind> {
+pub fn trail_for(kind: AnimationKind, element: Element) -> Option<ParticleKind> {
     if !matches!(kind, AnimationKind::Jump | AnimationKind::Dash) {
         return None;
     }
@@ -269,7 +269,7 @@ fn trail_for(kind: AnimationKind, element: Element) -> Option<ParticleKind> {
     }
 }
 
-fn impact_for(kind: AnimationKind, element: Element, effect: &Effect) -> Option<ParticleKind> {
+pub fn impact_for(kind: AnimationKind, element: Element, effect: &Effect) -> Option<ParticleKind> {
     if !matches!(effect, Effect::Damage(_)) {
         return None;
     }
