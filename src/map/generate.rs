@@ -67,7 +67,6 @@ pub fn generate_with<R: Rng>(rng: &mut R) -> MapGraph {
         nodes,
         floors: floor_lists,
         current: None,
-        boss,
     }
 }
 

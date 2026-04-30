@@ -5,7 +5,6 @@ pub struct MapGraph {
     pub nodes: Vec<MapNode>,
     pub floors: Vec<Vec<NodeId>>,
     pub current: Option<NodeId>,
-    pub boss: NodeId,
 }
 
 impl MapGraph {
