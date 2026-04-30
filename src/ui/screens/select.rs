@@ -1,6 +1,6 @@
 use crate::player::Player;
 use crate::ui::screen::{Screen, Transition};
-use crate::ui::screens::{DemoScreen, FightScreen, MapScreen};
+use crate::ui::screens::{AttackPreviewScreen, DemoScreen, FightScreen, MapScreen};
 use crossterm::event::KeyCode;
 use ratatui::{
     layout::{Alignment, Constraint, Direction, Layout, Rect},
@@ -15,16 +15,23 @@ pub enum ScreenKind {
     Fight,
     Map,
     Demo,
+    AttackPreview,
 }
 
 impl ScreenKind {
-    pub const ALL: &'static [ScreenKind] = &[ScreenKind::Fight, ScreenKind::Map, ScreenKind::Demo];
+    pub const ALL: &'static [ScreenKind] = &[
+        ScreenKind::Fight,
+        ScreenKind::Map,
+        ScreenKind::Demo,
+        ScreenKind::AttackPreview,
+    ];
 
     pub fn label(&self) -> &'static str {
         match self {
             ScreenKind::Fight => "Fight Screen",
             ScreenKind::Map => "Map Screen",
             ScreenKind::Demo => "Transition Demo",
+            ScreenKind::AttackPreview => "Attack Preview",
         }
     }
 
@@ -33,6 +40,7 @@ impl ScreenKind {
             ScreenKind::Fight => "Turn-based combat with the crab and an enemy.",
             ScreenKind::Map => "Choose your path across the dungeon floor.",
             ScreenKind::Demo => "Preview every node transition animation.",
+            ScreenKind::AttackPreview => "Browse the attack library and play each animation.",
         }
     }
 
@@ -41,6 +49,7 @@ impl ScreenKind {
             ScreenKind::Fight => Screen::Fight(FightScreen::new(player)),
             ScreenKind::Map => Screen::Map(MapScreen::new()),
             ScreenKind::Demo => Screen::Demo(DemoScreen::new()),
+            ScreenKind::AttackPreview => Screen::AttackPreview(AttackPreviewScreen::new()),
         }
     }
 }
