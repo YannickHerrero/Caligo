@@ -1,6 +1,7 @@
 use crate::crab::Crab;
 use crate::environment::{Environment, GroundStyle};
 use crate::fight::{Action, Animation, Enemy, FightState, MenuState};
+use crate::map::NodeKind;
 use crate::player::Player;
 use crate::ui::screen::{Screen, Transition};
 use crate::ui::screens::{MapScreen, SelectScreen};
@@ -16,8 +17,22 @@ pub struct FightScreen {
     /// The map screen we entered from. `Some` for fights launched from a
     /// real run; `None` for the standalone --debug fight.
     pub map: Option<Box<MapScreen>>,
+    /// Which kind of map node this fight came from. Drives flee
+    /// permissions and reward shape. `None` for standalone --debug fights.
+    pub node_kind: Option<NodeKind>,
+    /// Set to true when the player has triggered an outcome that should
+    /// end the fight on the next update tick (lets the in-flight animation
+    /// finish before the screen hands off).
+    pending_exit: Option<FightOutcome>,
     last_terminal_size: (u16, u16),
     last_action_height: u16,
+}
+
+#[derive(Debug, Clone, Copy)]
+enum FightOutcome {
+    Victory,
+    Defeat,
+    Flee,
 }
 
 impl FightScreen {
@@ -27,6 +42,8 @@ impl FightScreen {
             environment: Environment::generate(80, 15, GroundStyle::default()),
             fight: FightState::from_player(player),
             map: None,
+            node_kind: None,
+            pending_exit: None,
             last_terminal_size: (0, 0),
             last_action_height: 0,
         }
@@ -34,15 +51,29 @@ impl FightScreen {
 
     /// Variant entered from a real map node — the fight carries the map
     /// forward so it can hand control back when the fight ends.
-    pub fn from_map(player: &Player, map: Box<MapScreen>, enemy: Enemy) -> Self {
+    pub fn from_map(
+        player: &Player,
+        map: Box<MapScreen>,
+        enemy: Enemy,
+        node_kind: NodeKind,
+    ) -> Self {
         Self {
             crab: Crab::new((6.0, 100.0), 95),
             environment: Environment::generate(80, 15, GroundStyle::default()),
             fight: FightState::from_player_with_enemy(player, enemy),
             map: Some(map),
+            node_kind: Some(node_kind),
+            pending_exit: None,
             last_terminal_size: (0, 0),
             last_action_height: 0,
         }
+    }
+
+    fn flee_allowed(&self) -> bool {
+        matches!(
+            self.node_kind,
+            None | Some(NodeKind::EasyFight) | Some(NodeKind::NormalFight)
+        )
     }
 
     pub fn handle_key(&mut self, key: KeyCode, _player: &mut Player) -> Transition {
@@ -62,6 +93,11 @@ impl FightScreen {
             KeyCode::Char('q') | KeyCode::Esc => {
                 return self.exit_fight();
             }
+            // Debug: force defeat. Lets the death flow be exercised while
+            // real combat is stubbed.
+            KeyCode::Char('L') => {
+                self.pending_exit = Some(FightOutcome::Defeat);
+            }
             KeyCode::Up | KeyCode::Char('k') => {
                 self.fight.selected_action =
                     (self.fight.selected_action + action_count - 1) % action_count;
@@ -76,7 +112,11 @@ impl FightScreen {
                 Action::Item => {
                     self.fight.menu_state = MenuState::ItemSelect;
                 }
-                Action::Flee => {}
+                Action::Flee => {
+                    if self.flee_allowed() {
+                        self.pending_exit = Some(FightOutcome::Flee);
+                    }
+                }
             },
             _ => {}
         }
@@ -128,6 +168,9 @@ impl FightScreen {
         let target_x = (self.last_terminal_size.0 as f32 - 18.0).max(start_x + 5.0);
         self.fight.animation = Some(Animation::for_attack(attack, start_x, target_x));
         self.fight.menu_state = MenuState::Main;
+        // Stub combat: any attack is treated as a one-shot kill once the
+        // animation finishes. Real combat replaces this in a follow-up.
+        self.pending_exit = Some(FightOutcome::Victory);
     }
 
     fn handle_item_menu(&mut self, key: KeyCode) -> Transition {
@@ -178,7 +221,28 @@ impl FightScreen {
 
         self.environment.update_cycle(dt, 1.0, 1.0);
         self.fight.commit_to_player(player);
+
+        // Wait for any in-flight animation to complete before resolving the
+        // pending outcome so the player sees their attack land.
+        if self.fight.animation.is_none() {
+            if let Some(outcome) = self.pending_exit.take() {
+                return self.resolve_outcome(outcome);
+            }
+        }
         Transition::Stay
+    }
+
+    fn resolve_outcome(&mut self, outcome: FightOutcome) -> Transition {
+        match outcome {
+            // Victory and Flee currently both just return to the carried map.
+            // Phase 7 / 8 will redirect Victory through RewardScreen and
+            // Defeat through GameOverScreen.
+            FightOutcome::Victory | FightOutcome::Flee => self.exit_fight(),
+            FightOutcome::Defeat => {
+                // Stub: same as exit for now until GameOverScreen lands.
+                self.exit_fight()
+            }
+        }
     }
 
     pub fn draw(&mut self, frame: &mut Frame, _player: &Player) {

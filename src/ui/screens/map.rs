@@ -205,18 +205,15 @@ fn build_node_screen(player: &Player, map: Box<MapScreen>, kind: NodeKind) -> Sc
     let mut rng = rand::thread_rng();
     match kind {
         NodeKind::EasyFight | NodeKind::NormalFight | NodeKind::EliteFight | NodeKind::Boss => {
-            let enemy = enemies::pick_for_node(kind, &mut rng).unwrap_or_else(|| {
-                // Fallback should be unreachable for fight kinds, but keep a
-                // safe default so the fight still launches.
-                crate::data::enemies::slime()
-            });
-            Screen::Fight(FightScreen::from_map(player, map, enemy))
+            let enemy = enemies::pick_for_node(kind, &mut rng)
+                .unwrap_or_else(crate::data::enemies::slime);
+            Screen::Fight(FightScreen::from_map(player, map, enemy, kind))
         }
         // Camp / Shop / Mystery don't have placeholder screens yet — for
         // now route them back through a fight so the loop is testable.
         NodeKind::Camp | NodeKind::Shop | NodeKind::Mystery => {
             let enemy = crate::data::enemies::slime();
-            Screen::Fight(FightScreen::from_map(player, map, enemy))
+            Screen::Fight(FightScreen::from_map(player, map, enemy, kind))
         }
     }
 }
