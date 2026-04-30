@@ -181,6 +181,11 @@ impl FightScreen {
             return;
         }
         let attack = self.fight.attacks[idx].clone();
+        if self.fight.player_mana < attack.mana_cost {
+            self.fight.set_message("Not enough mana!", 0.8);
+            return;
+        }
+        self.fight.player_mana -= attack.mana_cost;
         let start_x = self.crab.position.0;
         let target_x = (self.last_terminal_size.0 as f32 - 18.0).max(start_x + 5.0);
         self.fight
