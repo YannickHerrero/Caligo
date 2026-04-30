@@ -8,6 +8,7 @@ Reference for the game's content and systems. Pages are kept in sync with the da
 - [Items](items.md) — consumables, attack stones, and utility items.
 - [Trinkets](trinkets.md) — equippable trinkets and their bonuses.
 - [Enemies](enemies.md) — bestiary of foes encountered on the map.
+- [Starters](starters.md) — the three crabs you can begin a run with.
 - [Settings](settings.md) — theme and other user preferences.
 
 ## Conventions

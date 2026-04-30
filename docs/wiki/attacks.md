@@ -6,11 +6,11 @@ The player begins with **Pinch**, **Bubble**, **Snip**, and **Cosmic Orb** equip
 
 Source of truth: [`src/data/attacks.rs`](../../src/data/attacks.rs).
 
-> **In-game previews:** the home menu has two debug screens. **Attack Preview** plays each attack's animation against a slime dummy. **Catalogue** has three tabs (toggle with `Tab`): *Attacks* (list / projectile + particles / info), *Environments* (each ground style with `← →` cycling time of day), and *Bestiary* (every enemy with sprite, types, weaknesses, and moveset).
+> **In-game previews:** the home menu has two debug screens. **Attack Preview** plays each attack's animation against a slime dummy. **Catalogue** has four tabs (toggle with `Tab`): *Attacks* (list / projectile + particles / info), *Environments* (each ground style with `← →` cycling time of day), *Bestiary* (every enemy with sprite, types, weaknesses, and moveset), and *Starters* (the three crabs you can pick at run start).
 
 ## Types
 
-Caligo borrows Pokémon-style type names. The current set is **Normal, Fire, Water, Ice, Electric, Ground, Flying, Psychic** — eight types. A 2x/1x/0.5x effectiveness chart now lives on `Element::effectiveness_against` — see the [Enemies page](enemies.md#type-effectiveness) for the full table. Combat resolution that consumes the multiplier isn't wired up yet, but the chart drives the Bestiary tab's weakness/resistance display.
+Caligo borrows Pokémon-style type names. The current set is **Normal, Fire, Water, Grass, Ice, Electric, Ground, Flying, Psychic** — nine types. A 2x/1x/0.5x effectiveness chart lives on `Element::effectiveness_against` — see the [Enemies page](enemies.md#type-effectiveness) for the full table. Combat resolution that consumes the multiplier isn't wired up yet, but the chart drives the Bestiary tab's weakness/resistance display.
 
 ## Animation kinds
 
@@ -55,6 +55,7 @@ Particles are used in three places:
 | `Circles` | ● | Blue | `DefenseUp` buffs (Carapace) |
 | `FireSpark` | * | Orange | Fire trail and impact |
 | `WaterDroplet` | . | Blue | Water trail and impact |
+| `GrassLeaf` | v | Green | Grass trail and impact |
 | `IceShard` | + | Cyan | Ice trail and impact |
 | `ElectricSpark` | ' | Yellow | Electric trail and impact |
 | `GroundDust` | , | Brown | Ground trail and impact |
@@ -122,6 +123,16 @@ Balanced. Strong efficiency at low cost; ramps to a top-tier finisher. Includes 
 | Geyser | Jump | DMG 15 | 7 |
 | Tsunami | Throw(Water) | DMG 22 | 12 |
 | Salve | SelfCast | HEAL 6 | 2 |
+
+## Grass
+
+Plant-typed attacks. Currently all melee — no projectile sprites for Grass yet.
+
+| Name | Animation | Effect | Mana |
+|---|---|---|---:|
+| Vine Whip | Dash | DMG 6 | 2 |
+| Leaf Slash | Dash | DMG 11 | 5 |
+| Bramble Trap | Jump | DMG 14 | 6 |
 
 ## Ice
 

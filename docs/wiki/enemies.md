@@ -26,18 +26,19 @@ struct Enemy {
 
 ## Type effectiveness
 
-Eight types: Normal, Fire, Water, Ice, Electric, Ground, Flying, Psychic. Multipliers are 2x, 1x, or 0.5x — Pokémon-shaped, with 0x immunities collapsed to 0.5x to avoid hard locks.
+Nine types: Normal, Fire, Water, Grass, Ice, Electric, Ground, Flying, Psychic. Multipliers are 2x, 1x, or 0.5x — Pokémon-shaped, with 0x immunities collapsed to 0.5x to avoid hard locks.
 
-| Atk \ Def | Normal | Fire | Water | Ice | Electric | Ground | Flying | Psychic |
-|---|---|---|---|---|---|---|---|---|
-| **Normal** | 1× | 1× | 1× | 1× | 1× | 1× | 1× | 1× |
-| **Fire** | 1× | 0.5× | 0.5× | **2×** | 1× | 1× | 1× | 1× |
-| **Water** | 1× | **2×** | 0.5× | 1× | 1× | **2×** | 1× | 1× |
-| **Ice** | 1× | 0.5× | 0.5× | 0.5× | 1× | **2×** | **2×** | 1× |
-| **Electric** | 1× | 1× | **2×** | 1× | 0.5× | 0.5× | **2×** | 1× |
-| **Ground** | 1× | **2×** | 1× | 1× | **2×** | 1× | 0.5× | 1× |
-| **Flying** | 1× | 1× | 1× | 1× | 0.5× | 1× | 1× | 1× |
-| **Psychic** | 1× | 1× | 1× | 1× | 1× | 1× | 1× | 0.5× |
+| Atk \ Def | Normal | Fire | Water | Grass | Ice | Electric | Ground | Flying | Psychic |
+|---|---|---|---|---|---|---|---|---|---|
+| **Normal** | 1× | 1× | 1× | 1× | 1× | 1× | 1× | 1× | 1× |
+| **Fire** | 1× | 0.5× | 0.5× | **2×** | **2×** | 1× | 1× | 1× | 1× |
+| **Water** | 1× | **2×** | 0.5× | 0.5× | 1× | 1× | **2×** | 1× | 1× |
+| **Grass** | 1× | 0.5× | **2×** | 0.5× | 0.5× | 0.5× | **2×** | 0.5× | 1× |
+| **Ice** | 1× | 0.5× | 0.5× | **2×** | 0.5× | 1× | **2×** | **2×** | 1× |
+| **Electric** | 1× | 1× | **2×** | 0.5× | 1× | 0.5× | 0.5× | **2×** | 1× |
+| **Ground** | 1× | **2×** | 1× | 0.5× | 1× | **2×** | 1× | 0.5× | 1× |
+| **Flying** | 1× | 1× | 1× | **2×** | 1× | 0.5× | 1× | 1× | 1× |
+| **Psychic** | 1× | 1× | 1× | 1× | 1× | 1× | 1× | 1× | 0.5× |
 
 Dual-type defenders multiply the per-type multipliers — a Water/Ground enemy hit by Ice gets `2× × 2× = 4×`.
 
