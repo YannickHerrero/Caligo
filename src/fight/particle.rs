@@ -7,6 +7,7 @@ pub enum ParticleKind {
     Circles,
     FireSpark,
     WaterDroplet,
+    GrassLeaf,
     IceShard,
     ElectricSpark,
     GroundDust,
@@ -23,6 +24,7 @@ impl ParticleKind {
             ParticleKind::Circles => "●",
             ParticleKind::FireSpark => "*",
             ParticleKind::WaterDroplet => ".",
+            ParticleKind::GrassLeaf => "v",
             ParticleKind::IceShard => "+",
             ParticleKind::ElectricSpark => "'",
             ParticleKind::GroundDust => ",",
@@ -40,6 +42,10 @@ impl ParticleKind {
             ParticleKind::Circles => Color::Rgb(110, 170, 255),
             ParticleKind::FireSpark => Color::Rgb(255, 140, 60),
             ParticleKind::WaterDroplet => Color::Rgb(100, 180, 255),
+            ParticleKind::GrassLeaf => match theme() {
+                Theme::Dark => Color::Rgb(120, 210, 110),
+                Theme::Light => Color::Rgb(40, 140, 60),
+            },
             ParticleKind::IceShard => match theme() {
                 Theme::Dark => Color::Rgb(150, 220, 240),
                 Theme::Light => Color::Rgb(60, 150, 190),

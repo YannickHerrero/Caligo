@@ -607,6 +607,7 @@ fn type_effectiveness_summary(enemy: &Enemy) -> Vec<(Element, f32)> {
         Element::Normal,
         Element::Fire,
         Element::Water,
+        Element::Grass,
         Element::Ice,
         Element::Electric,
         Element::Ground,

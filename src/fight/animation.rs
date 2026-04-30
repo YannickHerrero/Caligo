@@ -260,6 +260,7 @@ pub fn trail_for(kind: AnimationKind, element: Element) -> Option<ParticleKind> 
     match element {
         Element::Fire => Some(ParticleKind::FireSpark),
         Element::Water => Some(ParticleKind::WaterDroplet),
+        Element::Grass => Some(ParticleKind::GrassLeaf),
         Element::Ice => Some(ParticleKind::IceShard),
         Element::Electric => Some(ParticleKind::ElectricSpark),
         Element::Ground => Some(ParticleKind::GroundDust),
@@ -282,6 +283,7 @@ pub fn impact_for(kind: AnimationKind, element: Element, effect: &Effect) -> Opt
     Some(match element {
         Element::Fire => ParticleKind::FireSpark,
         Element::Water => ParticleKind::WaterDroplet,
+        Element::Grass => ParticleKind::GrassLeaf,
         Element::Ice => ParticleKind::IceShard,
         Element::Electric => ParticleKind::ElectricSpark,
         Element::Ground => ParticleKind::GroundDust,

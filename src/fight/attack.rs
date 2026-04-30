@@ -65,6 +65,7 @@ pub enum Element {
     Normal,
     Fire,
     Water,
+    Grass,
     Ice,
     Electric,
     Ground,
@@ -78,6 +79,7 @@ impl Element {
             Element::Normal => "Normal",
             Element::Fire => "Fire",
             Element::Water => "Water",
+            Element::Grass => "Grass",
             Element::Ice => "Ice",
             Element::Electric => "Electric",
             Element::Ground => "Ground",
@@ -92,6 +94,10 @@ impl Element {
             Element::Normal => Color::Gray,
             Element::Fire => Color::Rgb(255, 140, 60),
             Element::Water => Color::Rgb(100, 180, 255),
+            Element::Grass => match theme() {
+                Theme::Dark => Color::Rgb(120, 210, 110),
+                Theme::Light => Color::Rgb(40, 140, 60),
+            },
             Element::Ice => match theme() {
                 Theme::Dark => Color::Rgb(150, 220, 240),
                 Theme::Light => Color::Rgb(60, 150, 190),
@@ -114,21 +120,29 @@ impl Element {
     pub fn effectiveness_against(self, defender: Element) -> f32 {
         use Element::*;
         match (self, defender) {
-            (Fire, Ice) => 2.0,
+            (Fire, Ice) | (Fire, Grass) => 2.0,
             (Fire, Fire) | (Fire, Water) => 0.5,
 
             (Water, Fire) | (Water, Ground) => 2.0,
-            (Water, Water) => 0.5,
+            (Water, Water) | (Water, Grass) => 0.5,
 
-            (Ice, Ground) | (Ice, Flying) => 2.0,
+            (Grass, Water) | (Grass, Ground) => 2.0,
+            (Grass, Fire)
+            | (Grass, Grass)
+            | (Grass, Ice)
+            | (Grass, Flying)
+            | (Grass, Electric) => 0.5,
+
+            (Ice, Ground) | (Ice, Flying) | (Ice, Grass) => 2.0,
             (Ice, Fire) | (Ice, Water) | (Ice, Ice) => 0.5,
 
             (Electric, Water) | (Electric, Flying) => 2.0,
-            (Electric, Electric) | (Electric, Ground) => 0.5,
+            (Electric, Electric) | (Electric, Ground) | (Electric, Grass) => 0.5,
 
             (Ground, Fire) | (Ground, Electric) => 2.0,
-            (Ground, Flying) => 0.5,
+            (Ground, Flying) | (Ground, Grass) => 0.5,
 
+            (Flying, Grass) => 2.0,
             (Flying, Electric) => 0.5,
 
             (Psychic, Psychic) => 0.5,
