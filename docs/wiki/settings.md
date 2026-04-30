@@ -1,8 +1,28 @@
 # Settings
 
-User preferences that affect rendering and input. Stored in a process-wide `RwLock<Settings>` (no on-disk persistence yet).
+User preferences that affect rendering and input. Held in a process-wide `RwLock<Settings>` and persisted to disk so choices survive between runs.
 
 Source of truth: [`src/settings.rs`](../../src/settings.rs).
+
+## Storage
+
+Settings are read on startup and written every time a setting changes. The file lives at:
+
+- `$XDG_CONFIG_HOME/caligo/settings` if that env var is set.
+- Otherwise `$HOME/.config/caligo/settings`.
+- If neither is set the file is silently skipped — no crash, just no persistence.
+
+Format is one `key=value` line per setting (no TOML/JSON dependency for now):
+
+```
+theme=light
+```
+
+Order of precedence at startup:
+
+1. Default (`Theme::Dark`).
+2. Whatever the config file contains.
+3. `CALIGO_THEME=light|dark` env var, applied last and **not written back** — useful for one-off launches without changing the saved choice.
 
 ## Theme
 
