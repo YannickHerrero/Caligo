@@ -15,21 +15,26 @@ const CRAB_HALF_WIDTH: f32 = 11.0;
 const CRAB_HALF_HEIGHT: f32 = 1.5;
 const TRAIL_SAMPLES: usize = 6;
 const TRAIL_STEP: f32 = 0.06;
+const IMPACT_DURATION: f32 = 1.0;
+const IMPACT_PARTICLE_COUNT: usize = 8;
+const IMPACT_PARTICLE_LIFE: f32 = 0.45;
 
 #[derive(Debug, Clone)]
 pub struct Animation {
     pub kind: AnimationKind,
     pub projectile_size: ProjectileSize,
     pub trail: Option<ParticleKind>,
+    pub impact: Option<ParticleKind>,
     pub start_x: f32,
     pub target_x: f32,
     pub elapsed: f32,
-    pub duration: f32,
+    pub move_duration: f32,
+    pub total_duration: f32,
 }
 
 impl Animation {
     pub fn new(kind: AnimationKind, start_x: f32, target_x: f32) -> Self {
-        Self::build(kind, ProjectileSize::Small, None, start_x, target_x)
+        Self::build(kind, ProjectileSize::Small, None, None, start_x, target_x)
     }
 
     pub fn for_attack(attack: &Attack, start_x: f32, target_x: f32) -> Self {
@@ -38,30 +43,40 @@ impl Animation {
             _ => ProjectileSize::Small,
         };
         let trail = trail_for(attack.kind, attack.element);
-        Self::build(attack.kind, size, trail, start_x, target_x)
+        let impact = impact_for(attack.kind, attack.element, &attack.effect);
+        Self::build(attack.kind, size, trail, impact, start_x, target_x)
     }
 
     fn build(
         kind: AnimationKind,
         projectile_size: ProjectileSize,
         trail: Option<ParticleKind>,
+        impact: Option<ParticleKind>,
         start_x: f32,
         target_x: f32,
     ) -> Self {
-        let duration = match kind {
+        let move_duration = match kind {
             AnimationKind::Jump => JUMP_DURATION,
             AnimationKind::Dash => DASH_DURATION,
             AnimationKind::Throw(_) => THROW_DURATION,
             AnimationKind::SelfCast(_) => SELF_CAST_DURATION,
         };
+        let mut total_duration = move_duration;
+        if impact.is_some() {
+            if let Some(start) = impact_start_t(kind, move_duration) {
+                total_duration = total_duration.max(start + IMPACT_DURATION);
+            }
+        }
         Self {
             kind,
             projectile_size,
             trail,
+            impact,
             start_x,
             target_x,
             elapsed: 0.0,
-            duration,
+            move_duration,
+            total_duration,
         }
     }
 
@@ -70,11 +85,11 @@ impl Animation {
     }
 
     pub fn is_done(&self) -> bool {
-        self.elapsed >= self.duration
+        self.elapsed >= self.total_duration
     }
 
     pub fn progress(&self) -> f32 {
-        (self.elapsed / self.duration).clamp(0.0, 1.0)
+        (self.elapsed / self.move_duration).clamp(0.0, 1.0)
     }
 
     pub fn crab_position(&self, base: (f32, f32)) -> (f32, f32) {
@@ -128,11 +143,14 @@ impl Animation {
     }
 
     pub fn particles(&self, base: (f32, f32)) -> Vec<Particle> {
+        let mut out = Vec::new();
         match self.kind {
-            AnimationKind::SelfCast(_) => self.aura_particles(base),
-            AnimationKind::Jump | AnimationKind::Dash => self.trail_particles(base),
-            _ => Vec::new(),
+            AnimationKind::SelfCast(_) => out.extend(self.aura_particles(base)),
+            AnimationKind::Jump | AnimationKind::Dash => out.extend(self.trail_particles(base)),
+            _ => {}
         }
+        out.extend(self.impact_particles(base));
+        out
     }
 
     fn aura_particles(&self, base: (f32, f32)) -> Vec<Particle> {
@@ -142,7 +160,7 @@ impl Animation {
         };
         let center_x = self.start_x + CRAB_HALF_WIDTH;
         let center_y = base.1 + CRAB_HALF_HEIGHT;
-        let stagger_window = (self.duration - PARTICLE_LIFE).max(0.0);
+        let stagger_window = (self.move_duration - PARTICLE_LIFE).max(0.0);
         let mut out = Vec::with_capacity(PARTICLE_COUNT);
         for i in 0..PARTICLE_COUNT {
             let spawn_t = (i as f32 / PARTICLE_COUNT as f32) * stagger_window;
@@ -157,6 +175,39 @@ impl Animation {
             let drift_up = progress * 2.5;
             let x = center_x + radius_h * angle.cos();
             let y = center_y + radius_v * angle.sin() - drift_up;
+            out.push(Particle { x, y, kind });
+        }
+        out
+    }
+
+    fn impact_particles(&self, base: (f32, f32)) -> Vec<Particle> {
+        let kind = match self.impact {
+            Some(k) => k,
+            None => return Vec::new(),
+        };
+        let start = match impact_start_t(self.kind, self.move_duration) {
+            Some(t) => t,
+            None => return Vec::new(),
+        };
+        let age = self.elapsed - start;
+        if age < 0.0 || age > IMPACT_DURATION {
+            return Vec::new();
+        }
+        let center_x = self.target_x + 6.0;
+        let center_y = base.1 + 2.0;
+        let stagger = (IMPACT_DURATION - IMPACT_PARTICLE_LIFE).max(0.0);
+        let mut out = Vec::with_capacity(IMPACT_PARTICLE_COUNT);
+        for i in 0..IMPACT_PARTICLE_COUNT {
+            let spawn_t = (i as f32 / IMPACT_PARTICLE_COUNT as f32) * stagger;
+            let p_age = age - spawn_t;
+            if p_age < 0.0 || p_age > IMPACT_PARTICLE_LIFE {
+                continue;
+            }
+            let p_progress = p_age / IMPACT_PARTICLE_LIFE;
+            let angle = (i as f32 * 137.5 + 30.0).to_radians();
+            let radius = 1.0 + p_progress * 2.5;
+            let x = center_x + radius * angle.cos();
+            let y = center_y + radius * angle.sin() * 0.6 - p_progress * 1.5;
             out.push(Particle { x, y, kind });
         }
         out
@@ -209,5 +260,32 @@ fn trail_for(kind: AnimationKind, element: Element) -> Option<ParticleKind> {
         Element::Earth => Some(ParticleKind::EarthDust),
         Element::Air => Some(ParticleKind::AirWisp),
         Element::Neutral => None,
+    }
+}
+
+fn impact_for(kind: AnimationKind, element: Element, effect: &Effect) -> Option<ParticleKind> {
+    if !matches!(effect, Effect::Damage(_)) {
+        return None;
+    }
+    if !matches!(
+        kind,
+        AnimationKind::Jump | AnimationKind::Dash | AnimationKind::Throw(_)
+    ) {
+        return None;
+    }
+    Some(match element {
+        Element::Fire => ParticleKind::FireSpark,
+        Element::Water => ParticleKind::WaterDroplet,
+        Element::Earth => ParticleKind::EarthDust,
+        Element::Air => ParticleKind::AirWisp,
+        Element::Neutral => ParticleKind::NeutralHit,
+    })
+}
+
+fn impact_start_t(kind: AnimationKind, move_duration: f32) -> Option<f32> {
+    match kind {
+        AnimationKind::Jump | AnimationKind::Dash => Some(move_duration * 0.5),
+        AnimationKind::Throw(_) => Some(move_duration),
+        AnimationKind::SelfCast(_) => None,
     }
 }
