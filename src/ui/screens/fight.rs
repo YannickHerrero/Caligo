@@ -4,7 +4,8 @@ use crate::fight::{Action, Animation, Enemy, FightState, MenuState};
 use crate::map::NodeKind;
 use crate::player::Player;
 use crate::ui::screen::{Screen, Transition};
-use crate::ui::screens::{MapScreen, SelectScreen};
+use crate::ui::screens::reward::{apply_rewards, roll_rewards};
+use crate::ui::screens::{MapScreen, RewardScreen, SelectScreen};
 use crate::ui::widgets;
 use crossterm::event::KeyCode;
 use ratatui::layout::{Constraint, Direction, Layout};
@@ -226,23 +227,32 @@ impl FightScreen {
         // pending outcome so the player sees their attack land.
         if self.fight.animation.is_none() {
             if let Some(outcome) = self.pending_exit.take() {
-                return self.resolve_outcome(outcome);
+                return self.resolve_outcome(outcome, player);
             }
         }
         Transition::Stay
     }
 
-    fn resolve_outcome(&mut self, outcome: FightOutcome) -> Transition {
+    fn resolve_outcome(&mut self, outcome: FightOutcome, player: &mut Player) -> Transition {
         match outcome {
-            // Victory and Flee currently both just return to the carried map.
-            // Phase 7 / 8 will redirect Victory through RewardScreen and
-            // Defeat through GameOverScreen.
-            FightOutcome::Victory | FightOutcome::Flee => self.exit_fight(),
+            FightOutcome::Victory => self.victory(player),
+            FightOutcome::Flee => self.exit_fight(),
             FightOutcome::Defeat => {
-                // Stub: same as exit for now until GameOverScreen lands.
+                // Stub: same as flee for now until GameOverScreen lands.
                 self.exit_fight()
             }
         }
+    }
+
+    fn victory(&mut self, player: &mut Player) -> Transition {
+        let (Some(map), Some(kind)) = (self.map.take(), self.node_kind) else {
+            // Standalone fight without a run — nothing to reward.
+            return self.exit_fight();
+        };
+        let mut rng = rand::thread_rng();
+        let (gold, items) = roll_rewards(kind, &mut rng);
+        apply_rewards(player, gold, &items);
+        Transition::Goto(Screen::Reward(RewardScreen::new(map, gold, items, kind)))
     }
 
     pub fn draw(&mut self, frame: &mut Frame, _player: &Player) {

@@ -1,7 +1,7 @@
 use crate::player::Player;
 use crate::ui::screens::{
     AttackPreviewScreen, CatalogueScreen, DemoScreen, FightScreen, MapScreen, PlayerInfoScreen,
-    SelectScreen, SettingsScreen, StartScreen, StarterSelectScreen, TransitionScreen,
+    RewardScreen, SelectScreen, SettingsScreen, StartScreen, StarterSelectScreen, TransitionScreen,
 };
 use crossterm::event::KeyCode;
 use ratatui::Frame;
@@ -18,6 +18,7 @@ pub enum Screen {
     AttackPreview(AttackPreviewScreen),
     Settings(SettingsScreen),
     Catalogue(CatalogueScreen),
+    Reward(RewardScreen),
 }
 
 pub enum Transition {
@@ -40,6 +41,7 @@ impl Screen {
             Screen::AttackPreview(s) => s.handle_key(key, player),
             Screen::Settings(s) => s.handle_key(key, player),
             Screen::Catalogue(s) => s.handle_key(key, player),
+            Screen::Reward(s) => s.handle_key(key, player),
         }
     }
 
@@ -56,6 +58,7 @@ impl Screen {
             Screen::AttackPreview(s) => s.update(player),
             Screen::Settings(s) => s.update(player),
             Screen::Catalogue(s) => s.update(player),
+            Screen::Reward(s) => s.update(player),
         }
     }
 
@@ -72,6 +75,7 @@ impl Screen {
             Screen::AttackPreview(s) => s.draw(frame, player),
             Screen::Settings(s) => s.draw(frame, player),
             Screen::Catalogue(s) => s.draw(frame, player),
+            Screen::Reward(s) => s.draw(frame, player),
         }
     }
 }
