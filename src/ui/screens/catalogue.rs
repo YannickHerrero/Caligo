@@ -1,4 +1,5 @@
 use crate::data::attacks as attack_lib;
+use crate::environment::{Environment, GroundStyle, TimeOfDay};
 use crate::fight::{
     impact_for, trail_for, AnimationKind, Attack, Effect, ParticleKind, ProjectileKind,
     ProjectileSize,
@@ -6,6 +7,7 @@ use crate::fight::{
 use crate::player::Player;
 use crate::ui::screen::{Screen, Transition};
 use crate::ui::screens::SelectScreen;
+use crate::ui::widgets;
 use crossterm::event::KeyCode;
 use ratatui::{
     layout::{Alignment, Constraint, Direction, Layout, Rect},
@@ -109,33 +111,198 @@ impl AttacksTab {
     }
 }
 
-struct EnvironmentsTab;
+struct EnvEntry {
+    style: GroundStyle,
+    time: TimeOfDay,
+    label: String,
+}
+
+struct EnvironmentsTab {
+    entries: Vec<EnvEntry>,
+    selected: usize,
+    scroll: usize,
+    last_list_height: u16,
+    cached: Option<Environment>,
+    cached_for: Option<usize>,
+    cached_size: (u16, u16),
+}
 
 impl EnvironmentsTab {
     fn new() -> Self {
-        Self
+        let mut entries = Vec::with_capacity(GroundStyle::ALL.len() * TimeOfDay::ALL.len());
+        for &style in GroundStyle::ALL {
+            for &time in TimeOfDay::ALL {
+                entries.push(EnvEntry {
+                    style,
+                    time,
+                    label: format!("{} — {}", style.label(), time.label()),
+                });
+            }
+        }
+        Self {
+            entries,
+            selected: 0,
+            scroll: 0,
+            last_list_height: 0,
+            cached: None,
+            cached_for: None,
+            cached_size: (0, 0),
+        }
     }
 
-    fn handle_key(&mut self, _key: KeyCode) {}
+    fn handle_key(&mut self, key: KeyCode) {
+        let len = self.entries.len();
+        match key {
+            KeyCode::Up | KeyCode::Char('k') => {
+                if self.selected > 0 {
+                    self.selected -= 1;
+                    if self.selected < self.scroll {
+                        self.scroll = self.selected;
+                    }
+                }
+            }
+            KeyCode::Down | KeyCode::Char('j') => {
+                if self.selected + 1 < len {
+                    self.selected += 1;
+                    let visible = self.last_list_height as usize;
+                    if visible > 0 && self.selected >= self.scroll + visible {
+                        self.scroll = self.selected + 1 - visible;
+                    }
+                }
+            }
+            _ => {}
+        }
+    }
+
+    fn update(&mut self) {
+        if let Some(env) = self.cached.as_mut() {
+            // Freeze time, drift clouds.
+            env.update_cycle(0.05, 0.0, 1.0);
+        }
+    }
 
     fn draw(&mut self, frame: &mut Frame, area: Rect) {
-        let block = Block::default()
-            .borders(Borders::ALL)
-            .border_style(Style::default().fg(Color::DarkGray))
-            .title(Span::styled(
-                " Environments ",
-                Style::default()
-                    .fg(Color::Yellow)
-                    .add_modifier(Modifier::BOLD),
-            ));
-        let inner = block.inner(area);
-        frame.render_widget(block, area);
-        let line = Line::from(Span::styled(
-            "(coming soon)",
-            Style::default().fg(Color::DarkGray),
-        ));
-        frame.render_widget(Paragraph::new(line).alignment(Alignment::Center), inner);
+        let chunks = Layout::default()
+            .direction(Direction::Vertical)
+            .constraints([Constraint::Percentage(67), Constraint::Percentage(33)])
+            .split(area);
+        let visual_area = chunks[0];
+        let list_area = chunks[1];
+
+        self.refresh_cache(visual_area);
+        render_env_visual(frame, self.cached.as_ref(), self.entries.get(self.selected), visual_area);
+
+        self.last_list_height = list_area.height.saturating_sub(2);
+        render_env_list(
+            frame,
+            &self.entries,
+            self.selected,
+            self.scroll,
+            list_area,
+        );
     }
+
+    fn refresh_cache(&mut self, visual_area: Rect) {
+        let block_inner_size = (
+            visual_area.width.saturating_sub(2),
+            visual_area.height.saturating_sub(2),
+        );
+        if block_inner_size.0 == 0 || block_inner_size.1 == 0 {
+            return;
+        }
+        let needs_rebuild = self.cached.is_none()
+            || self.cached_for != Some(self.selected)
+            || self.cached_size != block_inner_size;
+        if !needs_rebuild {
+            return;
+        }
+        let Some(entry) = self.entries.get(self.selected) else {
+            return;
+        };
+        self.cached = Some(Environment::generate_at(
+            block_inner_size.0,
+            block_inner_size.1,
+            entry.style,
+            entry.time,
+        ));
+        self.cached_for = Some(self.selected);
+        self.cached_size = block_inner_size;
+    }
+}
+
+fn render_env_visual(
+    frame: &mut Frame,
+    env: Option<&Environment>,
+    entry: Option<&EnvEntry>,
+    area: Rect,
+) {
+    let title = entry
+        .map(|e| format!(" {} ", e.label))
+        .unwrap_or_else(|| " Environment ".to_string());
+    let block = Block::default()
+        .borders(Borders::ALL)
+        .border_style(Style::default().fg(Color::DarkGray))
+        .title(Span::styled(
+            title,
+            Style::default()
+                .fg(Color::Yellow)
+                .add_modifier(Modifier::BOLD),
+        ));
+    let inner = block.inner(area);
+    frame.render_widget(block, area);
+    let Some(env) = env else {
+        return;
+    };
+    if inner.width == 0 || inner.height == 0 {
+        return;
+    }
+    widgets::render_environment_background(frame, env, inner);
+    widgets::render_ground(frame, env, inner);
+}
+
+fn render_env_list(
+    frame: &mut Frame,
+    entries: &[EnvEntry],
+    selected: usize,
+    scroll: usize,
+    area: Rect,
+) {
+    let block = Block::default()
+        .borders(Borders::ALL)
+        .border_style(Style::default().fg(Color::DarkGray))
+        .title(Span::styled(
+            " Environments ",
+            Style::default()
+                .fg(Color::Yellow)
+                .add_modifier(Modifier::BOLD),
+        ));
+    let inner = block.inner(area);
+    frame.render_widget(block, area);
+
+    let visible = inner.height as usize;
+    if visible == 0 {
+        return;
+    }
+    let end = (scroll + visible).min(entries.len());
+
+    let mut lines: Vec<Line> = Vec::with_capacity(end - scroll);
+    for (offset, entry) in entries[scroll..end].iter().enumerate() {
+        let idx = scroll + offset;
+        let is_selected = idx == selected;
+        let cursor = if is_selected { "▶ " } else { "  " };
+        let style = if is_selected {
+            Style::default()
+                .fg(Color::Yellow)
+                .add_modifier(Modifier::BOLD)
+        } else {
+            Style::default().fg(Color::Gray)
+        };
+        lines.push(Line::from(vec![
+            Span::styled(cursor, style),
+            Span::styled(entry.label.clone(), style),
+        ]));
+    }
+    frame.render_widget(Paragraph::new(lines), inner);
 }
 
 pub struct CatalogueScreen {
@@ -172,6 +339,9 @@ impl CatalogueScreen {
     }
 
     pub fn update(&mut self, _player: &mut Player) -> Transition {
+        if self.tab == CatalogueTab::Environments {
+            self.environments.update();
+        }
         Transition::Stay
     }
 

@@ -13,6 +13,13 @@ pub enum TimeOfDay {
 }
 
 impl TimeOfDay {
+    pub const ALL: &'static [TimeOfDay] = &[
+        TimeOfDay::Morning,
+        TimeOfDay::Day,
+        TimeOfDay::Evening,
+        TimeOfDay::Night,
+    ];
+
     pub fn from_phase(phase: f32) -> Self {
         if phase < 0.2 {
             TimeOfDay::Morning
@@ -22,6 +29,24 @@ impl TimeOfDay {
             TimeOfDay::Evening
         } else {
             TimeOfDay::Night
+        }
+    }
+
+    pub fn label(&self) -> &'static str {
+        match self {
+            TimeOfDay::Morning => "Morning",
+            TimeOfDay::Day => "Day",
+            TimeOfDay::Evening => "Evening",
+            TimeOfDay::Night => "Night",
+        }
+    }
+
+    pub fn canonical_phase(&self) -> f32 {
+        match self {
+            TimeOfDay::Morning => 0.1,
+            TimeOfDay::Day => 0.3,
+            TimeOfDay::Evening => 0.475,
+            TimeOfDay::Night => 0.7,
         }
     }
 }
@@ -36,12 +61,28 @@ pub enum GroundStyle {
 }
 
 impl GroundStyle {
+    pub const ALL: &'static [GroundStyle] = &[
+        GroundStyle::Beach,
+        GroundStyle::Garden,
+        GroundStyle::Rocky,
+        GroundStyle::Minimal,
+    ];
+
     pub fn ground_chunks(&self) -> &'static [&'static str] {
         match self {
             GroundStyle::Beach => elements::BEACH_CHUNKS,
             GroundStyle::Garden => elements::GARDEN_CHUNKS,
             GroundStyle::Rocky => elements::ROCKY_CHUNKS,
             GroundStyle::Minimal => elements::MINIMAL_CHUNKS,
+        }
+    }
+
+    pub fn label(&self) -> &'static str {
+        match self {
+            GroundStyle::Beach => "Beach",
+            GroundStyle::Garden => "Garden",
+            GroundStyle::Rocky => "Rocky",
+            GroundStyle::Minimal => "Minimal",
         }
     }
 }
@@ -77,6 +118,19 @@ pub struct Environment {
 }
 
 impl Environment {
+    pub fn generate_at(width: u16, height: u16, style: GroundStyle, time: TimeOfDay) -> Self {
+        let mut env = Self::generate(width, height, style);
+        env.cycle_phase = time.canonical_phase();
+        env.time_of_day = time;
+        env.stars = if time == TimeOfDay::Night {
+            let mut rng = rand::thread_rng();
+            Self::generate_stars(width, height, &mut rng)
+        } else {
+            Vec::new()
+        };
+        env
+    }
+
     pub fn generate(width: u16, height: u16, style: GroundStyle) -> Self {
         let mut rng = rand::thread_rng();
         let cycle_duration = Duration::from_secs(18 * 60);
