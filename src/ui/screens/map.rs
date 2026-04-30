@@ -4,12 +4,15 @@ use crate::player::Player;
 use crate::run::Run;
 use crate::ui::screen::{Screen, Transition};
 use crate::ui::screens::{
-    FightScreen, PlaceholderNodeScreen, PlayerInfoScreen, SelectScreen, TransitionKind,
-    TransitionScreen,
+    FightScreen, PlaceholderNodeScreen, PlayerInfoScreen, SelectScreen, StartScreen,
+    TransitionKind, TransitionScreen,
 };
 use crate::ui::widgets;
 use crossterm::event::KeyCode;
-use ratatui::layout::{Constraint, Direction, Layout};
+use ratatui::layout::{Constraint, Direction, Layout, Rect};
+use ratatui::style::{Color, Modifier, Style};
+use ratatui::text::{Line, Span};
+use ratatui::widgets::{Block, Borders, Paragraph};
 use ratatui::Frame;
 
 const SCROLL_STEP: i32 = 3;
@@ -18,11 +21,22 @@ const SCROLL_STEP: i32 = 3;
 pub enum MapMenuState {
     Browsing,
     Confirming,
+    Abandoning,
+}
+
+/// Where the MapScreen returns to when the player abandons. Real runs
+/// hand control back to the start menu; debug-mode visits return to the
+/// SelectScreen test harness.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum MapOrigin {
+    Run,
+    DebugSelect,
 }
 
 #[derive(Clone)]
 pub struct MapScreen {
     pub run: Run,
+    pub origin: MapOrigin,
     pub cursor: Option<NodeId>,
     pub tick: u32,
     pub menu_state: MapMenuState,
@@ -36,13 +50,18 @@ impl MapScreen {
         // Falls back to the first starter so the screen is functional in
         // isolation.
         let starter = starters::all_starters().remove(0);
-        Self::with_run(Run::new(starter, map::generate()))
+        Self::with_run_and_origin(Run::new(starter, map::generate()), MapOrigin::DebugSelect)
     }
 
     pub fn with_run(run: Run) -> Self {
+        Self::with_run_and_origin(run, MapOrigin::Run)
+    }
+
+    fn with_run_and_origin(run: Run, origin: MapOrigin) -> Self {
         let cursor = pick_default_cursor(&run.map);
         Self {
             run,
+            origin,
             cursor,
             tick: 0,
             menu_state: MapMenuState::Browsing,
@@ -59,13 +78,15 @@ impl MapScreen {
         match self.menu_state {
             MapMenuState::Browsing => self.handle_browsing(key),
             MapMenuState::Confirming => self.handle_confirming(key, player),
+            MapMenuState::Abandoning => self.handle_abandoning(key),
         }
     }
 
     fn handle_browsing(&mut self, key: KeyCode) -> Transition {
         match key {
             KeyCode::Char('q') | KeyCode::Esc => {
-                return Transition::Goto(Screen::Select(SelectScreen::new()));
+                self.menu_state = MapMenuState::Abandoning;
+                return Transition::Stay;
             }
             KeyCode::Left | KeyCode::Char('h') => {
                 self.move_cursor(-1);
@@ -121,6 +142,24 @@ impl MapScreen {
                     TransitionKind::from(kind),
                 );
                 Transition::Goto(Screen::Transition(transition))
+            }
+            _ => Transition::Stay,
+        }
+    }
+
+    fn handle_abandoning(&mut self, key: KeyCode) -> Transition {
+        match key {
+            KeyCode::Char('y') | KeyCode::Char('Y') | KeyCode::Enter => match self.origin {
+                MapOrigin::Run => Transition::Goto(Screen::Start(StartScreen::new())),
+                MapOrigin::DebugSelect => Transition::Goto(Screen::Select(SelectScreen::new())),
+            },
+            KeyCode::Char('n')
+            | KeyCode::Char('N')
+            | KeyCode::Esc
+            | KeyCode::Backspace
+            | KeyCode::Char('q') => {
+                self.menu_state = MapMenuState::Browsing;
+                Transition::Stay
             }
             _ => Transition::Stay,
         }
@@ -199,7 +238,75 @@ impl MapScreen {
                 widgets::render_map_confirm(frame, self.run.map.node(id), area);
             }
         }
+        if self.menu_state == MapMenuState::Abandoning {
+            render_abandon_popup(frame, self.origin, area);
+        }
     }
+}
+
+fn render_abandon_popup(frame: &mut Frame, origin: MapOrigin, area: Rect) {
+    let popup_w: u16 = 44.min(area.width.saturating_sub(4)).max(20);
+    let popup_h: u16 = 7.min(area.height.saturating_sub(2)).max(5);
+    if popup_w < 20 || popup_h < 5 {
+        return;
+    }
+    let popup = Rect {
+        x: area.x + (area.width.saturating_sub(popup_w)) / 2,
+        y: area.y + (area.height.saturating_sub(popup_h)) / 2,
+        width: popup_w,
+        height: popup_h,
+    };
+
+    let block = Block::default()
+        .borders(Borders::ALL)
+        .border_style(Style::default().fg(Color::Rgb(220, 80, 80)))
+        .title(Span::styled(
+            " Abandon? ",
+            Style::default()
+                .fg(Color::Rgb(220, 80, 80))
+                .add_modifier(Modifier::BOLD),
+        ));
+    let inner = block.inner(popup);
+    frame.render_widget(block, popup);
+    if inner.height == 0 {
+        return;
+    }
+
+    let body_text = match origin {
+        MapOrigin::Run => "End the run? Progress will be lost.",
+        MapOrigin::DebugSelect => "Leave the map?",
+    };
+
+    let chunks = Layout::default()
+        .direction(Direction::Vertical)
+        .constraints([Constraint::Length(2), Constraint::Min(1), Constraint::Length(1)])
+        .split(inner);
+
+    frame.render_widget(
+        Paragraph::new(Line::from(Span::styled(
+            body_text,
+            Style::default().fg(Color::Gray),
+        )))
+        .alignment(ratatui::layout::Alignment::Center),
+        chunks[0],
+    );
+
+    let key = Style::default().fg(Color::Yellow);
+    let dim = Style::default().fg(Color::DarkGray);
+    let prompt = Line::from(vec![
+        Span::styled("Y", key),
+        Span::styled(" / ", dim),
+        Span::styled("Enter", key),
+        Span::styled("  abandon   ", dim),
+        Span::styled("N", key),
+        Span::styled(" / ", dim),
+        Span::styled("Esc", key),
+        Span::styled("  cancel", dim),
+    ]);
+    frame.render_widget(
+        Paragraph::new(prompt).alignment(ratatui::layout::Alignment::Center),
+        chunks[2],
+    );
 }
 
 fn build_node_screen(player: &mut Player, map: Box<MapScreen>, kind: NodeKind) -> Screen {
