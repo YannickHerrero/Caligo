@@ -13,7 +13,7 @@ Source of truth: [`src/data/attacks.rs`](../../src/data/attacks.rs).
 | `Dash` | Crab slides in, strikes, slides back. Typically physical and cheap. |
 | `Jump` | Crab arcs onto the target. Heavier hits, often higher cost. |
 | `Throw(kind)` | Crab launches a projectile of the given kind in an arc. |
-| `SelfCast` | Crab hops in place. Used for self-targeting healing and buffs. |
+| `SelfCast(particle)` | Crab hops in place while particles drift outward and upward around it. Used for self-targeting healing and buffs. |
 
 ## Projectile kinds
 
@@ -23,6 +23,16 @@ Source of truth: [`src/data/attacks.rs`](../../src/data/attacks.rs).
 | `Fire` | 2×2 flame | Orange |
 | `Electric` | 1×3 bolt | Yellow |
 | `EnergyBall` | 3×3 orb | Purple |
+
+## Particle kinds
+
+Used by `SelfCast`. Each support attack picks the particle that matches its effect.
+
+| Kind | Glyph | Color | Used by |
+|---|---|---|---|
+| `Hearts` | ♥ | Pink | All `Heal` attacks (Salve, Mend, First Aid, Greater Mend) |
+| `Triangles` | ▲ | Red | `AttackUp` buffs (Sharpen) |
+| `Circles` | ● | Blue | `DefenseUp` buffs (Carapace) |
 
 ## Effect kinds
 
