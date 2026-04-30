@@ -28,6 +28,8 @@ impl Player {
         let inventory = vec![
             ItemStack::new(Item::HpPotion(PotionSize::Small), 2),
             ItemStack::new(Item::HpPotion(PotionSize::Large), 1),
+            ItemStack::new(Item::ManaPotion(PotionSize::Small), 2),
+            ItemStack::new(Item::ManaPotion(PotionSize::Large), 1),
         ];
 
         Self {
