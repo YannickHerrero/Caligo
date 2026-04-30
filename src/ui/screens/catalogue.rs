@@ -15,15 +15,37 @@ use ratatui::{
     Frame,
 };
 
-pub struct CatalogueScreen {
-    pub attacks: Vec<Attack>,
-    pub selected: usize,
-    pub scroll: usize,
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum CatalogueTab {
+    Attacks,
+    Environments,
+}
+
+impl CatalogueTab {
+    const ALL: &'static [CatalogueTab] = &[CatalogueTab::Attacks, CatalogueTab::Environments];
+
+    fn label(&self) -> &'static str {
+        match self {
+            CatalogueTab::Attacks => "Attacks",
+            CatalogueTab::Environments => "Environments",
+        }
+    }
+
+    fn next(&self) -> Self {
+        let idx = Self::ALL.iter().position(|t| t == self).unwrap_or(0);
+        Self::ALL[(idx + 1) % Self::ALL.len()]
+    }
+}
+
+struct AttacksTab {
+    attacks: Vec<Attack>,
+    selected: usize,
+    scroll: usize,
     last_list_height: u16,
 }
 
-impl CatalogueScreen {
-    pub fn new() -> Self {
+impl AttacksTab {
+    fn new() -> Self {
         Self {
             attacks: attack_lib::all_attacks(),
             selected: 0,
@@ -32,12 +54,9 @@ impl CatalogueScreen {
         }
     }
 
-    pub fn handle_key(&mut self, key: KeyCode, _player: &mut Player) -> Transition {
+    fn handle_key(&mut self, key: KeyCode) {
         let len = self.attacks.len();
         match key {
-            KeyCode::Char('q') | KeyCode::Esc => {
-                Transition::Goto(Screen::Select(SelectScreen::new()))
-            }
             KeyCode::Up | KeyCode::Char('k') => {
                 if self.selected > 0 {
                     self.selected -= 1;
@@ -45,7 +64,6 @@ impl CatalogueScreen {
                         self.scroll = self.selected;
                     }
                 }
-                Transition::Stay
             }
             KeyCode::Down | KeyCode::Char('j') => {
                 if self.selected + 1 < len {
@@ -55,34 +73,16 @@ impl CatalogueScreen {
                         self.scroll = self.selected + 1 - visible;
                     }
                 }
-                Transition::Stay
             }
-            _ => Transition::Stay,
+            _ => {}
         }
     }
 
-    pub fn update(&mut self, _player: &mut Player) -> Transition {
-        Transition::Stay
-    }
-
-    pub fn draw(&mut self, frame: &mut Frame, _player: &Player) {
-        let area = frame.area();
-        let v_chunks = Layout::default()
-            .direction(Direction::Vertical)
-            .constraints([
-                Constraint::Length(1),
-                Constraint::Min(8),
-                Constraint::Length(1),
-            ])
-            .split(area);
-        let header_area = v_chunks[0];
-        let main_area = v_chunks[1];
-        let hint_area = v_chunks[2];
-
+    fn draw(&mut self, frame: &mut Frame, area: Rect) {
         let main_chunks = Layout::default()
             .direction(Direction::Horizontal)
             .constraints([Constraint::Percentage(33), Constraint::Percentage(67)])
-            .split(main_area);
+            .split(area);
         let list_area = main_chunks[0];
         let right_area = main_chunks[1];
 
@@ -92,8 +92,6 @@ impl CatalogueScreen {
             .split(right_area);
         let visuals_area = right_chunks[0];
         let info_area = right_chunks[1];
-
-        render_header(frame, header_area);
 
         self.last_list_height = list_area.height.saturating_sub(2);
         render_list(
@@ -108,9 +106,128 @@ impl CatalogueScreen {
             render_visuals(frame, attack, visuals_area);
             render_info(frame, attack, info_area);
         }
+    }
+}
+
+struct EnvironmentsTab;
+
+impl EnvironmentsTab {
+    fn new() -> Self {
+        Self
+    }
+
+    fn handle_key(&mut self, _key: KeyCode) {}
+
+    fn draw(&mut self, frame: &mut Frame, area: Rect) {
+        let block = Block::default()
+            .borders(Borders::ALL)
+            .border_style(Style::default().fg(Color::DarkGray))
+            .title(Span::styled(
+                " Environments ",
+                Style::default()
+                    .fg(Color::Yellow)
+                    .add_modifier(Modifier::BOLD),
+            ));
+        let inner = block.inner(area);
+        frame.render_widget(block, area);
+        let line = Line::from(Span::styled(
+            "(coming soon)",
+            Style::default().fg(Color::DarkGray),
+        ));
+        frame.render_widget(Paragraph::new(line).alignment(Alignment::Center), inner);
+    }
+}
+
+pub struct CatalogueScreen {
+    tab: CatalogueTab,
+    attacks: AttacksTab,
+    environments: EnvironmentsTab,
+}
+
+impl CatalogueScreen {
+    pub fn new() -> Self {
+        Self {
+            tab: CatalogueTab::Attacks,
+            attacks: AttacksTab::new(),
+            environments: EnvironmentsTab::new(),
+        }
+    }
+
+    pub fn handle_key(&mut self, key: KeyCode, _player: &mut Player) -> Transition {
+        match key {
+            KeyCode::Char('q') | KeyCode::Esc => {
+                return Transition::Goto(Screen::Select(SelectScreen::new()));
+            }
+            KeyCode::Tab => {
+                self.tab = self.tab.next();
+                return Transition::Stay;
+            }
+            _ => {}
+        }
+        match self.tab {
+            CatalogueTab::Attacks => self.attacks.handle_key(key),
+            CatalogueTab::Environments => self.environments.handle_key(key),
+        }
+        Transition::Stay
+    }
+
+    pub fn update(&mut self, _player: &mut Player) -> Transition {
+        Transition::Stay
+    }
+
+    pub fn draw(&mut self, frame: &mut Frame, _player: &Player) {
+        let area = frame.area();
+        let v_chunks = Layout::default()
+            .direction(Direction::Vertical)
+            .constraints([
+                Constraint::Length(1),
+                Constraint::Length(1),
+                Constraint::Min(8),
+                Constraint::Length(1),
+            ])
+            .split(area);
+        let header_area = v_chunks[0];
+        let tab_area = v_chunks[1];
+        let body_area = v_chunks[2];
+        let hint_area = v_chunks[3];
+
+        render_header(frame, header_area);
+        render_tabs(frame, self.tab, tab_area);
+
+        match self.tab {
+            CatalogueTab::Attacks => self.attacks.draw(frame, body_area),
+            CatalogueTab::Environments => self.environments.draw(frame, body_area),
+        }
 
         render_hint(frame, hint_area);
     }
+}
+
+fn render_tabs(frame: &mut Frame, current: CatalogueTab, area: Rect) {
+    let mut spans: Vec<Span> = Vec::new();
+    for (idx, tab) in CatalogueTab::ALL.iter().enumerate() {
+        if idx > 0 {
+            spans.push(Span::styled("   ", Style::default().fg(Color::DarkGray)));
+        }
+        let is_active = *tab == current;
+        let style = if is_active {
+            Style::default()
+                .fg(Color::Yellow)
+                .add_modifier(Modifier::BOLD)
+        } else {
+            Style::default().fg(Color::DarkGray)
+        };
+        let label = if is_active {
+            format!("[ {} ]", tab.label())
+        } else {
+            format!("  {}  ", tab.label())
+        };
+        spans.push(Span::styled(label, style));
+    }
+    frame.render_widget(
+        Paragraph::new(Line::from(spans)).alignment(Alignment::Center),
+        area,
+    );
 }
 
 fn render_header(frame: &mut Frame, area: Rect) {
@@ -134,6 +251,8 @@ fn render_hint(frame: &mut Frame, area: Rect) {
     let key = Style::default().fg(Color::Yellow);
     let dim = Style::default().fg(Color::DarkGray);
     let hint = Line::from(vec![
+        Span::styled("Tab", key),
+        Span::styled(" switch tab   ", dim),
         Span::styled("↑ ↓", key),
         Span::styled(" scroll   ", dim),
         Span::styled("q", key),
