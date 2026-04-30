@@ -1,4 +1,4 @@
-use super::attack::{AnimationKind, Attack, Effect};
+use super::attack::{AnimationKind, Attack, Effect, Element};
 use super::particle::ParticleKind;
 use super::projectile::{ProjectileKind, ProjectileSize};
 
@@ -18,6 +18,7 @@ const CRAB_HALF_HEIGHT: f32 = 1.5;
 pub struct Animation {
     pub kind: AnimationKind,
     pub projectile_size: ProjectileSize,
+    pub trail: Option<ParticleKind>,
     pub start_x: f32,
     pub target_x: f32,
     pub elapsed: f32,
@@ -26,7 +27,7 @@ pub struct Animation {
 
 impl Animation {
     pub fn new(kind: AnimationKind, start_x: f32, target_x: f32) -> Self {
-        Self::with_size(kind, ProjectileSize::Small, start_x, target_x)
+        Self::build(kind, ProjectileSize::Small, None, start_x, target_x)
     }
 
     pub fn for_attack(attack: &Attack, start_x: f32, target_x: f32) -> Self {
@@ -34,12 +35,14 @@ impl Animation {
             Effect::Damage(d) => ProjectileSize::for_damage(d),
             _ => ProjectileSize::Small,
         };
-        Self::with_size(attack.kind, size, start_x, target_x)
+        let trail = trail_for(attack.kind, attack.element);
+        Self::build(attack.kind, size, trail, start_x, target_x)
     }
 
-    fn with_size(
+    fn build(
         kind: AnimationKind,
         projectile_size: ProjectileSize,
+        trail: Option<ParticleKind>,
         start_x: f32,
         target_x: f32,
     ) -> Self {
@@ -52,6 +55,7 @@ impl Animation {
         Self {
             kind,
             projectile_size,
+            trail,
             start_x,
             target_x,
             elapsed: 0.0,
@@ -151,4 +155,17 @@ pub struct Particle {
     pub x: f32,
     pub y: f32,
     pub kind: ParticleKind,
+}
+
+fn trail_for(kind: AnimationKind, element: Element) -> Option<ParticleKind> {
+    if !matches!(kind, AnimationKind::Jump | AnimationKind::Dash) {
+        return None;
+    }
+    match element {
+        Element::Fire => Some(ParticleKind::FireSpark),
+        Element::Water => Some(ParticleKind::WaterDroplet),
+        Element::Earth => Some(ParticleKind::EarthDust),
+        Element::Air => Some(ParticleKind::AirWisp),
+        Element::Neutral => None,
+    }
 }
