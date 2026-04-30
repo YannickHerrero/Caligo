@@ -392,11 +392,6 @@ impl Crab {
         build_frame(body, eyes, mouth)
     }
 
-    pub fn celebrate(&mut self) {
-        self.celebrating = true;
-        self.celebration_timer = 3.0;
-    }
-
     pub fn color(&self) -> ratatui::style::Color {
         use ratatui::style::Color;
         if self.celebrating {
