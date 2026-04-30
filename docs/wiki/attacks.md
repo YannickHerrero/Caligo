@@ -36,13 +36,20 @@ So Ember (DMG 6) and Bubble (DMG 7) keep the small sprites, Fireball (DMG 11) an
 
 ## Particle kinds
 
-Used by `SelfCast`. Each support attack picks the particle that matches its effect.
+Particles are used in two places:
+
+1. `SelfCast` aura — drift outward and upward around the stationary crab. Picked per-attack to match the effect.
+2. `Jump` / `Dash` elemental trails — emitted behind the moving crab when an elemental physical attack is used (no trail for Neutral attacks).
 
 | Kind | Glyph | Color | Used by |
 |---|---|---|---|
 | `Hearts` | ♥ | Pink | All `Heal` attacks (Salve, Mend, First Aid, Greater Mend) |
 | `Triangles` | ▲ | Red | `AttackUp` buffs (Sharpen) |
 | `Circles` | ● | Blue | `DefenseUp` buffs (Carapace) |
+| `FireSpark` | * | Orange | Elemental Jump/Dash with Fire (Flame Dash, Pyre Charge, Magma Crush) |
+| `WaterDroplet` | . | Blue | Elemental Jump/Dash with Water (Frostbite, Riptide, Tidal Slam, Geyser) |
+| `EarthDust` | , | Brown | Elemental Jump/Dash with Earth (Granite Shell, Sandstorm, Quake Step, Stone Slam, Iron Pinch, Crystal Spike, Rockfall, Boulder Press, Earthquake, Tectonic Crush) |
+| `AirWisp` | ~ | Pale | Elemental Jump/Dash with Air (Gust, Static Charge, Tornado) |
 
 ## Effect kinds
 
