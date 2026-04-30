@@ -53,8 +53,8 @@ fn cinder() -> Starter {
             // F0 — flame centered, spark rising on the left
             vec![
                 "  *        ".to_string(),
-                "    .^.    ".to_string(),
-                "   /^^^\\   ".to_string(),
+                "    (^)    ".to_string(),
+                "   (^^^)   ".to_string(),
                 "  / o o \\  ".to_string(),
                 "  \\  v  /  ".to_string(),
                 "   '___'   ".to_string(),
@@ -62,8 +62,8 @@ fn cinder() -> Starter {
             // F1 — flame leans slightly left, spark drifting up-right
             vec![
                 "    '      ".to_string(),
-                "   .^.     ".to_string(),
-                "  /^^^\\    ".to_string(),
+                "   (^)     ".to_string(),
+                "  (^^^)    ".to_string(),
                 "  / o o \\  ".to_string(),
                 "  \\  v  /  ".to_string(),
                 "   '___'   ".to_string(),
@@ -71,8 +71,8 @@ fn cinder() -> Starter {
             // F2 — flame leans far left, previous spark gone
             vec![
                 "           ".to_string(),
-                "  .^.      ".to_string(),
-                " /^^^\\     ".to_string(),
+                "  (^)      ".to_string(),
+                " (^^^)     ".to_string(),
                 "  / o o \\  ".to_string(),
                 "  \\  v  /  ".to_string(),
                 "   '___'   ".to_string(),
@@ -80,8 +80,8 @@ fn cinder() -> Starter {
             // F3 — returning toward center, new spark on the right
             vec![
                 "         . ".to_string(),
-                "   .^.     ".to_string(),
-                "  /^^^\\    ".to_string(),
+                "   (^)     ".to_string(),
+                "  (^^^)    ".to_string(),
                 "  / o o \\  ".to_string(),
                 "  \\  v  /  ".to_string(),
                 "   '___'   ".to_string(),
@@ -89,8 +89,8 @@ fn cinder() -> Starter {
             // F4 — flame centered, blink, spark drifting up-left
             vec![
                 "       '   ".to_string(),
-                "    .^.    ".to_string(),
-                "   /^^^\\   ".to_string(),
+                "    (^)    ".to_string(),
+                "   (^^^)   ".to_string(),
                 "  / - - \\  ".to_string(),
                 "  \\  v  /  ".to_string(),
                 "   '___'   ".to_string(),
@@ -98,8 +98,8 @@ fn cinder() -> Starter {
             // F5 — flame leans slightly right, new spark center-left
             vec![
                 "    *      ".to_string(),
-                "     .^.   ".to_string(),
-                "    /^^^\\  ".to_string(),
+                "     (^)   ".to_string(),
+                "    (^^^)  ".to_string(),
                 "  / o o \\  ".to_string(),
                 "  \\  v  /  ".to_string(),
                 "   '___'   ".to_string(),
@@ -107,8 +107,8 @@ fn cinder() -> Starter {
             // F6 — flame leans far right, spark drifted up-left
             vec![
                 "  '        ".to_string(),
-                "      .^.  ".to_string(),
-                "     /^^^\\ ".to_string(),
+                "      (^)  ".to_string(),
+                "     (^^^) ".to_string(),
                 "  / o o \\  ".to_string(),
                 "  \\  v  /  ".to_string(),
                 "   '___'   ".to_string(),
@@ -116,8 +116,8 @@ fn cinder() -> Starter {
             // F7 — returning toward center
             vec![
                 "           ".to_string(),
-                "     .^.   ".to_string(),
-                "    /^^^\\  ".to_string(),
+                "     (^)   ".to_string(),
+                "    (^^^)  ".to_string(),
                 "  / o o \\  ".to_string(),
                 "  \\  v  /  ".to_string(),
                 "   '___'   ".to_string(),
