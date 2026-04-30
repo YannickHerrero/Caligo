@@ -181,29 +181,43 @@ pub fn render_attack_menu(frame: &mut Frame, fight: &FightState, area: Rect) {
 
         for col_idx in 0..2 {
             let slot = row_idx * 2 + col_idx;
-            let label = if slot < fight.attacks.len() {
-                fight.attacks[slot].name.clone()
-            } else if slot < MAX_ATTACKS {
-                "—".to_string()
-            } else {
-                String::new()
-            };
-
             let is_selected = slot == fight.attack_selected;
             let cursor = if is_selected { "> " } else { "  " };
-            let style = if is_selected {
+
+            if slot >= fight.attacks.len() {
+                let label = if slot < MAX_ATTACKS { "—" } else { "" };
+                let style = Style::default().fg(Color::DarkGray);
+                let line = Line::from(vec![
+                    Span::styled(cursor, style),
+                    Span::styled(label.to_string(), style),
+                ]);
+                frame.render_widget(Paragraph::new(line), cols[col_idx]);
+                continue;
+            }
+
+            let attack = &fight.attacks[slot];
+            let affordable = fight.player_mana >= attack.mana_cost;
+
+            let name_style = if !affordable {
+                Style::default().fg(Color::DarkGray)
+            } else if is_selected {
                 Style::default()
                     .fg(Color::Yellow)
                     .add_modifier(Modifier::BOLD)
-            } else if slot < fight.attacks.len() {
-                Style::default().fg(Color::Gray)
             } else {
+                Style::default().fg(Color::Gray)
+            };
+            let mp_style = if !affordable {
                 Style::default().fg(Color::DarkGray)
+            } else {
+                Style::default().fg(Color::Rgb(120, 160, 255))
             };
 
             let line = Line::from(vec![
-                Span::styled(cursor, style),
-                Span::styled(label, style),
+                Span::styled(cursor, name_style),
+                Span::styled(attack.name.clone(), name_style),
+                Span::styled("  ", Style::default()),
+                Span::styled(format!("MP {}", attack.mana_cost), mp_style),
             ]);
             frame.render_widget(Paragraph::new(line), cols[col_idx]);
         }
