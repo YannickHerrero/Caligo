@@ -1,8 +1,10 @@
 use crate::crab::Crab;
+use crate::data::attacks as attack_lib;
 use crate::environment::{Environment, GroundStyle};
 use crate::fight::{Action, Animation, Enemy, FightState, MenuState};
 use crate::map::NodeKind;
 use crate::player::Player;
+use rand::seq::SliceRandom;
 use crate::ui::screen::{Screen, Transition};
 use crate::ui::screens::reward::{apply_rewards, roll_rewards};
 use crate::ui::screens::{GameOverScreen, MapScreen, RewardScreen, SelectScreen, VictoryScreen};
@@ -25,6 +27,9 @@ pub struct FightScreen {
     /// end the fight on the next update tick (lets the in-flight animation
     /// finish before the screen hands off).
     pending_exit: Option<FightOutcome>,
+    /// True from the moment the player commits to an attack until the
+    /// enemy's counter-strike is queued. Drives the turn loop.
+    player_just_acted: bool,
     last_terminal_size: (u16, u16),
     last_action_height: u16,
 }
@@ -45,6 +50,7 @@ impl FightScreen {
             map: None,
             node_kind: None,
             pending_exit: None,
+            player_just_acted: false,
             last_terminal_size: (0, 0),
             last_action_height: 0,
         }
@@ -58,13 +64,16 @@ impl FightScreen {
         enemy: Enemy,
         node_kind: NodeKind,
     ) -> Self {
+        let mut fight = FightState::from_player_with_enemy(player, enemy);
+        fight.player_type = Some(map.run.starter.primary_type);
         Self {
             crab: Crab::new((6.0, 100.0), 95),
             environment: Environment::generate(80, 15, GroundStyle::default()),
-            fight: FightState::from_player_with_enemy(player, enemy),
+            fight,
             map: Some(map),
             node_kind: Some(node_kind),
             pending_exit: None,
+            player_just_acted: false,
             last_terminal_size: (0, 0),
             last_action_height: 0,
         }
@@ -172,6 +181,7 @@ impl FightScreen {
         self.fight.animation = Some(Animation::for_attack(&attack, start_x, target_x));
         self.fight.pending_player_attack = Some(attack);
         self.fight.menu_state = MenuState::Main;
+        self.player_just_acted = true;
     }
 
     fn handle_item_menu(&mut self, key: KeyCode) -> Transition {
@@ -238,6 +248,51 @@ impl FightScreen {
 
         self.environment.update_cycle(dt, 1.0, 1.0);
         self.fight.tick_message(dt);
+
+        // Apply the enemy's chosen attack once its telegraph message has
+        // cleared. This is the "impact" step of the enemy turn.
+        if self.fight.animation.is_none() && self.fight.message.is_none() {
+            if let Some(attack) = self.fight.pending_enemy_attack.take() {
+                let mut rng = rand::thread_rng();
+                let damage = self.fight.resolve_enemy_attack(&attack, &mut rng);
+                let msg = if self.fight.player_hp == 0 {
+                    "You fainted!".to_string()
+                } else if damage > 0 {
+                    format!("You took {} damage!", damage)
+                } else {
+                    "It had no effect.".to_string()
+                };
+                self.fight.set_message(msg, 1.0);
+                if self.fight.player_hp == 0 {
+                    self.pending_exit = Some(FightOutcome::Defeat);
+                }
+            }
+        }
+
+        // Telegraph the enemy's counter-strike right after the player's
+        // turn fully resolves. Skipped if the player won, fled, or the
+        // enemy is defeated.
+        if self.pending_exit.is_none()
+            && self.fight.animation.is_none()
+            && self.fight.message.is_none()
+            && self.fight.pending_enemy_attack.is_none()
+            && self.fight.pending_player_attack.is_none()
+            && self.fight.menu_state == MenuState::Main
+            && self.fight.enemy.hp > 0
+            && self.player_just_acted
+        {
+            self.player_just_acted = false;
+            let mut rng = rand::thread_rng();
+            if let Some(name) = self.fight.enemy.moveset.choose(&mut rng) {
+                if let Some(attack) = attack_lib::find_by_name(name) {
+                    let enemy_name = self.fight.enemy.name.clone();
+                    self.fight
+                        .set_message(format!("{} used {}!", enemy_name, attack.name), 0.7);
+                    self.fight.pending_enemy_attack = Some(attack);
+                }
+            }
+        }
+
         self.fight.commit_to_player(player);
 
         // Wait for any in-flight animation AND the linger of the result

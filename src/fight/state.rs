@@ -1,6 +1,6 @@
 use super::actions::Action;
 use super::animation::Animation;
-use super::attack::{Attack, Effect};
+use super::attack::{Attack, Effect, Element};
 use super::enemy::Enemy;
 use super::item::ItemStack;
 use crate::data::enemies;
@@ -36,6 +36,15 @@ pub struct FightState {
     /// and there's no animation in flight.
     pub message: Option<String>,
     pub message_linger: f32,
+    /// Set after the player's turn resolves to telegraph the enemy's
+    /// counter-strike: holds the attack the enemy is about to use. While
+    /// this is `Some`, the screen is showing "X used Y!" and waiting for
+    /// the message to linger before applying damage to the player.
+    pub pending_enemy_attack: Option<Attack>,
+    /// Player's elemental type, derived from the chosen starter. Used
+    /// when computing how effective enemy moves are against us. `None`
+    /// for stand-alone debug fights.
+    pub player_type: Option<Element>,
 }
 
 impl FightState {
@@ -67,6 +76,8 @@ impl FightState {
             pending_player_attack: None,
             message: None,
             message_linger: 0.0,
+            pending_enemy_attack: None,
+            player_type: None,
         }
     }
 
@@ -107,6 +118,29 @@ impl FightState {
             }
             Effect::Heal(amount) => {
                 self.player_hp = (self.player_hp + amount).min(self.player_max_hp);
+                0
+            }
+            Effect::Buff { .. } => 0,
+        }
+    }
+
+    /// Apply a finished enemy attack's effect against the player. Type
+    /// effectiveness is computed against the player's starter type when
+    /// known.
+    pub fn resolve_enemy_attack<R: Rng>(&mut self, attack: &Attack, rng: &mut R) -> u32 {
+        match attack.effect {
+            Effect::Damage(base) => {
+                let mult = match self.player_type {
+                    Some(t) => attack.element.effectiveness_vs(t, None),
+                    None => 1.0,
+                };
+                let variance = rng.gen_range(0.9..=1.1);
+                let damage = ((base as f32) * mult * variance).round().max(1.0) as u32;
+                self.player_hp = self.player_hp.saturating_sub(damage);
+                damage
+            }
+            Effect::Heal(amount) => {
+                self.enemy.hp = (self.enemy.hp + amount).min(self.enemy.max_hp);
                 0
             }
             Effect::Buff { .. } => 0,

@@ -13,6 +13,12 @@ pub fn all_attacks() -> Vec<Attack> {
     out
 }
 
+/// Look up an attack by its display name. Returns the first match found
+/// in the global registry, or None if no attack carries that name.
+pub fn find_by_name(name: &str) -> Option<Attack> {
+    all_attacks().into_iter().find(|a| a.name == name)
+}
+
 fn neutral() -> Vec<Attack> {
     vec![
         Attack::new(
