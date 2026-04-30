@@ -27,9 +27,12 @@ pub struct FightScreen {
     /// end the fight on the next update tick (lets the in-flight animation
     /// finish before the screen hands off).
     pending_exit: Option<FightOutcome>,
-    /// True from the moment the player commits to an attack until the
-    /// enemy's counter-strike is queued. Drives the turn loop.
-    player_just_acted: bool,
+    /// True once the player has committed to and resolved their action
+    /// for the current round. Reset on round reroll.
+    player_acted: bool,
+    /// True once the enemy has resolved its action for the current round.
+    /// Reset on round reroll.
+    enemy_acted: bool,
     last_terminal_size: (u16, u16),
     last_action_height: u16,
 }
@@ -50,7 +53,8 @@ impl FightScreen {
             map: None,
             node_kind: None,
             pending_exit: None,
-            player_just_acted: false,
+            player_acted: false,
+            enemy_acted: false,
             last_terminal_size: (0, 0),
             last_action_height: 0,
         }
@@ -75,7 +79,8 @@ impl FightScreen {
             map: Some(map),
             node_kind: Some(node_kind),
             pending_exit: None,
-            player_just_acted: false,
+            player_acted: false,
+            enemy_acted: false,
             last_terminal_size: (0, 0),
             last_action_height: 0,
         }
@@ -183,7 +188,28 @@ impl FightScreen {
         self.fight.animation = Some(Animation::for_attack(&attack, start_x, target_x));
         self.fight.pending_player_attack = Some(attack);
         self.fight.menu_state = MenuState::Main;
-        self.player_just_acted = true;
+        self.player_acted = true;
+    }
+
+    /// Pick a uniform-random move from the enemy moveset, telegraph it,
+    /// and store the resolved Attack so the impact lands once the message
+    /// clears.
+    fn queue_enemy_attack(&mut self) {
+        let mut rng = rand::thread_rng();
+        let Some(name) = self.fight.enemy.moveset.choose(&mut rng) else {
+            // Empty moveset — skip the enemy's turn rather than stalling.
+            self.enemy_acted = true;
+            return;
+        };
+        let Some(attack) = attack_lib::find_by_name(name) else {
+            self.enemy_acted = true;
+            return;
+        };
+        let enemy_name = self.fight.enemy.name.clone();
+        self.fight
+            .set_message(format!("{} used {}!", enemy_name, attack.name), 0.7);
+        self.fight.pending_enemy_attack = Some(attack);
+        self.enemy_acted = true;
     }
 
     fn handle_item_menu(&mut self, key: KeyCode) -> Transition {
@@ -271,28 +297,31 @@ impl FightScreen {
             }
         }
 
-        // Telegraph the enemy's counter-strike right after the player's
-        // turn fully resolves. Skipped if the player won, fled, or the
-        // enemy is defeated.
-        if self.pending_exit.is_none()
+        // Round-loop driver: only runs when nothing is in-flight (no
+        // animation, no message, no pending action, no end-of-fight).
+        let idle = self.pending_exit.is_none()
             && self.fight.animation.is_none()
             && self.fight.message.is_none()
             && self.fight.pending_enemy_attack.is_none()
             && self.fight.pending_player_attack.is_none()
             && self.fight.menu_state == MenuState::Main
             && self.fight.enemy.hp > 0
-            && self.player_just_acted
-        {
-            self.player_just_acted = false;
-            let mut rng = rand::thread_rng();
-            if let Some(name) = self.fight.enemy.moveset.choose(&mut rng) {
-                if let Some(attack) = attack_lib::find_by_name(name) {
-                    let enemy_name = self.fight.enemy.name.clone();
-                    self.fight
-                        .set_message(format!("{} used {}!", enemy_name, attack.name), 0.7);
-                    self.fight.pending_enemy_attack = Some(attack);
-                }
+            && self.fight.player_hp > 0;
+
+        if idle {
+            if self.player_acted && self.enemy_acted {
+                // Round complete; reroll for the next round.
+                let mut rng = rand::thread_rng();
+                self.fight.roll_round_order(&mut rng);
+                self.player_acted = false;
+                self.enemy_acted = false;
+            } else if !self.enemy_acted
+                && (self.fight.enemy_first_this_round || self.player_acted)
+            {
+                // Enemy's turn this round.
+                self.queue_enemy_attack();
             }
+            // Otherwise: it's the player's turn. We just wait for input.
         }
 
         self.fight.commit_to_player(player);
