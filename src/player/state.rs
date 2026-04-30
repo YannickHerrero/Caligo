@@ -36,6 +36,9 @@ impl Player {
                 },
                 1,
             ),
+            ItemStack::new(Item::Trinket(TrinketKind::HeartCharm), 1),
+            ItemStack::new(Item::Trinket(TrinketKind::ManaPearl), 1),
+            ItemStack::new(Item::Trinket(TrinketKind::LuckyShell), 1),
         ];
 
         Self {
