@@ -110,11 +110,6 @@ impl FightScreen {
             KeyCode::Char('q') | KeyCode::Esc => {
                 return self.exit_fight();
             }
-            // Debug: force defeat. Lets the death flow be exercised while
-            // real combat is stubbed.
-            KeyCode::Char('L') => {
-                self.pending_exit = Some(FightOutcome::Defeat);
-            }
             KeyCode::Up | KeyCode::Char('k') => {
                 self.fight.selected_action =
                     (self.fight.selected_action + action_count - 1) % action_count;
