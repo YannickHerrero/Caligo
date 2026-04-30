@@ -1,3 +1,4 @@
+use super::particle::ParticleKind;
 use super::projectile::ProjectileKind;
 use ratatui::style::Color;
 
@@ -8,7 +9,7 @@ pub enum AnimationKind {
     Jump,
     Dash,
     Throw(ProjectileKind),
-    SelfCast,
+    SelfCast(ParticleKind),
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

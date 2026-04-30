@@ -24,7 +24,7 @@ impl Animation {
             AnimationKind::Jump => JUMP_DURATION,
             AnimationKind::Dash => DASH_DURATION,
             AnimationKind::Throw(_) => THROW_DURATION,
-            AnimationKind::SelfCast => SELF_CAST_DURATION,
+            AnimationKind::SelfCast(_) => SELF_CAST_DURATION,
         };
         Self {
             kind,
@@ -68,7 +68,7 @@ impl Animation {
                 (x, base.1)
             }
             AnimationKind::Throw(_) => (self.start_x, base.1),
-            AnimationKind::SelfCast => {
+            AnimationKind::SelfCast(_) => {
                 let y_offset = -SELF_CAST_HEIGHT * (std::f32::consts::PI * p).sin();
                 (self.start_x, base.1 + y_offset)
             }

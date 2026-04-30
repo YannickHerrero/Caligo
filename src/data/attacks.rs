@@ -1,4 +1,4 @@
-use crate::fight::{AnimationKind, Attack, BuffKind, Effect, Element, ProjectileKind};
+use crate::fight::{AnimationKind, Attack, BuffKind, Effect, Element, ParticleKind, ProjectileKind};
 
 pub const STARTER_ATTACK_NAMES: [&str; 4] = ["Pinch", "Bubble", "Snip", "Cosmic Orb"];
 
@@ -96,7 +96,7 @@ fn neutral() -> Vec<Attack> {
         ),
         Attack::with_effect(
             "Mend",
-            AnimationKind::SelfCast,
+            AnimationKind::SelfCast(ParticleKind::Hearts),
             Effect::Heal(10),
             4,
             Element::Neutral,
@@ -104,7 +104,7 @@ fn neutral() -> Vec<Attack> {
         ),
         Attack::with_effect(
             "First Aid",
-            AnimationKind::SelfCast,
+            AnimationKind::SelfCast(ParticleKind::Hearts),
             Effect::Heal(15),
             6,
             Element::Neutral,
@@ -112,7 +112,7 @@ fn neutral() -> Vec<Attack> {
         ),
         Attack::with_effect(
             "Greater Mend",
-            AnimationKind::SelfCast,
+            AnimationKind::SelfCast(ParticleKind::Hearts),
             Effect::Heal(22),
             10,
             Element::Neutral,
@@ -120,7 +120,7 @@ fn neutral() -> Vec<Attack> {
         ),
         Attack::with_effect(
             "Sharpen",
-            AnimationKind::SelfCast,
+            AnimationKind::SelfCast(ParticleKind::Triangles),
             Effect::Buff {
                 kind: BuffKind::AttackUp,
                 magnitude: 25,
@@ -302,7 +302,7 @@ fn water() -> Vec<Attack> {
         ),
         Attack::with_effect(
             "Salve",
-            AnimationKind::SelfCast,
+            AnimationKind::SelfCast(ParticleKind::Hearts),
             Effect::Heal(6),
             2,
             Element::Water,
@@ -395,7 +395,7 @@ fn earth() -> Vec<Attack> {
         ),
         Attack::with_effect(
             "Carapace",
-            AnimationKind::SelfCast,
+            AnimationKind::SelfCast(ParticleKind::Circles),
             Effect::Buff {
                 kind: BuffKind::DefenseUp,
                 magnitude: 30,
