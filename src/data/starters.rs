@@ -50,74 +50,82 @@ fn cinder() -> Starter {
         primary_type: Element::Fire,
         starting_attacks: vec!["Pinch", "Ember", "Snip", "Cinder Spit"],
         visual: StarterVisual::Frames(vec![
-            // F0 — flame centered, spark rising on the left
+            // F0 — outward flame, sparks A
             vec![
-                "  *        ".to_string(),
-                "    (^)    ".to_string(),
-                "   (^^^)   ".to_string(),
+                "  *      . ".to_string(),
+                "       '   ".to_string(),
+                "    ( )    ".to_string(),
+                "   (( ))   ".to_string(),
                 "  / o o \\  ".to_string(),
                 "  \\  v  /  ".to_string(),
                 "   '___'   ".to_string(),
             ],
-            // F1 — flame leans slightly left, spark drifting up-right
-            vec![
-                "    '      ".to_string(),
-                "   (^)     ".to_string(),
-                "  (^^^)    ".to_string(),
-                "  / o o \\  ".to_string(),
-                "  \\  v  /  ".to_string(),
-                "   '___'   ".to_string(),
-            ],
-            // F2 — flame leans far left, previous spark gone
-            vec![
-                "           ".to_string(),
-                "  (^)      ".to_string(),
-                " (^^^)     ".to_string(),
-                "  / o o \\  ".to_string(),
-                "  \\  v  /  ".to_string(),
-                "   '___'   ".to_string(),
-            ],
-            // F3 — returning toward center, new spark on the right
-            vec![
-                "         . ".to_string(),
-                "   (^)     ".to_string(),
-                "  (^^^)    ".to_string(),
-                "  / o o \\  ".to_string(),
-                "  \\  v  /  ".to_string(),
-                "   '___'   ".to_string(),
-            ],
-            // F4 — flame centered, blink, spark drifting up-left
+            // F1 — inward flame, sparks B
             vec![
                 "       '   ".to_string(),
-                "    (^)    ".to_string(),
-                "   (^^^)   ".to_string(),
+                "   *    .  ".to_string(),
+                "    ) (    ".to_string(),
+                "   )) ((   ".to_string(),
+                "  / o o \\  ".to_string(),
+                "  \\  v  /  ".to_string(),
+                "   '___'   ".to_string(),
+            ],
+            // F2 — outward flame, sparks C
+            vec![
+                "  '    *   ".to_string(),
+                "        '  ".to_string(),
+                "    ( )    ".to_string(),
+                "   (( ))   ".to_string(),
+                "  / o o \\  ".to_string(),
+                "  \\  v  /  ".to_string(),
+                "   '___'   ".to_string(),
+            ],
+            // F3 — inward flame, sparks D
+            vec![
+                "   .   '   ".to_string(),
+                "      *    ".to_string(),
+                "    ) (    ".to_string(),
+                "   )) ((   ".to_string(),
+                "  / o o \\  ".to_string(),
+                "  \\  v  /  ".to_string(),
+                "   '___'   ".to_string(),
+            ],
+            // F4 — outward flame, blink, sparks E
+            vec![
+                "       '   ".to_string(),
+                "  .   *    ".to_string(),
+                "    ( )    ".to_string(),
+                "   (( ))   ".to_string(),
                 "  / - - \\  ".to_string(),
                 "  \\  v  /  ".to_string(),
                 "   '___'   ".to_string(),
             ],
-            // F5 — flame leans slightly right, new spark center-left
+            // F5 — inward flame, sparks F
             vec![
-                "    *      ".to_string(),
-                "     (^)   ".to_string(),
-                "    (^^^)  ".to_string(),
+                "  *      ' ".to_string(),
+                "      '    ".to_string(),
+                "    ) (    ".to_string(),
+                "   )) ((   ".to_string(),
                 "  / o o \\  ".to_string(),
                 "  \\  v  /  ".to_string(),
                 "   '___'   ".to_string(),
             ],
-            // F6 — flame leans far right, spark drifted up-left
+            // F6 — outward flame, sparks G
             vec![
-                "  '        ".to_string(),
-                "      (^)  ".to_string(),
-                "     (^^^) ".to_string(),
+                "   '   .   ".to_string(),
+                "       *   ".to_string(),
+                "    ( )    ".to_string(),
+                "   (( ))   ".to_string(),
                 "  / o o \\  ".to_string(),
                 "  \\  v  /  ".to_string(),
                 "   '___'   ".to_string(),
             ],
-            // F7 — returning toward center
+            // F7 — inward flame, sparks H
             vec![
-                "           ".to_string(),
-                "     (^)   ".to_string(),
-                "    (^^^)  ".to_string(),
+                "        *  ".to_string(),
+                "  '    .   ".to_string(),
+                "    ) (    ".to_string(),
+                "   )) ((   ".to_string(),
                 "  / o o \\  ".to_string(),
                 "  \\  v  /  ".to_string(),
                 "   '___'   ".to_string(),
