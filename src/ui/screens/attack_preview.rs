@@ -149,7 +149,7 @@ impl AttackPreviewScreen {
         widgets::render_enemy(frame, &self.target, scene_area);
         if let Some(anim) = self.animation.as_ref() {
             widgets::render_projectile(frame, anim, self.crab.position.1, scene_area);
-            widgets::render_particles(frame, anim, self.crab.position.1, scene_area);
+            widgets::render_particles(frame, anim, self.crab.position, scene_area);
         }
         widgets::render_ground(frame, &self.environment, scene_area);
 

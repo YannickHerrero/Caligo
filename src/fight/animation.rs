@@ -13,6 +13,8 @@ const PARTICLE_COUNT: usize = 10;
 const PARTICLE_LIFE: f32 = 0.5;
 const CRAB_HALF_WIDTH: f32 = 11.0;
 const CRAB_HALF_HEIGHT: f32 = 1.5;
+const TRAIL_SAMPLES: usize = 6;
+const TRAIL_STEP: f32 = 0.06;
 
 #[derive(Debug, Clone)]
 pub struct Animation {
@@ -76,7 +78,10 @@ impl Animation {
     }
 
     pub fn crab_position(&self, base: (f32, f32)) -> (f32, f32) {
-        let p = self.progress();
+        self.crab_position_at(self.progress(), base)
+    }
+
+    fn crab_position_at(&self, p: f32, base: (f32, f32)) -> (f32, f32) {
         match self.kind {
             AnimationKind::Jump => {
                 let (lerp, phase) = if p < 0.5 {
@@ -122,13 +127,21 @@ impl Animation {
         }
     }
 
-    pub fn particles(&self, crab_y: f32) -> Vec<Particle> {
+    pub fn particles(&self, base: (f32, f32)) -> Vec<Particle> {
+        match self.kind {
+            AnimationKind::SelfCast(_) => self.aura_particles(base),
+            AnimationKind::Jump | AnimationKind::Dash => self.trail_particles(base),
+            _ => Vec::new(),
+        }
+    }
+
+    fn aura_particles(&self, base: (f32, f32)) -> Vec<Particle> {
         let kind = match self.kind {
             AnimationKind::SelfCast(k) => k,
             _ => return Vec::new(),
         };
         let center_x = self.start_x + CRAB_HALF_WIDTH;
-        let center_y = crab_y + CRAB_HALF_HEIGHT;
+        let center_y = base.1 + CRAB_HALF_HEIGHT;
         let stagger_window = (self.duration - PARTICLE_LIFE).max(0.0);
         let mut out = Vec::with_capacity(PARTICLE_COUNT);
         for i in 0..PARTICLE_COUNT {
@@ -145,6 +158,32 @@ impl Animation {
             let x = center_x + radius_h * angle.cos();
             let y = center_y + radius_v * angle.sin() - drift_up;
             out.push(Particle { x, y, kind });
+        }
+        out
+    }
+
+    fn trail_particles(&self, base: (f32, f32)) -> Vec<Particle> {
+        let kind = match self.trail {
+            Some(k) => k,
+            None => return Vec::new(),
+        };
+        let now = self.progress();
+        let mut out = Vec::with_capacity(TRAIL_SAMPLES);
+        for i in 1..=TRAIL_SAMPLES {
+            let past = now - (i as f32) * TRAIL_STEP;
+            if past < 0.0 {
+                break;
+            }
+            let (px, py) = self.crab_position_at(past, base);
+            let cx = px + CRAB_HALF_WIDTH;
+            let cy = py + CRAB_HALF_HEIGHT;
+            let jitter_x = ((i * 17) % 5) as f32 - 2.0;
+            let jitter_y = ((i * 31) % 3) as f32 - 1.0;
+            out.push(Particle {
+                x: cx + jitter_x * 0.6,
+                y: cy + jitter_y * 0.5,
+                kind,
+            });
         }
         out
     }

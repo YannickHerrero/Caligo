@@ -194,7 +194,7 @@ impl FightScreen {
         widgets::render_enemy(frame, &self.fight.enemy, scene_area);
         if let Some(anim) = self.fight.animation.as_ref() {
             widgets::render_projectile(frame, anim, self.crab.position.1, scene_area);
-            widgets::render_particles(frame, anim, self.crab.position.1, scene_area);
+            widgets::render_particles(frame, anim, self.crab.position, scene_area);
         }
         widgets::render_ground(frame, &self.environment, scene_area);
         widgets::render_hp_bars(frame, &self.fight, scene_area);
