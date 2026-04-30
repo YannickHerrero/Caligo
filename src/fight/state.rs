@@ -3,6 +3,7 @@ use super::animation::Animation;
 use super::attack::Attack;
 use super::enemy::Enemy;
 use super::item::ItemStack;
+use crate::data::enemies;
 use crate::player::Player;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -42,7 +43,7 @@ impl FightState {
             player_max_hp: player.max_hp(),
             player_mana: player.mana,
             player_max_mana: player.max_mana(),
-            enemy: Enemy::slime(),
+            enemy: enemies::slime(),
             floor: 1,
             selected_action: 0,
             attacks,

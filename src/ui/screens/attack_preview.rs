@@ -1,5 +1,6 @@
 use crate::crab::Crab;
 use crate::data::attacks as attack_lib;
+use crate::data::enemies;
 use crate::environment::{Environment, GroundStyle};
 use crate::fight::{Animation, Attack, Enemy};
 use crate::player::Player;
@@ -32,7 +33,7 @@ impl AttackPreviewScreen {
         Self {
             crab: Crab::new((6.0, 100.0), 95),
             environment: Environment::generate(80, 15, GroundStyle::default()),
-            target: Enemy::slime(),
+            target: enemies::slime(),
             attacks: attack_lib::all_attacks(),
             selected: 0,
             scroll: 0,

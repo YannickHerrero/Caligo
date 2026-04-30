@@ -15,27 +15,3 @@ pub struct Enemy {
     pub is_boss: bool,
     pub description: String,
 }
-
-impl Enemy {
-    pub fn slime() -> Self {
-        let sprite = vec![
-            "   _____   ".to_string(),
-            "  /     \\  ".to_string(),
-            " | o   o | ".to_string(),
-            "  \\__~__/  ".to_string(),
-        ];
-        Self {
-            name: "Slime".to_string(),
-            primary_type: Element::Water,
-            secondary_type: None,
-            hp: 30,
-            max_hp: 30,
-            speed: 12,
-            moveset: vec!["Splash", "Bubble"],
-            sprite,
-            color: Color::Rgb(120, 200, 220),
-            is_boss: false,
-            description: "A wobbling blob of seawater. Bops more than it bites.".to_string(),
-        }
-    }
-}
