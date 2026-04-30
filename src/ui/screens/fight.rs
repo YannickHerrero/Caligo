@@ -5,7 +5,7 @@ use crate::map::NodeKind;
 use crate::player::Player;
 use crate::ui::screen::{Screen, Transition};
 use crate::ui::screens::reward::{apply_rewards, roll_rewards};
-use crate::ui::screens::{GameOverScreen, MapScreen, RewardScreen, SelectScreen};
+use crate::ui::screens::{GameOverScreen, MapScreen, RewardScreen, SelectScreen, VictoryScreen};
 use crate::ui::widgets;
 use crossterm::event::KeyCode;
 use ratatui::layout::{Constraint, Direction, Layout};
@@ -267,6 +267,24 @@ impl FightScreen {
         let mut rng = rand::thread_rng();
         let (gold, items) = roll_rewards(kind, &mut rng);
         apply_rewards(player, gold, &items);
+
+        if matches!(kind, NodeKind::Boss) {
+            let starter = map.run.starter.clone();
+            let floor_reached = map
+                .run
+                .map
+                .current
+                .map(|id| map.run.map.node(id).floor as u32 + 1)
+                .unwrap_or(0);
+            return Transition::Goto(Screen::Victory(VictoryScreen::new(
+                starter,
+                floor_reached,
+                player.gold,
+                gold,
+                items,
+            )));
+        }
+
         Transition::Goto(Screen::Reward(RewardScreen::new(map, gold, items, kind)))
     }
 

@@ -2,7 +2,7 @@ use crate::player::Player;
 use crate::ui::screens::{
     AttackPreviewScreen, CatalogueScreen, DemoScreen, FightScreen, GameOverScreen, MapScreen,
     PlaceholderNodeScreen, PlayerInfoScreen, RewardScreen, SelectScreen, SettingsScreen,
-    StartScreen, StarterSelectScreen, TransitionScreen,
+    StartScreen, StarterSelectScreen, TransitionScreen, VictoryScreen,
 };
 use crossterm::event::KeyCode;
 use ratatui::Frame;
@@ -22,6 +22,7 @@ pub enum Screen {
     Reward(RewardScreen),
     GameOver(GameOverScreen),
     PlaceholderNode(PlaceholderNodeScreen),
+    Victory(VictoryScreen),
 }
 
 pub enum Transition {
@@ -47,6 +48,7 @@ impl Screen {
             Screen::Reward(s) => s.handle_key(key, player),
             Screen::GameOver(s) => s.handle_key(key, player),
             Screen::PlaceholderNode(s) => s.handle_key(key, player),
+            Screen::Victory(s) => s.handle_key(key, player),
         }
     }
 
@@ -66,6 +68,7 @@ impl Screen {
             Screen::Reward(s) => s.update(player),
             Screen::GameOver(s) => s.update(player),
             Screen::PlaceholderNode(s) => s.update(player),
+            Screen::Victory(s) => s.update(player),
         }
     }
 
@@ -85,6 +88,7 @@ impl Screen {
             Screen::Reward(s) => s.draw(frame, player),
             Screen::GameOver(s) => s.draw(frame, player),
             Screen::PlaceholderNode(s) => s.draw(frame, player),
+            Screen::Victory(s) => s.draw(frame, player),
         }
     }
 }

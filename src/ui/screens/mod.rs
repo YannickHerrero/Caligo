@@ -12,6 +12,7 @@ pub mod settings;
 pub mod start;
 pub mod starter_select;
 pub mod transition;
+pub mod victory;
 
 pub use attack_preview::AttackPreviewScreen;
 pub use catalogue::CatalogueScreen;
@@ -27,3 +28,4 @@ pub use settings::SettingsScreen;
 pub use start::StartScreen;
 pub use starter_select::StarterSelectScreen;
 pub use transition::{TransitionKind, TransitionScreen};
+pub use victory::VictoryScreen;
