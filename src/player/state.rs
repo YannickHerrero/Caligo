@@ -1,4 +1,5 @@
 use crate::data::attacks as attack_lib;
+use crate::data::starters::Starter;
 use crate::fight::{
     AnimationKind, Attack, Element, Item, ItemStack, PotionSize, TrinketKind, UtilityKind,
     MAX_ATTACKS,
@@ -43,6 +44,26 @@ impl Player {
             ItemStack::new(Item::Utility(UtilityKind::GoldPouch), 1),
         ];
 
+        Self {
+            hp: 25,
+            base_max_hp: 25,
+            mana: 15,
+            base_max_mana: 15,
+            gold: 0,
+            owned_attacks,
+            equipped_attacks,
+            inventory,
+            equipped_trinkets: [None; MAX_TRINKETS],
+        }
+    }
+
+    /// Build a fresh Player for the start of a real run with the chosen
+    /// starter. The starter dictates the four equipped attacks; HP/mana are
+    /// the standard run baseline; inventory holds a single Small HP Potion.
+    pub fn for_starter(starter: &Starter) -> Self {
+        let owned_attacks = attack_lib::all_attacks();
+        let equipped_attacks = resolve_starter_attack_slots(&owned_attacks, &starter.starting_attacks);
+        let inventory = vec![ItemStack::new(Item::HpPotion(PotionSize::Small), 1)];
         Self {
             hp: 25,
             base_max_hp: 25,
@@ -188,8 +209,15 @@ impl Player {
 }
 
 fn resolve_starter_slots(attacks: &[Attack]) -> [Option<usize>; MAX_ATTACKS] {
+    resolve_starter_attack_slots(attacks, &attack_lib::STARTER_ATTACK_NAMES)
+}
+
+fn resolve_starter_attack_slots(
+    attacks: &[Attack],
+    names: &[&str],
+) -> [Option<usize>; MAX_ATTACKS] {
     let mut slots = [None; MAX_ATTACKS];
-    for (slot, name) in attack_lib::STARTER_ATTACK_NAMES.iter().enumerate() {
+    for (slot, name) in names.iter().enumerate() {
         if slot >= MAX_ATTACKS {
             break;
         }
