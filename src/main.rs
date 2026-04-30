@@ -4,6 +4,7 @@ mod environment;
 mod fight;
 mod map;
 mod player;
+mod settings;
 mod ui;
 
 use anyhow::Result;
@@ -17,6 +18,7 @@ use std::io;
 use ui::app::App;
 
 fn main() -> Result<()> {
+    settings::init_from_env();
     enable_raw_mode()?;
     let mut stdout = io::stdout();
     execute!(stdout, EnterAlternateScreen)?;
