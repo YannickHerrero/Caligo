@@ -108,6 +108,48 @@ impl Element {
             Element::Psychic => Color::Rgb(230, 110, 200),
         }
     }
+
+    /// Damage multiplier for an attack of `self` type hitting a defender of `defender` type.
+    /// Pokémon-shaped chart, with 0x immunities collapsed to 0.5x.
+    pub fn effectiveness_against(self, defender: Element) -> f32 {
+        use Element::*;
+        match (self, defender) {
+            (Fire, Ice) => 2.0,
+            (Fire, Fire) | (Fire, Water) => 0.5,
+
+            (Water, Fire) | (Water, Ground) => 2.0,
+            (Water, Water) => 0.5,
+
+            (Ice, Ground) | (Ice, Flying) => 2.0,
+            (Ice, Fire) | (Ice, Water) | (Ice, Ice) => 0.5,
+
+            (Electric, Water) | (Electric, Flying) => 2.0,
+            (Electric, Electric) | (Electric, Ground) => 0.5,
+
+            (Ground, Fire) | (Ground, Electric) => 2.0,
+            (Ground, Flying) => 0.5,
+
+            (Flying, Electric) => 0.5,
+
+            (Psychic, Psychic) => 0.5,
+
+            _ => 1.0,
+        }
+    }
+
+    /// Effective multiplier when the defender carries a primary and optional secondary type.
+    /// Multiplies the per-type multipliers (e.g. 2x against both = 4x; 2x and 0.5x = 1x).
+    pub fn effectiveness_vs(
+        self,
+        primary: Element,
+        secondary: Option<Element>,
+    ) -> f32 {
+        let primary_mult = self.effectiveness_against(primary);
+        let secondary_mult = secondary
+            .map(|s| self.effectiveness_against(s))
+            .unwrap_or(1.0);
+        primary_mult * secondary_mult
+    }
 }
 
 #[derive(Debug, Clone)]
