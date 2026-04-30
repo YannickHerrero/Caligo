@@ -27,6 +27,7 @@ impl ParticleKind {
     }
 
     pub fn color(&self) -> Color {
+        use crate::settings::{theme, Theme};
         match self {
             ParticleKind::Hearts => Color::Rgb(255, 150, 200),
             ParticleKind::Triangles => Color::Rgb(240, 90, 70),
@@ -34,8 +35,14 @@ impl ParticleKind {
             ParticleKind::FireSpark => Color::Rgb(255, 140, 60),
             ParticleKind::WaterDroplet => Color::Rgb(100, 180, 255),
             ParticleKind::EarthDust => Color::Rgb(170, 130, 80),
-            ParticleKind::AirWisp => Color::Rgb(190, 230, 240),
-            ParticleKind::NeutralHit => Color::Rgb(220, 220, 220),
+            ParticleKind::AirWisp => match theme() {
+                Theme::Dark => Color::Rgb(190, 230, 240),
+                Theme::Light => Color::Rgb(70, 130, 180),
+            },
+            ParticleKind::NeutralHit => match theme() {
+                Theme::Dark => Color::Rgb(220, 220, 220),
+                Theme::Light => Color::Rgb(100, 100, 100),
+            },
         }
     }
 }

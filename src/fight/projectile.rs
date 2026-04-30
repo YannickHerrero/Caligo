@@ -59,10 +59,14 @@ impl ProjectileKind {
     }
 
     pub fn color(&self) -> Color {
+        use crate::settings::{theme, Theme};
         match self {
             ProjectileKind::Water => Color::Rgb(100, 180, 255),
             ProjectileKind::Fire => Color::Rgb(255, 140, 60),
-            ProjectileKind::Electric => Color::Rgb(255, 240, 100),
+            ProjectileKind::Electric => match theme() {
+                Theme::Dark => Color::Rgb(255, 240, 100),
+                Theme::Light => Color::Rgb(190, 150, 20),
+            },
             ProjectileKind::EnergyBall => Color::Rgb(200, 120, 255),
         }
     }

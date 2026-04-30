@@ -81,12 +81,16 @@ impl Element {
     }
 
     pub fn color(&self) -> Color {
+        use crate::settings::{theme, Theme};
         match self {
             Element::Neutral => Color::Gray,
             Element::Fire => Color::Rgb(255, 140, 60),
             Element::Water => Color::Rgb(100, 180, 255),
             Element::Earth => Color::Rgb(170, 130, 80),
-            Element::Air => Color::Rgb(190, 230, 240),
+            Element::Air => match theme() {
+                Theme::Dark => Color::Rgb(190, 230, 240),
+                Theme::Light => Color::Rgb(70, 130, 180),
+            },
         }
     }
 }
