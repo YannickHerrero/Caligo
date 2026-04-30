@@ -40,7 +40,6 @@ impl Player {
             ItemStack::new(Item::Trinket(TrinketKind::ManaPearl), 1),
             ItemStack::new(Item::Trinket(TrinketKind::LuckyShell), 1),
             ItemStack::new(Item::Utility(UtilityKind::Revive), 1),
-            ItemStack::new(Item::Utility(UtilityKind::EscapeToken), 1),
             ItemStack::new(Item::Utility(UtilityKind::GoldPouch), 1),
         ];
 
@@ -110,7 +109,7 @@ impl Player {
                 let result = self.toggle_trinket(*kind);
                 return result;
             }
-            Item::Utility(UtilityKind::Revive | UtilityKind::EscapeToken) => {
+            Item::Utility(UtilityKind::Revive) => {
                 return ItemUseResult::CombatOnly;
             }
             _ => {}

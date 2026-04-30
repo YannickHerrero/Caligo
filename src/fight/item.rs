@@ -48,7 +48,6 @@ impl TrinketKind {
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum UtilityKind {
     Revive,
-    EscapeToken,
     GoldPouch,
 }
 
@@ -56,7 +55,6 @@ impl UtilityKind {
     pub fn name(&self) -> &'static str {
         match self {
             UtilityKind::Revive => "Revive Pearl",
-            UtilityKind::EscapeToken => "Escape Token",
             UtilityKind::GoldPouch => "Gold Pouch",
         }
     }
@@ -64,7 +62,6 @@ impl UtilityKind {
     pub fn description(&self) -> &'static str {
         match self {
             UtilityKind::Revive => "Auto-revives on defeat (used in combat).",
-            UtilityKind::EscapeToken => "Guarantees escape from a fight.",
             UtilityKind::GoldPouch => "Contains 25 gold. Open to claim.",
         }
     }
