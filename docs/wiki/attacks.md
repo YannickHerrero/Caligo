@@ -6,6 +6,8 @@ The player begins with **Pinch**, **Bubble**, **Snip**, and **Cosmic Orb** equip
 
 Source of truth: [`src/data/attacks.rs`](../../src/data/attacks.rs).
 
+> **In-game previews:** the home menu has two debug screens. **Attack Preview** plays each attack's animation against a slime dummy. **Catalogue** is a static three-pane view (list / projectile + particles / info) for inspecting designs at rest.
+
 ## Types
 
 Caligo borrows Pokémon-style type names. The current set is **Normal, Fire, Water, Ice, Electric, Ground, Flying, Psychic** — eight types. A type-effectiveness chart isn't implemented yet; types currently just color the attacks and pick the trail/impact particle.
