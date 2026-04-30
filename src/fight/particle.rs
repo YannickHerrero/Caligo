@@ -11,6 +11,7 @@ pub enum ParticleKind {
     ElectricSpark,
     GroundDust,
     FlyingWisp,
+    PsychicSpark,
     NormalHit,
 }
 
@@ -26,6 +27,7 @@ impl ParticleKind {
             ParticleKind::ElectricSpark => "'",
             ParticleKind::GroundDust => ",",
             ParticleKind::FlyingWisp => "~",
+            ParticleKind::PsychicSpark => "°",
             ParticleKind::NormalHit => "*",
         }
     }
@@ -51,6 +53,7 @@ impl ParticleKind {
                 Theme::Dark => Color::Rgb(190, 230, 240),
                 Theme::Light => Color::Rgb(70, 130, 180),
             },
+            ParticleKind::PsychicSpark => Color::Rgb(230, 110, 200),
             ParticleKind::NormalHit => match theme() {
                 Theme::Dark => Color::Rgb(220, 220, 220),
                 Theme::Light => Color::Rgb(100, 100, 100),

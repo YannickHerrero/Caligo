@@ -455,7 +455,7 @@ fn air() -> Vec<Attack> {
             AnimationKind::Throw(ProjectileKind::EnergyBall),
             14,
             8,
-            Element::Flying,
+            Element::Psychic,
             "A heavy orb of cosmic energy. High cost, high damage.",
         ),
         Attack::new(
@@ -479,7 +479,7 @@ fn air() -> Vec<Attack> {
             AnimationKind::Throw(ProjectileKind::EnergyBall),
             19,
             10,
-            Element::Flying,
+            Element::Psychic,
             "A spear of starlight.",
         ),
         Attack::new(

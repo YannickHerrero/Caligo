@@ -69,6 +69,7 @@ pub enum Element {
     Electric,
     Ground,
     Flying,
+    Psychic,
 }
 
 impl Element {
@@ -81,6 +82,7 @@ impl Element {
             Element::Electric => "Electric",
             Element::Ground => "Ground",
             Element::Flying => "Flying",
+            Element::Psychic => "Psychic",
         }
     }
 
@@ -103,6 +105,7 @@ impl Element {
                 Theme::Dark => Color::Rgb(190, 230, 240),
                 Theme::Light => Color::Rgb(70, 130, 180),
             },
+            Element::Psychic => Color::Rgb(230, 110, 200),
         }
     }
 }

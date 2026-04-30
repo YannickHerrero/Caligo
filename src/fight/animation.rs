@@ -264,6 +264,7 @@ fn trail_for(kind: AnimationKind, element: Element) -> Option<ParticleKind> {
         Element::Electric => Some(ParticleKind::ElectricSpark),
         Element::Ground => Some(ParticleKind::GroundDust),
         Element::Flying => Some(ParticleKind::FlyingWisp),
+        Element::Psychic => Some(ParticleKind::PsychicSpark),
         Element::Normal => None,
     }
 }
@@ -285,6 +286,7 @@ fn impact_for(kind: AnimationKind, element: Element, effect: &Effect) -> Option<
         Element::Electric => ParticleKind::ElectricSpark,
         Element::Ground => ParticleKind::GroundDust,
         Element::Flying => ParticleKind::FlyingWisp,
+        Element::Psychic => ParticleKind::PsychicSpark,
         Element::Normal => ParticleKind::NormalHit,
     })
 }
