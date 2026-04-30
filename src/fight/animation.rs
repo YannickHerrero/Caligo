@@ -168,6 +168,9 @@ impl Animation {
             None => return Vec::new(),
         };
         let now = self.progress();
+        if now > 0.5 {
+            return Vec::new();
+        }
         let mut out = Vec::with_capacity(TRAIL_SAMPLES);
         for i in 1..=TRAIL_SAMPLES {
             let past = now - (i as f32) * TRAIL_STEP;
