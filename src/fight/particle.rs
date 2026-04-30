@@ -5,6 +5,10 @@ pub enum ParticleKind {
     Hearts,
     Triangles,
     Circles,
+    FireSpark,
+    WaterDroplet,
+    EarthDust,
+    AirWisp,
 }
 
 impl ParticleKind {
@@ -13,6 +17,10 @@ impl ParticleKind {
             ParticleKind::Hearts => "♥",
             ParticleKind::Triangles => "▲",
             ParticleKind::Circles => "●",
+            ParticleKind::FireSpark => "*",
+            ParticleKind::WaterDroplet => ".",
+            ParticleKind::EarthDust => ",",
+            ParticleKind::AirWisp => "~",
         }
     }
 
@@ -21,6 +29,10 @@ impl ParticleKind {
             ParticleKind::Hearts => Color::Rgb(255, 150, 200),
             ParticleKind::Triangles => Color::Rgb(240, 90, 70),
             ParticleKind::Circles => Color::Rgb(110, 170, 255),
+            ParticleKind::FireSpark => Color::Rgb(255, 140, 60),
+            ParticleKind::WaterDroplet => Color::Rgb(100, 180, 255),
+            ParticleKind::EarthDust => Color::Rgb(170, 130, 80),
+            ParticleKind::AirWisp => Color::Rgb(190, 230, 240),
         }
     }
 }
