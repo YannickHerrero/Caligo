@@ -7,6 +7,7 @@ pub fn all_attacks() -> Vec<Attack> {
     out.extend(neutral());
     out.extend(fire());
     out.extend(water());
+    out.extend(grass());
     out.extend(earth());
     out.extend(air());
     out
@@ -307,6 +308,35 @@ fn water() -> Vec<Attack> {
             2,
             Element::Water,
             "Cool brine soothes wounds.",
+        ),
+    ]
+}
+
+fn grass() -> Vec<Attack> {
+    vec![
+        Attack::new(
+            "Vine Whip",
+            AnimationKind::Dash,
+            6,
+            2,
+            Element::Grass,
+            "Lashes the foe with a quick green tendril.",
+        ),
+        Attack::new(
+            "Leaf Slash",
+            AnimationKind::Dash,
+            11,
+            5,
+            Element::Grass,
+            "A sharpened leaf carves a clean arc.",
+        ),
+        Attack::new(
+            "Bramble Trap",
+            AnimationKind::Jump,
+            14,
+            6,
+            Element::Grass,
+            "Snares the target in fast-growing thorns.",
         ),
     ]
 }
