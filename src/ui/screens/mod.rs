@@ -4,6 +4,7 @@ pub mod fight;
 pub mod map;
 pub mod player_info;
 pub mod select;
+pub mod settings;
 pub mod transition;
 
 pub use attack_preview::AttackPreviewScreen;
@@ -12,4 +13,5 @@ pub use fight::FightScreen;
 pub use map::MapScreen;
 pub use player_info::PlayerInfoScreen;
 pub use select::SelectScreen;
+pub use settings::SettingsScreen;
 pub use transition::{TransitionKind, TransitionScreen};
