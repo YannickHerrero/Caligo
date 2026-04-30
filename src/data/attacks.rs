@@ -241,7 +241,7 @@ fn water() -> Vec<Attack> {
             AnimationKind::Dash,
             8,
             4,
-            Element::Water,
+            Element::Ice,
             "Chilling claws sap the enemy's vigor.",
         ),
         Attack::new(
@@ -249,7 +249,7 @@ fn water() -> Vec<Attack> {
             AnimationKind::Throw(ProjectileKind::Water),
             9,
             4,
-            Element::Water,
+            Element::Ice,
             "A jagged splinter of ice.",
         ),
         Attack::new(
@@ -289,7 +289,7 @@ fn water() -> Vec<Attack> {
             AnimationKind::Throw(ProjectileKind::Water),
             17,
             9,
-            Element::Water,
+            Element::Ice,
             "Pummels the foe with hail.",
         ),
         Attack::new(
