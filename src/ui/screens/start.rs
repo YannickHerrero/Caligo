@@ -20,13 +20,6 @@ const TITLE_ART: &[&str] = &[
     " ╚═════╝╚═╝  ╚═╝╚══════╝╚═╝ ╚═════╝  ╚═════╝ ",
 ];
 
-const CRAB_ART: &[&str] = &[
-    "    _~^~^~_    ",
-    "\\) /  o   o  \\ (/",
-    "  '_   ---   _'  ",
-    "  \\ '-------' /  ",
-];
-
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 enum StartChoice {
     Play,
@@ -87,15 +80,13 @@ impl StartScreen {
 
         let title_w = TITLE_ART.iter().map(|l| l.chars().count()).max().unwrap_or(0) as u16;
         let title_h = TITLE_ART.len() as u16;
-        let crab_w = CRAB_ART.iter().map(|l| l.chars().count()).max().unwrap_or(0) as u16;
-        let crab_h = CRAB_ART.len() as u16;
         let menu_w: u16 = 32;
         let menu_h: u16 = (StartChoice::ALL.len() as u16) * 2 + 2;
         let tagline_h: u16 = 1;
         let hint_h: u16 = 1;
         let gap: u16 = 1;
 
-        let total_h = title_h + gap + tagline_h + gap + crab_h + gap + menu_h + gap + hint_h;
+        let total_h = title_h + gap + tagline_h + gap + menu_h + gap + hint_h;
         let mut y = area.y + area.height.saturating_sub(total_h) / 2;
 
         render_centered_lines(
@@ -116,18 +107,6 @@ impl StartScreen {
             &mut y,
             "A roguelike crab dungeon crawler",
             Style::default().fg(Color::Gray),
-        );
-        y += gap;
-
-        render_centered_lines(
-            frame,
-            area,
-            &mut y,
-            CRAB_ART,
-            crab_w,
-            Style::default()
-                .fg(Color::Rgb(220, 110, 90))
-                .add_modifier(Modifier::BOLD),
         );
         y += gap;
 
