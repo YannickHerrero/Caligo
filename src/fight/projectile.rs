@@ -29,8 +29,8 @@ impl ProjectileKind {
     pub fn sprite(&self, size: ProjectileSize) -> &'static [&'static str] {
         match (self, size) {
             (ProjectileKind::Water, ProjectileSize::Small) => &["●"],
-            (ProjectileKind::Water, ProjectileSize::Medium) => &["●●", "●●"],
-            (ProjectileKind::Water, ProjectileSize::Large) => &[" ● ", "●●●", " ● "],
+            (ProjectileKind::Water, ProjectileSize::Medium) => &["●●●", "●●●"],
+            (ProjectileKind::Water, ProjectileSize::Large) => &[".●●●.", "●●●●●", ".●●●."],
 
             (ProjectileKind::Fire, ProjectileSize::Small) => &["/\\", ")("],
             (ProjectileKind::Fire, ProjectileSize::Medium) => &[" /\\", "/^\\", ")()"],
