@@ -6,6 +6,7 @@ pub mod map;
 pub mod player_info;
 pub mod select;
 pub mod settings;
+pub mod start;
 pub mod transition;
 
 pub use attack_preview::AttackPreviewScreen;
@@ -16,4 +17,5 @@ pub use map::MapScreen;
 pub use player_info::PlayerInfoScreen;
 pub use select::SelectScreen;
 pub use settings::SettingsScreen;
+pub use start::StartScreen;
 pub use transition::{TransitionKind, TransitionScreen};

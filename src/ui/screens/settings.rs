@@ -1,18 +1,20 @@
 use crate::player::Player;
 use crate::settings;
 use crate::ui::screen::{Screen, Transition};
-use crate::ui::screens::SelectScreen;
+use crate::ui::screens::{SelectScreen, StartScreen};
 use crossterm::event::KeyCode;
 
 #[derive(Debug, Clone, Copy)]
 pub enum SettingsOrigin {
     Select,
+    Start,
 }
 
 impl SettingsOrigin {
     fn back(self) -> Screen {
         match self {
             SettingsOrigin::Select => Screen::Select(SelectScreen::new()),
+            SettingsOrigin::Start => Screen::Start(StartScreen::new()),
         }
     }
 }
