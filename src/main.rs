@@ -5,6 +5,7 @@ mod fight;
 mod map;
 mod palette;
 mod player;
+mod run;
 mod settings;
 mod ui;
 

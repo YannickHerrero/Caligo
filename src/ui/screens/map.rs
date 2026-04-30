@@ -1,5 +1,6 @@
 use crate::map::{self, MapGraph, NodeId};
 use crate::player::Player;
+use crate::run::Run;
 use crate::ui::screen::{Screen, Transition};
 use crate::ui::screens::{
     FightScreen, PlayerInfoScreen, SelectScreen, TransitionKind, TransitionScreen,
@@ -18,7 +19,7 @@ pub enum MapMenuState {
 }
 
 pub struct MapScreen {
-    pub graph: MapGraph,
+    pub run: Run,
     pub cursor: Option<NodeId>,
     pub tick: u32,
     pub menu_state: MapMenuState,
@@ -28,10 +29,13 @@ pub struct MapScreen {
 
 impl MapScreen {
     pub fn new() -> Self {
-        let graph = map::generate();
-        let cursor = pick_default_cursor(&graph);
+        Self::with_run(Run::new(map::generate()))
+    }
+
+    pub fn with_run(run: Run) -> Self {
+        let cursor = pick_default_cursor(&run.map);
         Self {
-            graph,
+            run,
             cursor,
             tick: 0,
             menu_state: MapMenuState::Browsing,
@@ -92,8 +96,8 @@ impl MapScreen {
                     self.menu_state = MapMenuState::Browsing;
                     return Transition::Stay;
                 };
-                let kind = self.graph.node(id).kind;
-                if !self.graph.select(id) {
+                let kind = self.run.map.node(id).kind;
+                if !self.run.map.select(id) {
                     self.menu_state = MapMenuState::Browsing;
                     return Transition::Stay;
                 }
@@ -125,11 +129,11 @@ impl MapScreen {
             return;
         }
         self.scroll =
-            widgets::compute_map_scroll(&self.graph, self.cursor, self.last_viewport_height);
+            widgets::compute_map_scroll(&self.run.map, self.cursor, self.last_viewport_height);
     }
 
     fn move_cursor(&mut self, delta: i32) {
-        let reachable = sorted_reachable(&self.graph);
+        let reachable = sorted_reachable(&self.run.map);
         if reachable.is_empty() {
             self.cursor = None;
             return;
@@ -174,13 +178,13 @@ impl MapScreen {
             self.scroll = max;
         }
         let scroll = self.scroll;
-        widgets::render_map_header(frame, &self.graph, header_area);
-        widgets::render_map_edges(frame, &self.graph, scroll, map_area);
-        widgets::render_map_nodes(frame, &self.graph, self.cursor, pulse, scroll, map_area);
-        widgets::render_map_info(frame, &self.graph, self.cursor, info_area);
+        widgets::render_map_header(frame, &self.run.map, header_area);
+        widgets::render_map_edges(frame, &self.run.map, scroll, map_area);
+        widgets::render_map_nodes(frame, &self.run.map, self.cursor, pulse, scroll, map_area);
+        widgets::render_map_info(frame, &self.run.map, self.cursor, info_area);
         if self.menu_state == MapMenuState::Confirming {
             if let Some(id) = self.cursor {
-                widgets::render_map_confirm(frame, self.graph.node(id), area);
+                widgets::render_map_confirm(frame, self.run.map.node(id), area);
             }
         }
     }
