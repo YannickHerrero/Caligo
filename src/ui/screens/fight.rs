@@ -164,14 +164,12 @@ impl FightScreen {
         if idx >= self.fight.attacks.len() {
             return;
         }
-        let attack = &self.fight.attacks[idx];
+        let attack = self.fight.attacks[idx].clone();
         let start_x = self.crab.position.0;
         let target_x = (self.last_terminal_size.0 as f32 - 18.0).max(start_x + 5.0);
-        self.fight.animation = Some(Animation::for_attack(attack, start_x, target_x));
+        self.fight.animation = Some(Animation::for_attack(&attack, start_x, target_x));
+        self.fight.pending_player_attack = Some(attack);
         self.fight.menu_state = MenuState::Main;
-        // Stub combat: any attack is treated as a one-shot kill once the
-        // animation finishes. Real combat replaces this in a follow-up.
-        self.pending_exit = Some(FightOutcome::Victory);
     }
 
     fn handle_item_menu(&mut self, key: KeyCode) -> Transition {
@@ -214,6 +212,12 @@ impl FightScreen {
             anim.tick(dt);
             if anim.is_done() {
                 self.fight.animation = None;
+                if let Some(attack) = self.fight.pending_player_attack.take() {
+                    self.fight.resolve_player_attack(&attack);
+                    if self.fight.enemy.hp == 0 {
+                        self.pending_exit = Some(FightOutcome::Victory);
+                    }
+                }
             }
         } else if bounds.0 > 0.0 && bounds.1 > 0.0 {
             self.crab.walk_range_x = Some((0.0, bounds.0 * 0.4));

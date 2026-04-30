@@ -1,6 +1,6 @@
 use super::actions::Action;
 use super::animation::Animation;
-use super::attack::Attack;
+use super::attack::{Attack, Effect};
 use super::enemy::Enemy;
 use super::item::ItemStack;
 use crate::data::enemies;
@@ -27,6 +27,9 @@ pub struct FightState {
     pub item_selected: usize,
     pub item_scroll: usize,
     pub animation: Option<Animation>,
+    /// The attack that's currently animating from the player. When the
+    /// animation finishes, its effect is applied to the enemy.
+    pub pending_player_attack: Option<Attack>,
 }
 
 impl FightState {
@@ -55,6 +58,24 @@ impl FightState {
             item_selected: 0,
             item_scroll: 0,
             animation: None,
+            pending_player_attack: None,
+        }
+    }
+
+    /// Apply a finished player attack's effect against the enemy. Returns
+    /// the raw damage dealt (0 for non-damage effects).
+    pub fn resolve_player_attack(&mut self, attack: &Attack) -> u32 {
+        match attack.effect {
+            Effect::Damage(base) => {
+                let damage = base;
+                self.enemy.hp = self.enemy.hp.saturating_sub(damage);
+                damage
+            }
+            Effect::Heal(amount) => {
+                self.player_hp = (self.player_hp + amount).min(self.player_max_hp);
+                0
+            }
+            Effect::Buff { .. } => 0,
         }
     }
 
