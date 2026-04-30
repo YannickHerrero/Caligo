@@ -111,38 +111,24 @@ impl AttacksTab {
     }
 }
 
-struct EnvEntry {
-    style: GroundStyle,
-    time: TimeOfDay,
-    label: String,
-}
-
 struct EnvironmentsTab {
-    entries: Vec<EnvEntry>,
+    styles: &'static [GroundStyle],
     selected: usize,
     scroll: usize,
+    time: TimeOfDay,
     last_list_height: u16,
     cached: Option<Environment>,
-    cached_for: Option<usize>,
+    cached_for: Option<(GroundStyle, TimeOfDay)>,
     cached_size: (u16, u16),
 }
 
 impl EnvironmentsTab {
     fn new() -> Self {
-        let mut entries = Vec::with_capacity(GroundStyle::ALL.len() * TimeOfDay::ALL.len());
-        for &style in GroundStyle::ALL {
-            for &time in TimeOfDay::ALL {
-                entries.push(EnvEntry {
-                    style,
-                    time,
-                    label: format!("{} — {}", style.label(), time.label()),
-                });
-            }
-        }
         Self {
-            entries,
+            styles: GroundStyle::ALL,
             selected: 0,
             scroll: 0,
+            time: TimeOfDay::Day,
             last_list_height: 0,
             cached: None,
             cached_for: None,
@@ -150,8 +136,20 @@ impl EnvironmentsTab {
         }
     }
 
+    fn current_style(&self) -> Option<GroundStyle> {
+        self.styles.get(self.selected).copied()
+    }
+
+    fn cycle_time(&mut self, delta: i32) {
+        let times = TimeOfDay::ALL;
+        let len = times.len() as i32;
+        let idx = times.iter().position(|t| *t == self.time).unwrap_or(0) as i32;
+        let next = ((idx + delta).rem_euclid(len)) as usize;
+        self.time = times[next];
+    }
+
     fn handle_key(&mut self, key: KeyCode) {
-        let len = self.entries.len();
+        let len = self.styles.len();
         match key {
             KeyCode::Up | KeyCode::Char('k') => {
                 if self.selected > 0 {
@@ -170,6 +168,8 @@ impl EnvironmentsTab {
                     }
                 }
             }
+            KeyCode::Right | KeyCode::Char('l') => self.cycle_time(1),
+            KeyCode::Left | KeyCode::Char('h') => self.cycle_time(-1),
             _ => {}
         }
     }
@@ -190,12 +190,18 @@ impl EnvironmentsTab {
         let list_area = chunks[1];
 
         self.refresh_cache(visual_area);
-        render_env_visual(frame, self.cached.as_ref(), self.entries.get(self.selected), visual_area);
+        render_env_visual(
+            frame,
+            self.cached.as_ref(),
+            self.current_style(),
+            self.time,
+            visual_area,
+        );
 
         self.last_list_height = list_area.height.saturating_sub(2);
         render_env_list(
             frame,
-            &self.entries,
+            self.styles,
             self.selected,
             self.scroll,
             list_area,
@@ -210,22 +216,23 @@ impl EnvironmentsTab {
         if block_inner_size.0 == 0 || block_inner_size.1 == 0 {
             return;
         }
+        let Some(style) = self.current_style() else {
+            return;
+        };
+        let key = (style, self.time);
         let needs_rebuild = self.cached.is_none()
-            || self.cached_for != Some(self.selected)
+            || self.cached_for != Some(key)
             || self.cached_size != block_inner_size;
         if !needs_rebuild {
             return;
         }
-        let Some(entry) = self.entries.get(self.selected) else {
-            return;
-        };
         self.cached = Some(Environment::generate_at(
             block_inner_size.0,
             block_inner_size.1,
-            entry.style,
-            entry.time,
+            style,
+            self.time,
         ));
-        self.cached_for = Some(self.selected);
+        self.cached_for = Some(key);
         self.cached_size = block_inner_size;
     }
 }
@@ -233,12 +240,14 @@ impl EnvironmentsTab {
 fn render_env_visual(
     frame: &mut Frame,
     env: Option<&Environment>,
-    entry: Option<&EnvEntry>,
+    style: Option<GroundStyle>,
+    time: TimeOfDay,
     area: Rect,
 ) {
-    let title = entry
-        .map(|e| format!(" {} ", e.label))
-        .unwrap_or_else(|| " Environment ".to_string());
+    let title = match style {
+        Some(s) => format!(" {} — {} ", s.label(), time.label()),
+        None => " Environment ".to_string(),
+    };
     let block = Block::default()
         .borders(Borders::ALL)
         .border_style(Style::default().fg(Color::DarkGray))
@@ -262,7 +271,7 @@ fn render_env_visual(
 
 fn render_env_list(
     frame: &mut Frame,
-    entries: &[EnvEntry],
+    styles: &[GroundStyle],
     selected: usize,
     scroll: usize,
     area: Rect,
@@ -283,14 +292,14 @@ fn render_env_list(
     if visible == 0 {
         return;
     }
-    let end = (scroll + visible).min(entries.len());
+    let end = (scroll + visible).min(styles.len());
 
     let mut lines: Vec<Line> = Vec::with_capacity(end - scroll);
-    for (offset, entry) in entries[scroll..end].iter().enumerate() {
+    for (offset, ground) in styles[scroll..end].iter().enumerate() {
         let idx = scroll + offset;
         let is_selected = idx == selected;
         let cursor = if is_selected { "▶ " } else { "  " };
-        let style = if is_selected {
+        let row_style = if is_selected {
             Style::default()
                 .fg(Color::Yellow)
                 .add_modifier(Modifier::BOLD)
@@ -298,8 +307,8 @@ fn render_env_list(
             Style::default().fg(Color::Gray)
         };
         lines.push(Line::from(vec![
-            Span::styled(cursor, style),
-            Span::styled(entry.label.clone(), style),
+            Span::styled(cursor, row_style),
+            Span::styled(ground.label().to_string(), row_style),
         ]));
     }
     frame.render_widget(Paragraph::new(lines), inner);
@@ -425,6 +434,8 @@ fn render_hint(frame: &mut Frame, area: Rect) {
         Span::styled(" switch tab   ", dim),
         Span::styled("↑ ↓", key),
         Span::styled(" scroll   ", dim),
+        Span::styled("← →", key),
+        Span::styled(" time of day   ", dim),
         Span::styled("q", key),
         Span::styled(" back", dim),
     ]);
