@@ -18,5 +18,6 @@ pub use player_info::{
     render_inventory_panel, render_item_info_strip, render_stats_panel,
 };
 pub use scene::{
-    render_crab, render_enemy, render_environment_background, render_ground, render_projectile,
+    render_crab, render_enemy, render_environment_background, render_ground, render_particles,
+    render_projectile,
 };

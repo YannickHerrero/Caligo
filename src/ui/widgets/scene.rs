@@ -192,3 +192,12 @@ pub fn render_projectile(frame: &mut Frame, anim: &Animation, ground_y: f32, are
     let y = (cy - height / 2.0).round() as i32;
     render_element(frame, &sprite, x, y, kind.color(), area);
 }
+
+pub fn render_particles(frame: &mut Frame, anim: &Animation, crab_y: f32, area: Rect) {
+    for particle in anim.particles(crab_y) {
+        let glyph = vec![particle.kind.glyph().to_string()];
+        let x = particle.x.round() as i32;
+        let y = particle.y.round() as i32;
+        render_element(frame, &glyph, x, y, particle.kind.color(), area);
+    }
+}
