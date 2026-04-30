@@ -1,6 +1,6 @@
 use crate::crab::Crab;
 use crate::environment::{Environment, GroundStyle, TimeOfDay};
-use crate::fight::{Animation, Enemy, ProjectileSize};
+use crate::fight::{Animation, Enemy};
 use ratatui::{
     layout::Rect,
     style::{Color, Modifier, Style},
@@ -185,7 +185,7 @@ pub fn render_projectile(frame: &mut Frame, anim: &Animation, ground_y: f32, are
     let Some(kind) = anim.projectile_kind() else {
         return;
     };
-    let size = ProjectileSize::Small;
+    let size = anim.projectile_size;
     let sprite: Vec<String> = kind.sprite(size).iter().map(|s| s.to_string()).collect();
     let width = kind.width(size) as f32;
     let height = kind.height(size) as f32;

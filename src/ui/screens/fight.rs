@@ -97,10 +97,10 @@ impl FightScreen {
         if idx >= self.fight.attacks.len() {
             return;
         }
-        let kind = self.fight.attacks[idx].kind;
+        let attack = &self.fight.attacks[idx];
         let start_x = self.crab.position.0;
         let target_x = (self.last_terminal_size.0 as f32 - 18.0).max(start_x + 5.0);
-        self.fight.animation = Some(Animation::new(kind, start_x, target_x));
+        self.fight.animation = Some(Animation::for_attack(attack, start_x, target_x));
         self.fight.menu_state = MenuState::Main;
     }
 

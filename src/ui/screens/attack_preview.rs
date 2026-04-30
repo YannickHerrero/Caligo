@@ -80,10 +80,10 @@ impl AttackPreviewScreen {
         if self.selected >= self.attacks.len() {
             return;
         }
-        let kind = self.attacks[self.selected].kind;
+        let attack = &self.attacks[self.selected];
         let start_x = self.crab.position.0;
         let target_x = (self.last_terminal_size.0 as f32 - 18.0).max(start_x + 5.0);
-        self.animation = Some(Animation::new(kind, start_x, target_x));
+        self.animation = Some(Animation::for_attack(attack, start_x, target_x));
     }
 
     pub fn update(&mut self, _player: &mut Player) -> Transition {

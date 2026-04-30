@@ -1,6 +1,6 @@
-use super::attack::AnimationKind;
+use super::attack::{AnimationKind, Attack, Effect};
 use super::particle::ParticleKind;
-use super::projectile::ProjectileKind;
+use super::projectile::{ProjectileKind, ProjectileSize};
 
 const JUMP_DURATION: f32 = 0.8;
 const DASH_DURATION: f32 = 0.5;
@@ -17,6 +17,7 @@ const CRAB_HALF_HEIGHT: f32 = 1.5;
 #[derive(Debug, Clone)]
 pub struct Animation {
     pub kind: AnimationKind,
+    pub projectile_size: ProjectileSize,
     pub start_x: f32,
     pub target_x: f32,
     pub elapsed: f32,
@@ -25,6 +26,23 @@ pub struct Animation {
 
 impl Animation {
     pub fn new(kind: AnimationKind, start_x: f32, target_x: f32) -> Self {
+        Self::with_size(kind, ProjectileSize::Small, start_x, target_x)
+    }
+
+    pub fn for_attack(attack: &Attack, start_x: f32, target_x: f32) -> Self {
+        let size = match attack.effect {
+            Effect::Damage(d) => ProjectileSize::for_damage(d),
+            _ => ProjectileSize::Small,
+        };
+        Self::with_size(attack.kind, size, start_x, target_x)
+    }
+
+    fn with_size(
+        kind: AnimationKind,
+        projectile_size: ProjectileSize,
+        start_x: f32,
+        target_x: f32,
+    ) -> Self {
         let duration = match kind {
             AnimationKind::Jump => JUMP_DURATION,
             AnimationKind::Dash => DASH_DURATION,
@@ -33,6 +51,7 @@ impl Animation {
         };
         Self {
             kind,
+            projectile_size,
             start_x,
             target_x,
             elapsed: 0.0,
