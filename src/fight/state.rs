@@ -31,6 +31,11 @@ pub struct FightState {
     /// The attack that's currently animating from the player. When the
     /// animation finishes, its effect is applied to the enemy.
     pub pending_player_attack: Option<Attack>,
+    /// One-line action feedback shown in place of the action menu while a
+    /// turn is resolving. Cleared once `message_linger` ticks down to 0
+    /// and there's no animation in flight.
+    pub message: Option<String>,
+    pub message_linger: f32,
 }
 
 impl FightState {
@@ -60,6 +65,30 @@ impl FightState {
             item_scroll: 0,
             animation: None,
             pending_player_attack: None,
+            message: None,
+            message_linger: 0.0,
+        }
+    }
+
+    pub fn set_message(&mut self, text: impl Into<String>, linger: f32) {
+        self.message = Some(text.into());
+        self.message_linger = linger;
+    }
+
+    /// Tick the message timer and clear once it elapses (and no animation
+    /// is mid-flight).
+    pub fn tick_message(&mut self, dt: f32) {
+        if self.message.is_none() {
+            return;
+        }
+        if self.animation.is_some() {
+            // Keep the message pinned while the animation plays.
+            return;
+        }
+        self.message_linger -= dt;
+        if self.message_linger <= 0.0 {
+            self.message = None;
+            self.message_linger = 0.0;
         }
     }
 

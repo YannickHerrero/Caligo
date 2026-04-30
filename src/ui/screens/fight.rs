@@ -78,7 +78,7 @@ impl FightScreen {
     }
 
     pub fn handle_key(&mut self, key: KeyCode, _player: &mut Player) -> Transition {
-        if self.fight.animation.is_some() {
+        if self.fight.animation.is_some() || self.fight.message.is_some() {
             return Transition::Stay;
         }
         match self.fight.menu_state {
@@ -167,6 +167,8 @@ impl FightScreen {
         let attack = self.fight.attacks[idx].clone();
         let start_x = self.crab.position.0;
         let target_x = (self.last_terminal_size.0 as f32 - 18.0).max(start_x + 5.0);
+        self.fight
+            .set_message(format!("You used {}!", attack.name), 0.6);
         self.fight.animation = Some(Animation::for_attack(&attack, start_x, target_x));
         self.fight.pending_player_attack = Some(attack);
         self.fight.menu_state = MenuState::Main;
@@ -214,7 +216,16 @@ impl FightScreen {
                 self.fight.animation = None;
                 if let Some(attack) = self.fight.pending_player_attack.take() {
                     let mut rng = rand::thread_rng();
-                    self.fight.resolve_player_attack(&attack, &mut rng);
+                    let damage = self.fight.resolve_player_attack(&attack, &mut rng);
+                    let enemy_name = self.fight.enemy.name.clone();
+                    let msg = if self.fight.enemy.hp == 0 {
+                        format!("{} fainted!", enemy_name)
+                    } else if damage > 0 {
+                        format!("{} took {} damage!", enemy_name, damage)
+                    } else {
+                        format!("It had no effect on {}.", enemy_name)
+                    };
+                    self.fight.set_message(msg, 1.0);
                     if self.fight.enemy.hp == 0 {
                         self.pending_exit = Some(FightOutcome::Victory);
                     }
@@ -226,11 +237,13 @@ impl FightScreen {
         }
 
         self.environment.update_cycle(dt, 1.0, 1.0);
+        self.fight.tick_message(dt);
         self.fight.commit_to_player(player);
 
-        // Wait for any in-flight animation to complete before resolving the
-        // pending outcome so the player sees their attack land.
-        if self.fight.animation.is_none() {
+        // Wait for any in-flight animation AND the linger of the result
+        // message to clear before handing off — otherwise the player never
+        // gets to see "X fainted!".
+        if self.fight.animation.is_none() && self.fight.message.is_none() {
             if let Some(outcome) = self.pending_exit.take() {
                 return self.resolve_outcome(outcome, player);
             }
@@ -336,7 +349,11 @@ impl FightScreen {
         }
         widgets::render_ground(frame, &self.environment, scene_area);
         widgets::render_hp_bars(frame, &self.fight, scene_area);
-        if self.fight.animation.is_none() {
+        // While a turn is resolving (animation in flight or message lingering)
+        // the message strip replaces the action menu.
+        if let Some(msg) = self.fight.message.as_deref() {
+            widgets::render_message_strip(frame, msg, action_area);
+        } else if self.fight.animation.is_none() {
             match self.fight.menu_state {
                 MenuState::Main => widgets::render_action_menu(frame, &self.fight, action_area),
                 MenuState::AttackSelect => {

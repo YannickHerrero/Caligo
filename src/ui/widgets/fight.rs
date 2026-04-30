@@ -90,6 +90,29 @@ pub fn render_hp_bars(frame: &mut Frame, fight: &FightState, area: Rect) {
     frame.render_widget(Paragraph::new(enemy_bar), enemy_area);
 }
 
+pub fn render_message_strip(frame: &mut Frame, message: &str, area: Rect) {
+    use ratatui::widgets::{Block, Borders};
+    let block = Block::default()
+        .borders(Borders::ALL)
+        .border_style(Style::default().fg(Color::Yellow))
+        .title(Span::styled(
+            " ",
+            Style::default().fg(Color::DarkGray),
+        ));
+    let inner = block.inner(area);
+    frame.render_widget(block, area);
+    if inner.height == 0 {
+        return;
+    }
+    let line = Line::from(Span::styled(
+        message.to_string(),
+        Style::default()
+            .fg(Color::White)
+            .add_modifier(Modifier::BOLD),
+    ));
+    frame.render_widget(Paragraph::new(line).alignment(Alignment::Center), inner);
+}
+
 pub fn render_action_menu(frame: &mut Frame, fight: &FightState, area: Rect) {
     use ratatui::widgets::{Block, Borders};
     use crate::fight::Action;

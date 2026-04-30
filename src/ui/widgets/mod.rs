@@ -5,7 +5,8 @@ pub mod player_info;
 pub mod scene;
 
 pub use fight::{
-    render_action_menu, render_attack_menu, render_hp_bars, render_item_menu, render_top_bar,
+    render_action_menu, render_attack_menu, render_hp_bars, render_item_menu,
+    render_message_strip, render_top_bar,
 };
 pub use map::{
     compute_scroll as compute_map_scroll, render_confirm_popup as render_map_confirm,
