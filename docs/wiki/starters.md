@@ -1,6 +1,6 @@
 # Starters
 
-The three crabs the player can begin a run with. Each is the same crab body in a different color with a different elemental type and a different starting moveset.
+The three creatures the player can begin a run with. Different species, not recolors of the same crab — Pinchy is the original tidepool crab, Cinder is a cute flame, and Sprout is a piranha plant on a stem.
 
 Source of truth: [`src/data/starters.rs`](../../src/data/starters.rs).
 
@@ -8,11 +8,11 @@ Source of truth: [`src/data/starters.rs`](../../src/data/starters.rs).
 
 ## The three starters
 
-| Starter | Type | Starting moves | Flavor |
-|---|---|---|---|
-| Pinchy | Water | Pinch, Bubble, Snip, Cosmic Orb | The default tidepool crab. Balanced and sturdy, generalist kit. |
-| Cinder | Fire | Pinch, Ember, Snip, Cinder Spit | Hatched in a tidepool that ran a little hot. Aggressive, fragile shell. |
-| Sprout | Grass | Pinch, Vine Whip, Snip, Leaf Slash | A crab who has clearly been spending time in the kelp. Slow but steady. |
+| Starter | Creature | Type | Starting moves | Flavor |
+|---|---|---|---|---|
+| Pinchy | Crab | Water | Pinch, Bubble, Snip, Cosmic Orb | The default tidepool crab. Balanced and sturdy, generalist kit. |
+| Cinder | Cute flame | Fire | Pinch, Ember, Snip, Cinder Spit | A spry flame with a face. Aggressive opener, fragile shell. |
+| Sprout | Piranha plant | Grass | Pinch, Vine Whip, Snip, Leaf Slash | A piranha plant on a stout stem. Patient — bites when you're not looking. |
 
 The classic Fire / Water / Grass triangle — Cinder beats Sprout, Sprout beats Pinchy, Pinchy beats Cinder.
 
@@ -23,7 +23,8 @@ struct Starter {
     name, description,
     primary_type,
     starting_attacks: Vec<&'static str>, // attack names from the library
-    sprite, palette,                     // crab body + ThemedColor
+    sprite: Vec<String>,                 // unique ASCII art per starter
+    palette: ThemedColor,
 }
 ```
 
