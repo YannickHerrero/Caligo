@@ -48,10 +48,16 @@ fn cinder() -> Starter {
         name: "Cinder".to_string(),
         primary_type: Element::Fire,
         starting_attacks: vec!["Pinch", "Ember", "Snip", "Cinder Spit"],
-        sprite: crab_sprite(),
+        sprite: vec![
+            "    .^.    ".to_string(),
+            "   /^^^\\   ".to_string(),
+            "  / o o \\  ".to_string(),
+            "  \\  v  /  ".to_string(),
+            "   '___'   ".to_string(),
+        ],
         palette: ThemedColor::Fixed(Color::Rgb(220, 90, 50)),
         description:
-            "Hatched in a tidepool that ran a little hot. Aggressive opener, fragile shell."
+            "A spry flame with a face. Aggressive opener, fragile shell."
                 .to_string(),
     }
 }
@@ -61,12 +67,20 @@ fn sprout() -> Starter {
         name: "Sprout".to_string(),
         primary_type: Element::Grass,
         starting_attacks: vec!["Pinch", "Vine Whip", "Snip", "Leaf Slash"],
-        sprite: crab_sprite(),
+        sprite: vec![
+            "   .---.   ".to_string(),
+            "  /     \\  ".to_string(),
+            "  |\\v^v/|  ".to_string(),
+            "  \\_____/  ".to_string(),
+            "    | |    ".to_string(),
+            "   ~| |~   ".to_string(),
+        ],
         palette: ThemedColor::Themed {
             dark: Color::Rgb(120, 210, 110),
             light: Color::Rgb(40, 140, 60),
         },
-        description: "A crab who has clearly been spending time in the kelp. Slow but steady."
-            .to_string(),
+        description:
+            "A piranha plant on a stout stem. Patient — bites when you're not looking."
+                .to_string(),
     }
 }
