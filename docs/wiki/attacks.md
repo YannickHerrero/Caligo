@@ -17,12 +17,22 @@ Source of truth: [`src/data/attacks.rs`](../../src/data/attacks.rs).
 
 ## Projectile kinds
 
-| Kind | Visual | Color |
-|---|---|---|
-| `Water` | 1×1 droplet | Blue |
-| `Fire` | 2×2 flame | Orange |
-| `Electric` | 1×3 bolt | Yellow |
-| `EnergyBall` | 3×3 orb | Purple |
+Each kind has three sizes. The size used for a `Throw` attack is derived from the attack's damage:
+
+| Damage | Size |
+|---|---|
+| 0 – 8 | Small |
+| 9 – 16 | Medium |
+| 17+ | Large |
+
+| Kind | Small | Medium | Large | Color |
+|---|---|---|---|---|
+| `Water` | 1×1 | 2×2 | 3×3 | Blue |
+| `Fire` | 2×2 | 3×3 | 4×4 | Orange |
+| `Electric` | 1×3 | 2×4 | 3×5 | Yellow |
+| `EnergyBall` | 3×3 | 5×5 | 7×7 | Purple |
+
+So Ember (DMG 6) and Bubble (DMG 7) keep the small sprites, Fireball (DMG 11) and Cosmic Orb (DMG 14) get the medium versions, and Inferno (DMG 21), Tsunami (DMG 22), Sky Splitter (DMG 22), and Star Lance (DMG 19) get the large ones.
 
 ## Particle kinds
 
