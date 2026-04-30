@@ -18,7 +18,7 @@ use std::io;
 use ui::app::App;
 
 fn main() -> Result<()> {
-    settings::init_from_env();
+    settings::init();
     enable_raw_mode()?;
     let mut stdout = io::stdout();
     execute!(stdout, EnterAlternateScreen)?;
