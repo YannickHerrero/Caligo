@@ -8,6 +8,8 @@ pub fn all_enemies() -> Vec<Enemy> {
         fire_slime(),
         frost_slime(),
         sandling(),
+        shark(),
+        cataphract(),
         crab_king(),
         wisp(),
         volt_wisp(),
@@ -191,6 +193,54 @@ pub fn mind_wisp() -> Enemy {
         palette: ThemedColor::Fixed(Color::Rgb(220, 130, 220)),
         is_boss: false,
         description: "Watches you from a distance you can't quite measure.".to_string(),
+    }
+}
+
+pub fn shark() -> Enemy {
+    Enemy {
+        name: "Shark".to_string(),
+        primary_type: Element::Water,
+        secondary_type: None,
+        hp: 55,
+        max_hp: 55,
+        speed: 14,
+        moveset: vec!["Bite", "Riptide", "Tidal Slam"],
+        sprite: vec![
+            "      .      ".to_string(),
+            "_____/(_____/".to_string(),
+            ">'__ ____v--\\".to_string(),
+            "   \\(        ".to_string(),
+            "    `        ".to_string(),
+        ],
+        palette: ThemedColor::Themed {
+            dark: Color::Rgb(160, 180, 200),
+            light: Color::Rgb(50, 80, 120),
+        },
+        is_boss: false,
+        description: "All teeth and tail. Smells blood from a tidepool away.".to_string(),
+    }
+}
+
+pub fn cataphract() -> Enemy {
+    Enemy {
+        name: "Cataphract".to_string(),
+        primary_type: Element::Normal,
+        secondary_type: None,
+        hp: 45,
+        max_hp: 45,
+        speed: 8,
+        moveset: vec!["Bite", "Tail Whip", "Sharpen"],
+        sprite: vec![
+            "  |\\_/|  ".to_string(),
+            "=( o O )=".to_string(),
+            " /\\ \" /\\ ".to_string(),
+            "| |\\_/| |".to_string(),
+            "\\_>---<_/".to_string(),
+            "(___|___)".to_string(),
+        ],
+        palette: ThemedColor::Fixed(Color::Rgb(180, 160, 130)),
+        is_boss: false,
+        description: "An armored tomcat that takes its watch very seriously.".to_string(),
     }
 }
 
