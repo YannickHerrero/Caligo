@@ -59,20 +59,37 @@ fn hp_bar(label: &str, hp: u32, max_hp: u32, color: Color) -> Line<'static> {
 }
 
 pub fn render_hp_bars(frame: &mut Frame, fight: &FightState, area: Rect) {
-    let player_bar = hp_bar(
-        "Crab",
+    let player_width = 32u16.min(area.width);
+
+    let player_hp = hp_bar(
+        " HP",
         fight.player_hp,
         fight.player_max_hp,
         Color::Rgb(255, 120, 80),
     );
-    let player_width = 32u16.min(area.width);
-    let player_area = Rect {
+    let player_hp_area = Rect {
         x: area.x + 1,
         y: area.y,
         width: player_width,
         height: 1,
     };
-    frame.render_widget(Paragraph::new(player_bar), player_area);
+    frame.render_widget(Paragraph::new(player_hp), player_hp_area);
+
+    if area.height >= 2 {
+        let player_mp = hp_bar(
+            " MP",
+            fight.player_mana,
+            fight.player_max_mana,
+            Color::Rgb(120, 160, 255),
+        );
+        let player_mp_area = Rect {
+            x: area.x + 1,
+            y: area.y + 1,
+            width: player_width,
+            height: 1,
+        };
+        frame.render_widget(Paragraph::new(player_mp), player_mp_area);
+    }
 
     let enemy_bar = hp_bar(
         &fight.enemy.name,

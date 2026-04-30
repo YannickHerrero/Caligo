@@ -272,7 +272,8 @@ impl FightScreen {
                     PotionSize::Small => 6,
                     PotionSize::Large => 15,
                 };
-                self.fight.player_mana = self.fight.player_mana.saturating_add(amount);
+                self.fight.player_mana = (self.fight.player_mana + amount)
+                    .min(self.fight.player_max_mana);
                 Some(format!("Recovered {} MP.", amount))
             }
             _ => None,
