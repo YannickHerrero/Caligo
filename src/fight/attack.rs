@@ -66,6 +66,7 @@ pub enum Element {
     Fire,
     Water,
     Ice,
+    Electric,
     Ground,
     Flying,
 }
@@ -77,6 +78,7 @@ impl Element {
             Element::Fire => "Fire",
             Element::Water => "Water",
             Element::Ice => "Ice",
+            Element::Electric => "Electric",
             Element::Ground => "Ground",
             Element::Flying => "Flying",
         }
@@ -91,6 +93,10 @@ impl Element {
             Element::Ice => match theme() {
                 Theme::Dark => Color::Rgb(150, 220, 240),
                 Theme::Light => Color::Rgb(60, 150, 190),
+            },
+            Element::Electric => match theme() {
+                Theme::Dark => Color::Rgb(255, 240, 100),
+                Theme::Light => Color::Rgb(190, 150, 20),
             },
             Element::Ground => Color::Rgb(170, 130, 80),
             Element::Flying => match theme() {

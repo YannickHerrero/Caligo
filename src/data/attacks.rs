@@ -415,7 +415,7 @@ fn air() -> Vec<Attack> {
             AnimationKind::Throw(ProjectileKind::Electric),
             5,
             2,
-            Element::Flying,
+            Element::Electric,
             "A small static jolt.",
         ),
         Attack::new(
@@ -431,7 +431,7 @@ fn air() -> Vec<Attack> {
             AnimationKind::Dash,
             7,
             3,
-            Element::Flying,
+            Element::Electric,
             "Crackles with electricity on impact.",
         ),
         Attack::new(
@@ -439,7 +439,7 @@ fn air() -> Vec<Attack> {
             AnimationKind::Throw(ProjectileKind::Electric),
             9,
             4,
-            Element::Flying,
+            Element::Electric,
             "An ear-splitting boom.",
         ),
         Attack::new(
@@ -447,7 +447,7 @@ fn air() -> Vec<Attack> {
             AnimationKind::Throw(ProjectileKind::Electric),
             12,
             6,
-            Element::Flying,
+            Element::Electric,
             "A crackling arc of lightning.",
         ),
         Attack::new(
@@ -471,7 +471,7 @@ fn air() -> Vec<Attack> {
             AnimationKind::Throw(ProjectileKind::Electric),
             16,
             8,
-            Element::Flying,
+            Element::Electric,
             "Lightning answers the call.",
         ),
         Attack::new(
@@ -487,7 +487,7 @@ fn air() -> Vec<Attack> {
             AnimationKind::Throw(ProjectileKind::Electric),
             22,
             11,
-            Element::Flying,
+            Element::Electric,
             "A pillar of lightning rips the sky.",
         ),
     ]
