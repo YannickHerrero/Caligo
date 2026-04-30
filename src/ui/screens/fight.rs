@@ -213,7 +213,8 @@ impl FightScreen {
             if anim.is_done() {
                 self.fight.animation = None;
                 if let Some(attack) = self.fight.pending_player_attack.take() {
-                    self.fight.resolve_player_attack(&attack);
+                    let mut rng = rand::thread_rng();
+                    self.fight.resolve_player_attack(&attack, &mut rng);
                     if self.fight.enemy.hp == 0 {
                         self.pending_exit = Some(FightOutcome::Victory);
                     }

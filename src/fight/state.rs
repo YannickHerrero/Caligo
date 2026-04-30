@@ -5,6 +5,7 @@ use super::enemy::Enemy;
 use super::item::ItemStack;
 use crate::data::enemies;
 use crate::player::Player;
+use rand::Rng;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum MenuState {
@@ -64,13 +65,14 @@ impl FightState {
 
     /// Apply a finished player attack's effect against the enemy. Returns
     /// the raw damage dealt (0 for non-damage effects).
-    pub fn resolve_player_attack(&mut self, attack: &Attack) -> u32 {
+    pub fn resolve_player_attack<R: Rng>(&mut self, attack: &Attack, rng: &mut R) -> u32 {
         match attack.effect {
             Effect::Damage(base) => {
                 let mult = attack
                     .element
                     .effectiveness_vs(self.enemy.primary_type, self.enemy.secondary_type);
-                let damage = ((base as f32) * mult).round().max(1.0) as u32;
+                let variance = rng.gen_range(0.9..=1.1);
+                let damage = ((base as f32) * mult * variance).round().max(1.0) as u32;
                 self.enemy.hp = self.enemy.hp.saturating_sub(damage);
                 damage
             }
