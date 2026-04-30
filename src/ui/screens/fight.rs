@@ -3,7 +3,7 @@ use crate::environment::{Environment, GroundStyle};
 use crate::fight::{Action, Animation, FightState, MenuState};
 use crate::player::Player;
 use crate::ui::screen::{Screen, Transition};
-use crate::ui::screens::SelectScreen;
+use crate::ui::screens::{MapScreen, SelectScreen};
 use crate::ui::widgets;
 use crossterm::event::KeyCode;
 use ratatui::layout::{Constraint, Direction, Layout};
@@ -13,6 +13,9 @@ pub struct FightScreen {
     pub crab: Crab,
     pub environment: Environment,
     pub fight: FightState,
+    /// The map screen we entered from. `Some` for fights launched from a
+    /// real run; `None` for the standalone --debug fight.
+    pub map: Option<Box<MapScreen>>,
     last_terminal_size: (u16, u16),
     last_action_height: u16,
 }
@@ -23,9 +26,18 @@ impl FightScreen {
             crab: Crab::new((6.0, 100.0), 95),
             environment: Environment::generate(80, 15, GroundStyle::default()),
             fight: FightState::from_player(player),
+            map: None,
             last_terminal_size: (0, 0),
             last_action_height: 0,
         }
+    }
+
+    /// Variant entered from a real map node — the fight carries the map
+    /// forward so it can hand control back when the fight ends.
+    pub fn from_map(player: &Player, map: Box<MapScreen>) -> Self {
+        let mut me = Self::new(player);
+        me.map = Some(map);
+        me
     }
 
     pub fn handle_key(&mut self, key: KeyCode, _player: &mut Player) -> Transition {
@@ -43,7 +55,7 @@ impl FightScreen {
         let action_count = Action::ALL.len();
         match key {
             KeyCode::Char('q') | KeyCode::Esc => {
-                return Transition::Goto(Screen::Select(SelectScreen::new()));
+                return self.exit_fight();
             }
             KeyCode::Up | KeyCode::Char('k') => {
                 self.fight.selected_action =
@@ -90,6 +102,15 @@ impl FightScreen {
             _ => {}
         }
         Transition::Stay
+    }
+
+    /// Exit a fight without victory: return to the carried map if there is
+    /// one, otherwise fall back to SelectScreen (debug entry).
+    fn exit_fight(&mut self) -> Transition {
+        match self.map.take() {
+            Some(map) => Transition::Goto(Screen::Map(*map)),
+            None => Transition::Goto(Screen::Select(SelectScreen::new())),
+        }
     }
 
     fn start_attack_animation(&mut self) {

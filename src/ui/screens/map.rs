@@ -19,6 +19,7 @@ pub enum MapMenuState {
     Confirming,
 }
 
+#[derive(Clone)]
 pub struct MapScreen {
     pub run: Run,
     pub cursor: Option<NodeId>,
@@ -107,10 +108,15 @@ impl MapScreen {
                     return Transition::Stay;
                 }
                 self.menu_state = MapMenuState::Browsing;
-                let from = std::mem::replace(self, MapScreen::new());
+
+                // Move the current map forward into the FightScreen so the
+                // run persists; clone for the transition's fade visual.
+                let map_owned = std::mem::replace(self, MapScreen::new());
+                let map_for_fade = map_owned.clone();
+                let fight = FightScreen::from_map(player, Box::new(map_owned));
                 let transition = TransitionScreen::new(
-                    Screen::Map(from),
-                    Screen::Fight(FightScreen::new(player)),
+                    Screen::Map(map_for_fade),
+                    Screen::Fight(fight),
                     TransitionKind::from(kind),
                 );
                 Transition::Goto(Screen::Transition(transition))

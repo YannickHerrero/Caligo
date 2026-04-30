@@ -8,6 +8,7 @@ use crate::map::MapGraph;
 /// reward screens until it ends (boss defeated, player dies, or the player
 /// abandons). More progression fields (fights cleared, gold) get added as
 /// those systems land.
+#[derive(Clone)]
 pub struct Run {
     pub starter: Starter,
     pub map: MapGraph,
