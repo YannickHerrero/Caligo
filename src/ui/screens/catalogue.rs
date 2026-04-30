@@ -1,8 +1,9 @@
 use crate::data::attacks as attack_lib;
+use crate::data::enemies as enemy_lib;
 use crate::environment::{Environment, GroundStyle, TimeOfDay};
 use crate::fight::{
-    impact_for, trail_for, AnimationKind, Attack, Effect, ParticleKind, ProjectileKind,
-    ProjectileSize,
+    impact_for, trail_for, AnimationKind, Attack, Effect, Element, Enemy, ParticleKind,
+    ProjectileKind, ProjectileSize,
 };
 use crate::player::Player;
 use crate::ui::screen::{Screen, Transition};
@@ -21,15 +22,21 @@ use ratatui::{
 pub enum CatalogueTab {
     Attacks,
     Environments,
+    Bestiary,
 }
 
 impl CatalogueTab {
-    const ALL: &'static [CatalogueTab] = &[CatalogueTab::Attacks, CatalogueTab::Environments];
+    const ALL: &'static [CatalogueTab] = &[
+        CatalogueTab::Attacks,
+        CatalogueTab::Environments,
+        CatalogueTab::Bestiary,
+    ];
 
     fn label(&self) -> &'static str {
         match self {
             CatalogueTab::Attacks => "Attacks",
             CatalogueTab::Environments => "Environments",
+            CatalogueTab::Bestiary => "Bestiary",
         }
     }
 
@@ -314,10 +321,321 @@ fn render_env_list(
     frame.render_widget(Paragraph::new(lines), inner);
 }
 
+struct BestiaryTab {
+    enemies: Vec<Enemy>,
+    selected: usize,
+    scroll: usize,
+    last_list_height: u16,
+}
+
+impl BestiaryTab {
+    fn new() -> Self {
+        Self {
+            enemies: enemy_lib::all_enemies(),
+            selected: 0,
+            scroll: 0,
+            last_list_height: 0,
+        }
+    }
+
+    fn handle_key(&mut self, key: KeyCode) {
+        let len = self.enemies.len();
+        match key {
+            KeyCode::Up | KeyCode::Char('k') => {
+                if self.selected > 0 {
+                    self.selected -= 1;
+                    if self.selected < self.scroll {
+                        self.scroll = self.selected;
+                    }
+                }
+            }
+            KeyCode::Down | KeyCode::Char('j') => {
+                if self.selected + 1 < len {
+                    self.selected += 1;
+                    let visible = self.last_list_height as usize;
+                    if visible > 0 && self.selected >= self.scroll + visible {
+                        self.scroll = self.selected + 1 - visible;
+                    }
+                }
+            }
+            _ => {}
+        }
+    }
+
+    fn draw(&mut self, frame: &mut Frame, area: Rect) {
+        let main_chunks = Layout::default()
+            .direction(Direction::Horizontal)
+            .constraints([Constraint::Percentage(33), Constraint::Percentage(67)])
+            .split(area);
+        let list_area = main_chunks[0];
+        let right_area = main_chunks[1];
+
+        let right_chunks = Layout::default()
+            .direction(Direction::Vertical)
+            .constraints([Constraint::Percentage(55), Constraint::Percentage(45)])
+            .split(right_area);
+        let visual_area = right_chunks[0];
+        let info_area = right_chunks[1];
+
+        self.last_list_height = list_area.height.saturating_sub(2);
+        render_enemy_list(
+            frame,
+            &self.enemies,
+            self.selected,
+            self.scroll,
+            list_area,
+        );
+
+        if let Some(enemy) = self.enemies.get(self.selected) {
+            render_enemy_visual(frame, enemy, visual_area);
+            render_enemy_info(frame, enemy, info_area);
+        }
+    }
+}
+
+fn render_enemy_list(
+    frame: &mut Frame,
+    enemies: &[Enemy],
+    selected: usize,
+    scroll: usize,
+    area: Rect,
+) {
+    let block = Block::default()
+        .borders(Borders::ALL)
+        .border_style(Style::default().fg(Color::DarkGray))
+        .title(Span::styled(
+            " Bestiary ",
+            Style::default()
+                .fg(Color::Yellow)
+                .add_modifier(Modifier::BOLD),
+        ));
+    let inner = block.inner(area);
+    frame.render_widget(block, area);
+
+    let visible = inner.height as usize;
+    if visible == 0 {
+        return;
+    }
+    let end = (scroll + visible).min(enemies.len());
+
+    let mut lines: Vec<Line> = Vec::with_capacity(end - scroll);
+    for (offset, enemy) in enemies[scroll..end].iter().enumerate() {
+        let idx = scroll + offset;
+        let is_selected = idx == selected;
+        let cursor = if is_selected { "▶ " } else { "  " };
+        let style = if is_selected {
+            Style::default()
+                .fg(enemy.primary_type.color())
+                .add_modifier(Modifier::BOLD)
+        } else {
+            Style::default().fg(Color::Gray)
+        };
+        let prefix = if enemy.is_boss { "★ " } else { "" };
+        lines.push(Line::from(vec![
+            Span::styled(cursor, style),
+            Span::styled(format!("{}{}", prefix, enemy.name), style),
+        ]));
+    }
+    frame.render_widget(Paragraph::new(lines), inner);
+}
+
+fn render_enemy_visual(frame: &mut Frame, enemy: &Enemy, area: Rect) {
+    let title = if enemy.is_boss {
+        format!(" ★ {} ", enemy.name)
+    } else {
+        format!(" {} ", enemy.name)
+    };
+    let block = Block::default()
+        .borders(Borders::ALL)
+        .border_style(Style::default().fg(Color::DarkGray))
+        .title(Span::styled(
+            title,
+            Style::default()
+                .fg(enemy.primary_type.color())
+                .add_modifier(Modifier::BOLD),
+        ));
+    let inner = block.inner(area);
+    frame.render_widget(block, area);
+    if inner.width == 0 || inner.height == 0 {
+        return;
+    }
+
+    let mut lines: Vec<Line> = Vec::new();
+
+    // Type chips
+    let mut type_spans = vec![Span::styled(
+        enemy.primary_type.label().to_string(),
+        Style::default()
+            .fg(enemy.primary_type.color())
+            .add_modifier(Modifier::BOLD),
+    )];
+    if let Some(secondary) = enemy.secondary_type {
+        type_spans.push(Span::raw(" / "));
+        type_spans.push(Span::styled(
+            secondary.label().to_string(),
+            Style::default()
+                .fg(secondary.color())
+                .add_modifier(Modifier::BOLD),
+        ));
+    }
+    lines.push(Line::from(type_spans));
+    lines.push(Line::from(""));
+
+    // Sprite
+    let sprite_height = enemy.sprite.len() as u16;
+    let pad = inner.height.saturating_sub(sprite_height + 2) / 2;
+    for _ in 0..pad {
+        lines.push(Line::from(""));
+    }
+    for row in &enemy.sprite {
+        lines.push(Line::from(Span::styled(
+            row.clone(),
+            Style::default().fg(enemy.color),
+        )));
+    }
+
+    frame.render_widget(
+        Paragraph::new(lines).alignment(Alignment::Center),
+        inner,
+    );
+}
+
+fn render_enemy_info(frame: &mut Frame, enemy: &Enemy, area: Rect) {
+    let block = Block::default()
+        .borders(Borders::ALL)
+        .border_style(Style::default().fg(Color::DarkGray))
+        .title(Span::styled(
+            " Info ",
+            Style::default()
+                .fg(Color::Yellow)
+                .add_modifier(Modifier::BOLD),
+        ));
+    let inner = block.inner(area);
+    frame.render_widget(block, area);
+
+    let mut lines: Vec<Line> = Vec::new();
+
+    // Stats
+    lines.push(Line::from(vec![
+        Span::styled("HP    ", Style::default().fg(Color::DarkGray)),
+        Span::styled(
+            format!("{}", enemy.max_hp),
+            Style::default().fg(Color::Rgb(255, 120, 120)),
+        ),
+        Span::raw("    "),
+        Span::styled("Speed ", Style::default().fg(Color::DarkGray)),
+        Span::styled(
+            format!("{}", enemy.speed),
+            Style::default().fg(Color::Rgb(120, 200, 255)),
+        ),
+    ]));
+
+    // Weaknesses
+    let weaknesses = weaknesses_for(enemy);
+    if !weaknesses.is_empty() {
+        let mut spans = vec![Span::styled(
+            "Weak  ",
+            Style::default().fg(Color::DarkGray),
+        )];
+        for (idx, (el, mult)) in weaknesses.iter().enumerate() {
+            if idx > 0 {
+                spans.push(Span::raw(", "));
+            }
+            spans.push(Span::styled(
+                format!("{} ({}x)", el.label(), format_mult(*mult)),
+                Style::default()
+                    .fg(el.color())
+                    .add_modifier(Modifier::BOLD),
+            ));
+        }
+        lines.push(Line::from(spans));
+    }
+
+    let resists = resistances_for(enemy);
+    if !resists.is_empty() {
+        let mut spans = vec![Span::styled(
+            "Resist",
+            Style::default().fg(Color::DarkGray),
+        )];
+        spans.push(Span::raw("  "));
+        for (idx, (el, mult)) in resists.iter().enumerate() {
+            if idx > 0 {
+                spans.push(Span::raw(", "));
+            }
+            spans.push(Span::styled(
+                format!("{} ({}x)", el.label(), format_mult(*mult)),
+                Style::default().fg(el.color()),
+            ));
+        }
+        lines.push(Line::from(spans));
+    }
+
+    // Moveset
+    if !enemy.moveset.is_empty() {
+        let moves = enemy.moveset.join(", ");
+        lines.push(Line::from(vec![
+            Span::styled("Moves ", Style::default().fg(Color::DarkGray)),
+            Span::styled(moves, Style::default().fg(Color::Gray)),
+        ]));
+    }
+
+    lines.push(Line::from(""));
+    lines.push(Line::from(Span::styled(
+        enemy.description.clone(),
+        Style::default().fg(Color::Gray),
+    )));
+
+    frame.render_widget(Paragraph::new(lines), inner);
+}
+
+fn weaknesses_for(enemy: &Enemy) -> Vec<(Element, f32)> {
+    type_effectiveness_summary(enemy)
+        .into_iter()
+        .filter(|(_, m)| *m > 1.0)
+        .collect()
+}
+
+fn resistances_for(enemy: &Enemy) -> Vec<(Element, f32)> {
+    type_effectiveness_summary(enemy)
+        .into_iter()
+        .filter(|(_, m)| *m < 1.0)
+        .collect()
+}
+
+fn type_effectiveness_summary(enemy: &Enemy) -> Vec<(Element, f32)> {
+    const ALL: &[Element] = &[
+        Element::Normal,
+        Element::Fire,
+        Element::Water,
+        Element::Ice,
+        Element::Electric,
+        Element::Ground,
+        Element::Flying,
+        Element::Psychic,
+    ];
+    ALL.iter()
+        .map(|el| {
+            (
+                *el,
+                el.effectiveness_vs(enemy.primary_type, enemy.secondary_type),
+            )
+        })
+        .collect()
+}
+
+fn format_mult(m: f32) -> String {
+    if (m - m.round()).abs() < 0.01 {
+        format!("{}", m.round() as i32)
+    } else {
+        format!("{}", m)
+    }
+}
+
 pub struct CatalogueScreen {
     tab: CatalogueTab,
     attacks: AttacksTab,
     environments: EnvironmentsTab,
+    bestiary: BestiaryTab,
 }
 
 impl CatalogueScreen {
@@ -326,6 +644,7 @@ impl CatalogueScreen {
             tab: CatalogueTab::Attacks,
             attacks: AttacksTab::new(),
             environments: EnvironmentsTab::new(),
+            bestiary: BestiaryTab::new(),
         }
     }
 
@@ -343,6 +662,7 @@ impl CatalogueScreen {
         match self.tab {
             CatalogueTab::Attacks => self.attacks.handle_key(key),
             CatalogueTab::Environments => self.environments.handle_key(key),
+            CatalogueTab::Bestiary => self.bestiary.handle_key(key),
         }
         Transition::Stay
     }
@@ -376,6 +696,7 @@ impl CatalogueScreen {
         match self.tab {
             CatalogueTab::Attacks => self.attacks.draw(frame, body_area),
             CatalogueTab::Environments => self.environments.draw(frame, body_area),
+            CatalogueTab::Bestiary => self.bestiary.draw(frame, body_area),
         }
 
         render_hint(frame, hint_area);
