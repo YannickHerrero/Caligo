@@ -1,7 +1,7 @@
 use crate::crab::Crab;
 use crate::data::attacks as attack_lib;
 use crate::environment::{Environment, GroundStyle};
-use crate::fight::{Action, Animation, Enemy, FightState, MenuState};
+use crate::fight::{Action, Animation, Enemy, FightState, Item, MenuState, PotionSize};
 use crate::map::NodeKind;
 use crate::player::Player;
 use rand::seq::SliceRandom;
@@ -240,10 +240,68 @@ impl FightScreen {
                     }
                 }
             }
-            KeyCode::Enter => {}
+            KeyCode::Enter => {
+                self.use_focused_item();
+            }
             _ => {}
         }
         Transition::Stay
+    }
+
+    /// Apply the selected inventory item in combat. Only HP and Mana
+    /// potions resolve here for now — anything else flashes a "can't use
+    /// here" message and doesn't consume a turn.
+    fn use_focused_item(&mut self) {
+        let idx = self.fight.item_selected;
+        let Some(stack) = self.fight.items.get(idx) else {
+            return;
+        };
+        let item = stack.item.clone();
+        let result = match &item {
+            Item::HpPotion(size) => {
+                let amount = match size {
+                    PotionSize::Small => 10,
+                    PotionSize::Large => 30,
+                };
+                let before = self.fight.player_hp;
+                self.fight.player_hp = (self.fight.player_hp + amount).min(self.fight.player_max_hp);
+                let healed = self.fight.player_hp.saturating_sub(before);
+                Some(format!("Recovered {} HP.", healed))
+            }
+            Item::ManaPotion(size) => {
+                let amount = match size {
+                    PotionSize::Small => 6,
+                    PotionSize::Large => 15,
+                };
+                self.fight.player_mana = self.fight.player_mana.saturating_add(amount);
+                Some(format!("Recovered {} MP.", amount))
+            }
+            _ => None,
+        };
+
+        let Some(message) = result else {
+            self.fight.set_message("Can't use that here.", 0.8);
+            return;
+        };
+
+        // Consume one from the stack and prune empties.
+        if let Some(stack) = self.fight.items.get_mut(idx) {
+            stack.count = stack.count.saturating_sub(1);
+        }
+        if let Some(stack) = self.fight.items.get(idx) {
+            if stack.count == 0 {
+                self.fight.items.remove(idx);
+                if self.fight.item_selected >= self.fight.items.len()
+                    && !self.fight.items.is_empty()
+                {
+                    self.fight.item_selected = self.fight.items.len() - 1;
+                }
+            }
+        }
+        self.fight.set_message(message, 1.0);
+        self.fight.menu_state = MenuState::Main;
+        // Using an item costs the player's turn this round.
+        self.player_acted = true;
     }
 
     pub fn update(&mut self, player: &mut Player) -> Transition {
