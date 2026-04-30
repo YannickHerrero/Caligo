@@ -6,8 +6,9 @@ use ratatui::style::Color;
 pub enum StarterVisual {
     /// Render via the live Crab entity so it animates and bobs.
     AnimatedCrab,
-    /// Render this fixed ASCII art (each line padded to a consistent width).
-    Static(Vec<String>),
+    /// One or more ASCII frames cycled at the catalogue's animation rate.
+    /// One frame is effectively static.
+    Frames(Vec<Vec<String>>),
 }
 
 #[derive(Debug, Clone)]
@@ -48,12 +49,38 @@ fn cinder() -> Starter {
         name: "Cinder".to_string(),
         primary_type: Element::Fire,
         starting_attacks: vec!["Pinch", "Ember", "Snip", "Cinder Spit"],
-        visual: StarterVisual::Static(vec![
-            "    .^.    ".to_string(),
-            "   /^^^\\   ".to_string(),
-            "  / o o \\  ".to_string(),
-            "  \\  v  /  ".to_string(),
-            "   '___'   ".to_string(),
+        visual: StarterVisual::Frames(vec![
+            // eyes open
+            vec![
+                "    .^.    ".to_string(),
+                "   /^^^\\   ".to_string(),
+                "  / o o \\  ".to_string(),
+                "  \\  v  /  ".to_string(),
+                "   '___'   ".to_string(),
+            ],
+            // eyes closed (blink)
+            vec![
+                "    .^.    ".to_string(),
+                "   /^^^\\   ".to_string(),
+                "  / - - \\  ".to_string(),
+                "  \\  v  /  ".to_string(),
+                "   '___'   ".to_string(),
+            ],
+            // open again — pads the cycle so the blink is brief
+            vec![
+                "    .^.    ".to_string(),
+                "   /^^^\\   ".to_string(),
+                "  / o o \\  ".to_string(),
+                "  \\  v  /  ".to_string(),
+                "   '___'   ".to_string(),
+            ],
+            vec![
+                "    .^.    ".to_string(),
+                "   /^^^\\   ".to_string(),
+                "  / o o \\  ".to_string(),
+                "  \\  v  /  ".to_string(),
+                "   '___'   ".to_string(),
+            ],
         ]),
         palette: ThemedColor::Fixed(Color::Rgb(220, 90, 50)),
         description:
@@ -66,13 +93,43 @@ fn sprout() -> Starter {
         name: "Sprout".to_string(),
         primary_type: Element::Grass,
         starting_attacks: vec!["Pinch", "Vine Whip", "Snip", "Leaf Slash"],
-        visual: StarterVisual::Static(vec![
-            "   .---.   ".to_string(),
-            "  /     \\  ".to_string(),
-            "  |\\v^v/|  ".to_string(),
-            "  \\_____/  ".to_string(),
-            "    | |    ".to_string(),
-            "   ~| |~   ".to_string(),
+        visual: StarterVisual::Frames(vec![
+            // mouth open showing fangs
+            vec![
+                "   .---.   ".to_string(),
+                "  /     \\  ".to_string(),
+                "  |\\v^v/|  ".to_string(),
+                "  \\_____/  ".to_string(),
+                "    | |    ".to_string(),
+                "   ~| |~   ".to_string(),
+            ],
+            // mouth half-open
+            vec![
+                "   .---.   ".to_string(),
+                "  /     \\  ".to_string(),
+                "  |.v_v.|  ".to_string(),
+                "  \\_____/  ".to_string(),
+                "    | |    ".to_string(),
+                "   ~| |~   ".to_string(),
+            ],
+            // mouth closed
+            vec![
+                "   .---.   ".to_string(),
+                "  /     \\  ".to_string(),
+                "  |-----|  ".to_string(),
+                "  \\_____/  ".to_string(),
+                "    | |    ".to_string(),
+                "   ~| |~   ".to_string(),
+            ],
+            // mouth half-open again on the way back
+            vec![
+                "   .---.   ".to_string(),
+                "  /     \\  ".to_string(),
+                "  |.v_v.|  ".to_string(),
+                "  \\_____/  ".to_string(),
+                "    | |    ".to_string(),
+                "   ~| |~   ".to_string(),
+            ],
         ]),
         palette: ThemedColor::Themed {
             dark: Color::Rgb(120, 210, 110),

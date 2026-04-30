@@ -638,6 +638,8 @@ fn format_mult(m: f32) -> String {
     }
 }
 
+const STARTER_FRAME_DURATION: f32 = 0.4;
+
 struct StartersTab {
     starters: Vec<Starter>,
     selected: usize,
@@ -645,6 +647,8 @@ struct StartersTab {
     last_list_height: u16,
     crab: Crab,
     crab_bounds: (f32, f32),
+    frame_timer: f32,
+    frame_index: usize,
 }
 
 impl StartersTab {
@@ -658,12 +662,19 @@ impl StartersTab {
             last_list_height: 0,
             crab,
             crab_bounds: (0.0, 0.0),
+            frame_timer: 0.0,
+            frame_index: 0,
         }
     }
 
     fn update(&mut self) {
         if self.crab_bounds.0 > 0.0 && self.crab_bounds.1 > 0.0 {
             self.crab.update(0.05, self.crab_bounds);
+        }
+        self.frame_timer += 0.05;
+        if self.frame_timer >= STARTER_FRAME_DURATION {
+            self.frame_timer -= STARTER_FRAME_DURATION;
+            self.frame_index = self.frame_index.wrapping_add(1);
         }
     }
 
@@ -717,7 +728,13 @@ impl StartersTab {
 
         self.update_crab_bounds(visual_area);
         if let Some(starter) = self.starters.get(self.selected) {
-            render_starter_visual(frame, starter, &self.crab, visual_area);
+            render_starter_visual(
+                frame,
+                starter,
+                &self.crab,
+                self.frame_index,
+                visual_area,
+            );
             render_starter_info(frame, starter, info_area);
         }
     }
@@ -788,7 +805,13 @@ fn render_starter_list(
     frame.render_widget(Paragraph::new(lines), inner);
 }
 
-fn render_starter_visual(frame: &mut Frame, starter: &Starter, crab: &Crab, area: Rect) {
+fn render_starter_visual(
+    frame: &mut Frame,
+    starter: &Starter,
+    crab: &Crab,
+    frame_index: usize,
+    area: Rect,
+) {
     let block = Block::default()
         .borders(Borders::ALL)
         .border_style(Style::default().fg(Color::DarkGray))
@@ -826,7 +849,11 @@ fn render_starter_visual(frame: &mut Frame, starter: &Starter, crab: &Crab, area
         StarterVisual::AnimatedCrab => {
             crate::ui::widgets::render_crab(frame, crab, sprite_area, None);
         }
-        StarterVisual::Static(sprite) => {
+        StarterVisual::Frames(frames) => {
+            if frames.is_empty() {
+                return;
+            }
+            let sprite = &frames[frame_index % frames.len()];
             let sprite_height = sprite.len() as u16;
             let mut lines: Vec<Line> = Vec::with_capacity(sprite.len() + 4);
             let pad = sprite_area
