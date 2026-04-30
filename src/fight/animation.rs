@@ -126,6 +126,9 @@ impl Animation {
     pub fn projectile_position(&self, base_y: f32) -> Option<(f32, f32)> {
         match self.kind {
             AnimationKind::Throw(_) => {
+                if self.elapsed >= self.move_duration {
+                    return None;
+                }
                 let p = self.progress();
                 let x = self.start_x + 12.0 + (self.target_x - self.start_x - 12.0) * p;
                 let arc = THROW_ARC_HEIGHT * (std::f32::consts::PI * p).sin();
