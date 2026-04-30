@@ -50,7 +50,7 @@ fn cinder() -> Starter {
         primary_type: Element::Fire,
         starting_attacks: vec!["Pinch", "Ember", "Snip", "Cinder Spit"],
         visual: StarterVisual::Frames(vec![
-            // F0 — outward flame, sparks A
+            // F0 — calm flame
             vec![
                 "  *      . ".to_string(),
                 "       '   ".to_string(),
@@ -60,37 +60,37 @@ fn cinder() -> Starter {
                 "  \\  v  /  ".to_string(),
                 "   '___'   ".to_string(),
             ],
-            // F1 — inward flame, sparks B
+            // F1 — tip leans left, body's right edge flips outward→inward
             vec![
                 "       '   ".to_string(),
                 "   *    .  ".to_string(),
-                "    ) (    ".to_string(),
-                "   )) ((   ".to_string(),
+                "    ( (    ".to_string(),
+                "   () ))   ".to_string(),
                 "  / o o \\  ".to_string(),
                 "  \\  v  /  ".to_string(),
                 "   '___'   ".to_string(),
             ],
-            // F2 — outward flame, sparks C
+            // F2 — alternating pattern across the body
             vec![
                 "  '    *   ".to_string(),
                 "        '  ".to_string(),
-                "    ( )    ".to_string(),
-                "   (( ))   ".to_string(),
+                "    ) (    ".to_string(),
+                "   )( )(   ".to_string(),
                 "  / o o \\  ".to_string(),
                 "  \\  v  /  ".to_string(),
                 "   '___'   ".to_string(),
             ],
-            // F3 — inward flame, sparks D
+            // F3 — body's right side curls back in
             vec![
                 "   .   '   ".to_string(),
                 "      *    ".to_string(),
-                "    ) (    ".to_string(),
-                "   )) ((   ".to_string(),
+                "    ) )    ".to_string(),
+                "   (( ()   ".to_string(),
                 "  / o o \\  ".to_string(),
                 "  \\  v  /  ".to_string(),
                 "   '___'   ".to_string(),
             ],
-            // F4 — outward flame, blink, sparks E
+            // F4 — calm again, blink
             vec![
                 "       '   ".to_string(),
                 "  .   *    ".to_string(),
@@ -100,32 +100,32 @@ fn cinder() -> Starter {
                 "  \\  v  /  ".to_string(),
                 "   '___'   ".to_string(),
             ],
-            // F5 — inward flame, sparks F
+            // F5 — body's left edge flips
             vec![
                 "  *      ' ".to_string(),
                 "      '    ".to_string(),
-                "    ) (    ".to_string(),
-                "   )) ((   ".to_string(),
+                "    ( )    ".to_string(),
+                "   )( ))   ".to_string(),
                 "  / o o \\  ".to_string(),
                 "  \\  v  /  ".to_string(),
                 "   '___'   ".to_string(),
             ],
-            // F6 — outward flame, sparks G
+            // F6 — body splits oddly, tip pinches
             vec![
                 "   '   .   ".to_string(),
                 "       *   ".to_string(),
-                "    ( )    ".to_string(),
-                "   (( ))   ".to_string(),
+                "    ) (    ".to_string(),
+                "   () ((   ".to_string(),
                 "  / o o \\  ".to_string(),
                 "  \\  v  /  ".to_string(),
                 "   '___'   ".to_string(),
             ],
-            // F7 — inward flame, sparks H
+            // F7 — body's bottom-right flips, tip leans left
             vec![
                 "        *  ".to_string(),
                 "  '    .   ".to_string(),
-                "    ) (    ".to_string(),
-                "   )) ((   ".to_string(),
+                "    ( (    ".to_string(),
+                "   (( )(   ".to_string(),
                 "  / o o \\  ".to_string(),
                 "  \\  v  /  ".to_string(),
                 "   '___'   ".to_string(),
