@@ -9,11 +9,14 @@ pub const MAX_TRINKETS: usize = 2;
 
 pub type EquippedTrinkets = [Option<TrinketKind>; MAX_TRINKETS];
 
+pub const PLAYER_BASE_SPEED: u32 = 10;
+
 pub struct Player {
     pub hp: u32,
     pub base_max_hp: u32,
     pub mana: u32,
     pub base_max_mana: u32,
+    pub speed: u32,
     pub gold: u32,
     pub owned_attacks: Vec<Attack>,
     pub equipped_attacks: [Option<usize>; MAX_ATTACKS],
@@ -49,6 +52,7 @@ impl Player {
             base_max_hp: 25,
             mana: 15,
             base_max_mana: 15,
+            speed: PLAYER_BASE_SPEED,
             gold: 0,
             owned_attacks,
             equipped_attacks,
@@ -69,6 +73,7 @@ impl Player {
             base_max_hp: 25,
             mana: 15,
             base_max_mana: 15,
+            speed: PLAYER_BASE_SPEED,
             gold: 0,
             owned_attacks,
             equipped_attacks,

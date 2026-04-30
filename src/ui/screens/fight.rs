@@ -66,6 +66,8 @@ impl FightScreen {
     ) -> Self {
         let mut fight = FightState::from_player_with_enemy(player, enemy);
         fight.player_type = Some(map.run.starter.primary_type);
+        let mut rng = rand::thread_rng();
+        fight.roll_round_order(&mut rng);
         Self {
             crab: Crab::new((6.0, 100.0), 95),
             environment: Environment::generate(80, 15, GroundStyle::default()),

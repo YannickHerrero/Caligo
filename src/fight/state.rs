@@ -45,6 +45,12 @@ pub struct FightState {
     /// when computing how effective enemy moves are against us. `None`
     /// for stand-alone debug fights.
     pub player_type: Option<Element>,
+    /// Player's speed at the start of the fight. Used to roll round
+    /// order against `enemy.speed`.
+    pub player_speed: u32,
+    /// Whose turn comes first in the current round, rolled at round
+    /// start (random tie-break when speeds match).
+    pub enemy_first_this_round: bool,
 }
 
 impl FightState {
@@ -78,7 +84,19 @@ impl FightState {
             message_linger: 0.0,
             pending_enemy_attack: None,
             player_type: None,
+            player_speed: player.speed,
+            enemy_first_this_round: false,
         }
+    }
+
+    /// Roll initiative for a new round. Faster combatant goes first;
+    /// ties roll a coin.
+    pub fn roll_round_order<R: Rng>(&mut self, rng: &mut R) {
+        self.enemy_first_this_round = match self.enemy.speed.cmp(&self.player_speed) {
+            std::cmp::Ordering::Greater => true,
+            std::cmp::Ordering::Less => false,
+            std::cmp::Ordering::Equal => rng.gen_bool(0.5),
+        };
     }
 
     pub fn set_message(&mut self, text: impl Into<String>, linger: f32) {
