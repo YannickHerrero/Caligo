@@ -638,7 +638,7 @@ fn format_mult(m: f32) -> String {
     }
 }
 
-const STARTER_FRAME_DURATION: f32 = 0.4;
+const STARTER_FRAME_DURATION: f32 = 0.2;
 
 struct StartersTab {
     starters: Vec<Starter>,

@@ -50,33 +50,74 @@ fn cinder() -> Starter {
         primary_type: Element::Fire,
         starting_attacks: vec!["Pinch", "Ember", "Snip", "Cinder Spit"],
         visual: StarterVisual::Frames(vec![
-            // eyes open
+            // F0 — flame centered, spark rising on the left
             vec![
+                "  *        ".to_string(),
                 "    .^.    ".to_string(),
                 "   /^^^\\   ".to_string(),
                 "  / o o \\  ".to_string(),
                 "  \\  v  /  ".to_string(),
                 "   '___'   ".to_string(),
             ],
-            // eyes closed (blink)
+            // F1 — flame leans slightly left, spark drifting up-right
             vec![
+                "    '      ".to_string(),
+                "   .^.     ".to_string(),
+                "  /^^^\\    ".to_string(),
+                "  / o o \\  ".to_string(),
+                "  \\  v  /  ".to_string(),
+                "   '___'   ".to_string(),
+            ],
+            // F2 — flame leans far left, previous spark gone
+            vec![
+                "           ".to_string(),
+                "  .^.      ".to_string(),
+                " /^^^\\     ".to_string(),
+                "  / o o \\  ".to_string(),
+                "  \\  v  /  ".to_string(),
+                "   '___'   ".to_string(),
+            ],
+            // F3 — returning toward center, new spark on the right
+            vec![
+                "         . ".to_string(),
+                "   .^.     ".to_string(),
+                "  /^^^\\    ".to_string(),
+                "  / o o \\  ".to_string(),
+                "  \\  v  /  ".to_string(),
+                "   '___'   ".to_string(),
+            ],
+            // F4 — flame centered, blink, spark drifting up-left
+            vec![
+                "       '   ".to_string(),
                 "    .^.    ".to_string(),
                 "   /^^^\\   ".to_string(),
                 "  / - - \\  ".to_string(),
                 "  \\  v  /  ".to_string(),
                 "   '___'   ".to_string(),
             ],
-            // open again — pads the cycle so the blink is brief
+            // F5 — flame leans slightly right, new spark center-left
             vec![
-                "    .^.    ".to_string(),
-                "   /^^^\\   ".to_string(),
+                "    *      ".to_string(),
+                "     .^.   ".to_string(),
+                "    /^^^\\  ".to_string(),
                 "  / o o \\  ".to_string(),
                 "  \\  v  /  ".to_string(),
                 "   '___'   ".to_string(),
             ],
+            // F6 — flame leans far right, spark drifted up-left
             vec![
-                "    .^.    ".to_string(),
-                "   /^^^\\   ".to_string(),
+                "  '        ".to_string(),
+                "      .^.  ".to_string(),
+                "     /^^^\\ ".to_string(),
+                "  / o o \\  ".to_string(),
+                "  \\  v  /  ".to_string(),
+                "   '___'   ".to_string(),
+            ],
+            // F7 — returning toward center
+            vec![
+                "           ".to_string(),
+                "     .^.   ".to_string(),
+                "    /^^^\\  ".to_string(),
                 "  / o o \\  ".to_string(),
                 "  \\  v  /  ".to_string(),
                 "   '___'   ".to_string(),
