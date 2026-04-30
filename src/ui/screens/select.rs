@@ -1,6 +1,8 @@
 use crate::player::Player;
 use crate::ui::screen::{Screen, Transition};
-use crate::ui::screens::{AttackPreviewScreen, DemoScreen, FightScreen, MapScreen, SettingsScreen};
+use crate::ui::screens::{
+    AttackPreviewScreen, CatalogueScreen, DemoScreen, FightScreen, MapScreen, SettingsScreen,
+};
 use crossterm::event::KeyCode;
 use ratatui::{
     layout::{Alignment, Constraint, Direction, Layout, Rect},
@@ -16,6 +18,7 @@ pub enum ScreenKind {
     Map,
     Demo,
     AttackPreview,
+    Catalogue,
     Settings,
 }
 
@@ -25,6 +28,7 @@ impl ScreenKind {
         ScreenKind::Map,
         ScreenKind::Demo,
         ScreenKind::AttackPreview,
+        ScreenKind::Catalogue,
         ScreenKind::Settings,
     ];
 
@@ -34,6 +38,7 @@ impl ScreenKind {
             ScreenKind::Map => "Map Screen",
             ScreenKind::Demo => "Transition Demo",
             ScreenKind::AttackPreview => "Attack Preview",
+            ScreenKind::Catalogue => "Catalogue",
             ScreenKind::Settings => "Settings",
         }
     }
@@ -44,6 +49,7 @@ impl ScreenKind {
             ScreenKind::Map => "Choose your path across the dungeon floor.",
             ScreenKind::Demo => "Preview every node transition animation.",
             ScreenKind::AttackPreview => "Browse the attack library and play each animation.",
+            ScreenKind::Catalogue => "Inspect every projectile and particle at rest.",
             ScreenKind::Settings => "Adjust the theme and other preferences.",
         }
     }
@@ -54,6 +60,7 @@ impl ScreenKind {
             ScreenKind::Map => Screen::Map(MapScreen::new()),
             ScreenKind::Demo => Screen::Demo(DemoScreen::new()),
             ScreenKind::AttackPreview => Screen::AttackPreview(AttackPreviewScreen::new()),
+            ScreenKind::Catalogue => Screen::Catalogue(CatalogueScreen::new()),
             ScreenKind::Settings => Screen::Settings(SettingsScreen::new()),
         }
     }
