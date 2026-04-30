@@ -5,7 +5,7 @@ use crate::map::NodeKind;
 use crate::player::Player;
 use crate::ui::screen::{Screen, Transition};
 use crate::ui::screens::reward::{apply_rewards, roll_rewards};
-use crate::ui::screens::{MapScreen, RewardScreen, SelectScreen};
+use crate::ui::screens::{GameOverScreen, MapScreen, RewardScreen, SelectScreen};
 use crate::ui::widgets;
 use crossterm::event::KeyCode;
 use ratatui::layout::{Constraint, Direction, Layout};
@@ -237,11 +237,26 @@ impl FightScreen {
         match outcome {
             FightOutcome::Victory => self.victory(player),
             FightOutcome::Flee => self.exit_fight(),
-            FightOutcome::Defeat => {
-                // Stub: same as flee for now until GameOverScreen lands.
-                self.exit_fight()
-            }
+            FightOutcome::Defeat => self.defeat(player),
         }
+    }
+
+    fn defeat(&mut self, player: &Player) -> Transition {
+        let Some(map) = self.map.take() else {
+            return self.exit_fight();
+        };
+        let starter = map.run.starter.clone();
+        let floor_reached = map
+            .run
+            .map
+            .current
+            .map(|id| map.run.map.node(id).floor as u32 + 1)
+            .unwrap_or(0);
+        Transition::Goto(Screen::GameOver(GameOverScreen::new(
+            starter,
+            floor_reached,
+            player.gold,
+        )))
     }
 
     fn victory(&mut self, player: &mut Player) -> Transition {
