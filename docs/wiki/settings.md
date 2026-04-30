@@ -25,10 +25,14 @@ The audit so far covers the colors that go invisible on a light background:
 
 | Where | Dark | Light |
 |---|---|---|
-| `Element::Air` (labels) | pale cyan-blue | steel blue |
+| `Element::Flying` (labels) | pale cyan-blue | steel blue |
+| `Element::Ice` (labels) | cyan | deep teal |
+| `Element::Electric` (labels) | bright yellow | deep amber |
 | `ProjectileKind::Electric` (lightning bolt) | bright yellow | deep amber |
-| `ParticleKind::AirWisp` (Air trails / impact) | pale cyan | steel blue |
-| `ParticleKind::NeutralHit` (Neutral impact mark) | light gray | mid gray |
+| `ParticleKind::FlyingWisp` (Flying trails / impact) | pale cyan | steel blue |
+| `ParticleKind::IceShard` (Ice trails / impact) | cyan | deep teal |
+| `ParticleKind::ElectricSpark` (Electric trails / impact) | bright yellow | deep amber |
+| `ParticleKind::NormalHit` (Normal impact mark) | light gray | mid gray |
 
 Other colors (Fire orange, Water blue, Earth brown, EnergyBall purple, Hearts pink, Triangles red, Circles blue, etc.) are saturated enough to read on both backgrounds and are kept identical across themes.
 

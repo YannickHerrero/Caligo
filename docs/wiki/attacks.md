@@ -1,10 +1,14 @@
 # Attacks
 
-The full attack pool, grouped by element. Both offensive and support moves live in the same Attack menu — the `Effect` column tells you what each one does.
+The full attack pool, grouped by type. Both offensive and support moves live in the same Attack menu — the `Effect` column tells you what each one does.
 
 The player begins with **Pinch**, **Bubble**, **Snip**, and **Cosmic Orb** equipped; the remaining attacks are unlocked through Stones found during a run.
 
 Source of truth: [`src/data/attacks.rs`](../../src/data/attacks.rs).
+
+## Types
+
+Caligo borrows Pokémon-style type names. The current set is **Normal, Fire, Water, Ice, Electric, Ground, Flying, Psychic** — eight types. A type-effectiveness chart isn't implemented yet; types currently just color the attacks and pick the trail/impact particle.
 
 ## Animation kinds
 
@@ -32,19 +36,15 @@ Each kind has three sizes. The size used for a `Throw` attack is derived from th
 | `Electric` | 1×3 | 2×4 | 3×5 | Yellow |
 | `EnergyBall` | 3×2 | 5×3 | 7×5 | Purple |
 
-Sprite dimensions are *width × height* in characters. Round projectiles (Water and EnergyBall) are deliberately wider than tall because terminal cells render at roughly a 2:1 height:width ratio — a square sprite reads as a vertical bar on screen, so the round shapes are flattened to look round once rendered. Fire and Electric are kept tall on purpose (flames rise, lightning is a vertical bolt).
-
-So Ember (DMG 6) and Bubble (DMG 7) keep the small sprites, Fireball (DMG 11) and Cosmic Orb (DMG 14) get the medium versions, and Inferno (DMG 21), Tsunami (DMG 22), Sky Splitter (DMG 22), and Star Lance (DMG 19) get the large ones.
+Sprite dimensions are *width × height* in characters. Round projectiles (Water and EnergyBall) are deliberately wider than tall because terminal cells render at roughly a 2:1 height:width ratio — a square sprite reads as a vertical bar on screen, so the round shapes are flattened to look round once rendered. Fire and Electric projectiles are kept tall on purpose (flames rise, lightning is a vertical bolt).
 
 ## Particle kinds
 
 Particles are used in three places:
 
 1. **`SelfCast` aura** — drifts outward and upward around the stationary crab during heals and buffs. Picked per-attack to match the effect.
-2. **`Jump` / `Dash` elemental trails** — emitted behind the moving crab during the *outbound* leg of the animation only. The trail vanishes the moment the crab reaches the target and starts heading back. No trail for Neutral attacks.
-3. **Impact marks** — every damage attack (`Jump`, `Dash`, or `Throw`) leaves a small burst of particles at the target when the hit lands, lingering for about a second so the impact reads visually. The mark uses the attack's element, with a neutral gray fallback for Neutral attacks.
-
-The animation keeps moving as before, then waits an extra ~0.5–1.0s for the impact particles to play out before unlocking input.
+2. **`Jump` / `Dash` elemental trails** — emitted behind the moving crab during the *outbound* leg of the animation only. The trail vanishes the moment the crab reaches the target. No trail for Normal attacks.
+3. **Impact marks** — every damage attack (`Jump`, `Dash`, or `Throw`) leaves a small burst of particles at the target when the hit lands, lingering for about a second. The mark uses the attack's type, with a gray fallback for Normal.
 
 | Kind | Glyph | Color | Used by |
 |---|---|---|---|
@@ -53,9 +53,12 @@ The animation keeps moving as before, then waits an extra ~0.5–1.0s for the im
 | `Circles` | ● | Blue | `DefenseUp` buffs (Carapace) |
 | `FireSpark` | * | Orange | Fire trail and impact |
 | `WaterDroplet` | . | Blue | Water trail and impact |
-| `EarthDust` | , | Brown | Earth trail and impact |
-| `AirWisp` | ~ | Pale | Air trail and impact |
-| `NeutralHit` | * | Gray | Impact for Neutral physical attacks (Pinch, Snip, Headbutt, etc.) |
+| `IceShard` | + | Cyan | Ice trail and impact |
+| `ElectricSpark` | ' | Yellow | Electric trail and impact |
+| `GroundDust` | , | Brown | Ground trail and impact |
+| `FlyingWisp` | ~ | Pale | Flying trail and impact |
+| `PsychicSpark` | ° | Magenta | Psychic trail and impact |
+| `NormalHit` | * | Gray | Impact for Normal physical attacks (Pinch, Snip, Headbutt, etc.) |
 
 ## Effect kinds
 
@@ -65,7 +68,7 @@ The animation keeps moving as before, then waits an extra ~0.5–1.0s for the im
 | Heal | `HEAL n` | Restores `n` HP to the caster. |
 | Buff | `ATK +m% / dt` or `DEF +m% / dt` | Boosts the caster's attack or defense by `m%` for `d` turns. |
 
-## Neutral
+## Normal
 
 Physical, mostly cheap. Reliable when mana is low — plus the bulk of the support kit.
 
@@ -111,17 +114,37 @@ Balanced. Strong efficiency at low cost; ramps to a top-tier finisher. Includes 
 |---|---|---|---:|
 | Splash | Throw(Water) | DMG 4 | 1 |
 | Bubble ⭐ | Throw(Water) | DMG 7 | 3 |
-| Frostbite | Dash | DMG 8 | 4 |
-| Ice Shard | Throw(Water) | DMG 9 | 4 |
 | Riptide | Dash | DMG 10 | 5 |
 | Whirlpool | Throw(Water) | DMG 12 | 6 |
 | Tidal Slam | Jump | DMG 13 | 5 |
 | Geyser | Jump | DMG 15 | 7 |
-| Hailstorm | Throw(Water) | DMG 17 | 9 |
 | Tsunami | Throw(Water) | DMG 22 | 12 |
 | Salve | SelfCast | HEAL 6 | 2 |
 
-## Earth
+## Ice
+
+Cold attacks split out of Water. Sparse so far but punches above its weight at the top end.
+
+| Name | Animation | Effect | Mana |
+|---|---|---|---:|
+| Frostbite | Dash | DMG 8 | 4 |
+| Ice Shard | Throw(Water) | DMG 9 | 4 |
+| Hailstorm | Throw(Water) | DMG 17 | 9 |
+
+## Electric
+
+Lightning attacks. Mid-cost projectiles that scale to a heavy ultimate.
+
+| Name | Animation | Effect | Mana |
+|---|---|---|---:|
+| Spark | Throw(Electric) | DMG 5 | 2 |
+| Static Charge | Dash | DMG 7 | 3 |
+| Thunderclap | Throw(Electric) | DMG 9 | 4 |
+| Lightning Bolt | Throw(Electric) | DMG 12 | 6 |
+| Storm Strike | Throw(Electric) | DMG 16 | 8 |
+| Sky Splitter | Throw(Electric) | DMG 22 | 11 |
+
+## Ground
 
 Heavy melee. Few projectiles; biggest single-hit numbers in the game. Also home to the defense buff.
 
@@ -139,22 +162,23 @@ Heavy melee. Few projectiles; biggest single-hit numbers in the game. Also home 
 | Tectonic Crush | Jump | DMG 24 | 12 |
 | Carapace | SelfCast | DEF +30% / 3t | 4 |
 
-## Air
+## Flying
 
-Lightning and cosmic. Heaviest mana sinks; biggest projectiles.
+Wind-based melee.
 
 | Name | Animation | Effect | Mana |
 |---|---|---|---:|
-| Spark | Throw(Electric) | DMG 5 | 2 |
 | Gust | Jump | DMG 6 | 2 |
-| Static Charge | Dash | DMG 7 | 3 |
-| Thunderclap | Throw(Electric) | DMG 9 | 4 |
-| Lightning Bolt | Throw(Electric) | DMG 12 | 6 |
-| Cosmic Orb ⭐ | Throw(EnergyBall) | DMG 14 | 8 |
 | Tornado | Jump | DMG 14 | 7 |
-| Storm Strike | Throw(Electric) | DMG 16 | 8 |
+
+## Psychic
+
+Cosmic energy attacks. Heaviest mana costs; biggest projectiles.
+
+| Name | Animation | Effect | Mana |
+|---|---|---|---:|
+| Cosmic Orb ⭐ | Throw(EnergyBall) | DMG 14 | 8 |
 | Star Lance | Throw(EnergyBall) | DMG 19 | 10 |
-| Sky Splitter | Throw(Electric) | DMG 22 | 11 |
 
 ⭐ = starter attack, equipped from the start of a run.
 
