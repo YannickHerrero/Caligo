@@ -1,7 +1,8 @@
+use crate::crab::Crab;
 use crate::data::attacks as attack_lib;
 use crate::data::enemies as enemy_lib;
 use crate::data::starters as starter_lib;
-use crate::data::starters::Starter;
+use crate::data::starters::{Starter, StarterVisual};
 use crate::environment::{Environment, GroundStyle, TimeOfDay};
 use crate::fight::{
     impact_for, trail_for, AnimationKind, Attack, Effect, Element, Enemy, ParticleKind,
@@ -642,15 +643,27 @@ struct StartersTab {
     selected: usize,
     scroll: usize,
     last_list_height: u16,
+    crab: Crab,
+    crab_bounds: (f32, f32),
 }
 
 impl StartersTab {
     fn new() -> Self {
+        let mut crab = Crab::new((0.0, 0.0), 95);
+        crab.walk_range_x = Some((0.0, 0.5));
         Self {
             starters: starter_lib::all_starters(),
             selected: 0,
             scroll: 0,
             last_list_height: 0,
+            crab,
+            crab_bounds: (0.0, 0.0),
+        }
+    }
+
+    fn update(&mut self) {
+        if self.crab_bounds.0 > 0.0 && self.crab_bounds.1 > 0.0 {
+            self.crab.update(0.05, self.crab_bounds);
         }
     }
 
@@ -702,10 +715,31 @@ impl StartersTab {
             list_area,
         );
 
+        self.update_crab_bounds(visual_area);
         if let Some(starter) = self.starters.get(self.selected) {
-            render_starter_visual(frame, starter, visual_area);
+            render_starter_visual(frame, starter, &self.crab, visual_area);
             render_starter_info(frame, starter, info_area);
         }
+    }
+
+    /// Re-center the crab inside the visual panel when the area resizes.
+    /// `crab_bounds` drives ground/jump math in Crab::update; with a 1-wide
+    /// `walk_range_x` the crab can't drift horizontally.
+    fn update_crab_bounds(&mut self, visual_area: Rect) {
+        let block_inner = (
+            visual_area.width.saturating_sub(2),
+            visual_area.height.saturating_sub(2),
+        );
+        // The visual panel splits its inner into a 2-line type chip + sprite area.
+        let sprite_h = block_inner.1.saturating_sub(2);
+        let bounds = (block_inner.0 as f32, sprite_h as f32);
+        if bounds == self.crab_bounds || bounds.0 <= 0.0 || bounds.1 <= 0.0 {
+            return;
+        }
+        let cx = ((bounds.0 - 15.0).max(0.0)) / 2.0;
+        self.crab.position.0 = cx;
+        self.crab.walk_range_x = Some((cx, cx + 0.5));
+        self.crab_bounds = bounds;
     }
 }
 
@@ -754,7 +788,7 @@ fn render_starter_list(
     frame.render_widget(Paragraph::new(lines), inner);
 }
 
-fn render_starter_visual(frame: &mut Frame, starter: &Starter, area: Rect) {
+fn render_starter_visual(frame: &mut Frame, starter: &Starter, crab: &Crab, area: Rect) {
     let block = Block::default()
         .borders(Borders::ALL)
         .border_style(Style::default().fg(Color::DarkGray))
@@ -770,33 +804,52 @@ fn render_starter_visual(frame: &mut Frame, starter: &Starter, area: Rect) {
         return;
     }
 
-    let mut lines: Vec<Line> = Vec::new();
-    lines.push(Line::from(Span::styled(
+    let chunks = Layout::default()
+        .direction(Direction::Vertical)
+        .constraints([Constraint::Length(2), Constraint::Min(1)])
+        .split(inner);
+    let chip_area = chunks[0];
+    let sprite_area = chunks[1];
+
+    let chip = Line::from(Span::styled(
         starter.primary_type.label().to_string(),
         Style::default()
             .fg(starter.primary_type.color())
             .add_modifier(Modifier::BOLD),
-    )));
-    lines.push(Line::from(""));
-
-    let sprite_height = starter.sprite.len() as u16;
-    let pad = inner.height.saturating_sub(sprite_height + 2) / 2;
-    for _ in 0..pad {
-        lines.push(Line::from(""));
-    }
-    for row in &starter.sprite {
-        lines.push(Line::from(Span::styled(
-            row.clone(),
-            Style::default()
-                .fg(starter.color())
-                .add_modifier(Modifier::BOLD),
-        )));
-    }
-
+    ));
     frame.render_widget(
-        Paragraph::new(lines).alignment(Alignment::Center),
-        inner,
+        Paragraph::new(chip).alignment(Alignment::Center),
+        chip_area,
     );
+
+    match &starter.visual {
+        StarterVisual::AnimatedCrab => {
+            crate::ui::widgets::render_crab(frame, crab, sprite_area, None);
+        }
+        StarterVisual::Static(sprite) => {
+            let sprite_height = sprite.len() as u16;
+            let mut lines: Vec<Line> = Vec::with_capacity(sprite.len() + 4);
+            let pad = sprite_area
+                .height
+                .saturating_sub(sprite_height)
+                / 2;
+            for _ in 0..pad {
+                lines.push(Line::from(""));
+            }
+            for row in sprite {
+                lines.push(Line::from(Span::styled(
+                    row.clone(),
+                    Style::default()
+                        .fg(starter.color())
+                        .add_modifier(Modifier::BOLD),
+                )));
+            }
+            frame.render_widget(
+                Paragraph::new(lines).alignment(Alignment::Center),
+                sprite_area,
+            );
+        }
+    }
 }
 
 fn render_starter_info(frame: &mut Frame, starter: &Starter, area: Rect) {
@@ -879,8 +932,10 @@ impl CatalogueScreen {
     }
 
     pub fn update(&mut self, _player: &mut Player) -> Transition {
-        if self.tab == CatalogueTab::Environments {
-            self.environments.update();
+        match self.tab {
+            CatalogueTab::Environments => self.environments.update(),
+            CatalogueTab::Starters => self.starters.update(),
+            _ => {}
         }
         Transition::Stay
     }
