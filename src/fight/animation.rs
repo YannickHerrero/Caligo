@@ -1,13 +1,18 @@
 use super::attack::AnimationKind;
+use super::particle::ParticleKind;
 use super::projectile::ProjectileKind;
 
 const JUMP_DURATION: f32 = 0.8;
 const DASH_DURATION: f32 = 0.5;
 const THROW_DURATION: f32 = 0.6;
-const SELF_CAST_DURATION: f32 = 0.6;
+const SELF_CAST_DURATION: f32 = 0.9;
 const JUMP_HEIGHT: f32 = 4.0;
 const SELF_CAST_HEIGHT: f32 = 2.0;
 const THROW_ARC_HEIGHT: f32 = 5.0;
+const PARTICLE_COUNT: usize = 10;
+const PARTICLE_LIFE: f32 = 0.5;
+const CRAB_HALF_WIDTH: f32 = 11.0;
+const CRAB_HALF_HEIGHT: f32 = 1.5;
 
 #[derive(Debug, Clone)]
 pub struct Animation {
@@ -93,4 +98,38 @@ impl Animation {
             _ => None,
         }
     }
+
+    pub fn particles(&self, crab_y: f32) -> Vec<Particle> {
+        let kind = match self.kind {
+            AnimationKind::SelfCast(k) => k,
+            _ => return Vec::new(),
+        };
+        let center_x = self.start_x + CRAB_HALF_WIDTH;
+        let center_y = crab_y + CRAB_HALF_HEIGHT;
+        let stagger_window = (self.duration - PARTICLE_LIFE).max(0.0);
+        let mut out = Vec::with_capacity(PARTICLE_COUNT);
+        for i in 0..PARTICLE_COUNT {
+            let spawn_t = (i as f32 / PARTICLE_COUNT as f32) * stagger_window;
+            let age = self.elapsed - spawn_t;
+            if age < 0.0 || age > PARTICLE_LIFE {
+                continue;
+            }
+            let progress = age / PARTICLE_LIFE;
+            let angle = (i as f32 * 137.5).to_radians();
+            let radius_h = 5.0 + progress * 6.0;
+            let radius_v = 1.0 + progress * 2.0;
+            let drift_up = progress * 2.5;
+            let x = center_x + radius_h * angle.cos();
+            let y = center_y + radius_v * angle.sin() - drift_up;
+            out.push(Particle { x, y, kind });
+        }
+        out
+    }
+}
+
+#[derive(Debug, Clone, Copy)]
+pub struct Particle {
+    pub x: f32,
+    pub y: f32,
+    pub kind: ParticleKind,
 }
