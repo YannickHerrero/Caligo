@@ -6,7 +6,7 @@ The player begins with **Pinch**, **Bubble**, **Snip**, and **Cosmic Orb** equip
 
 Source of truth: [`src/data/attacks.rs`](../../src/data/attacks.rs).
 
-> **In-game previews:** the home menu has two debug screens. **Attack Preview** plays each attack's animation against a slime dummy. **Catalogue** is a static three-pane view (list / projectile + particles / info) for inspecting designs at rest.
+> **In-game previews:** the home menu has two debug screens. **Attack Preview** plays each attack's animation against a slime dummy. **Catalogue** has two tabs (toggle with `Tab`): *Attacks* (list / projectile + particles / info) for inspecting designs at rest, and *Environments* for viewing every ground style at every time of day.
 
 ## Types
 
