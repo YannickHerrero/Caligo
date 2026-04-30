@@ -8,13 +8,55 @@ pub enum ProjectileKind {
     EnergyBall,
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum ProjectileSize {
+    Small,
+    Medium,
+    Large,
+}
+
+impl ProjectileSize {
+    pub fn for_damage(damage: u32) -> Self {
+        match damage {
+            0..=8 => ProjectileSize::Small,
+            9..=16 => ProjectileSize::Medium,
+            _ => ProjectileSize::Large,
+        }
+    }
+}
+
 impl ProjectileKind {
-    pub fn sprite(&self) -> &'static [&'static str] {
-        match self {
-            ProjectileKind::Water => &["●"],
-            ProjectileKind::Fire => &["/\\", ")("],
-            ProjectileKind::Electric => &["/", "\\", "/"],
-            ProjectileKind::EnergyBall => &[".*.", "*●*", ".*."],
+    pub fn sprite(&self, size: ProjectileSize) -> &'static [&'static str] {
+        match (self, size) {
+            (ProjectileKind::Water, ProjectileSize::Small) => &["●"],
+            (ProjectileKind::Water, ProjectileSize::Medium) => &["●●", "●●"],
+            (ProjectileKind::Water, ProjectileSize::Large) => &[" ● ", "●●●", " ● "],
+
+            (ProjectileKind::Fire, ProjectileSize::Small) => &["/\\", ")("],
+            (ProjectileKind::Fire, ProjectileSize::Medium) => &[" /\\", "/^\\", ")()"],
+            (ProjectileKind::Fire, ProjectileSize::Large) => {
+                &[" /\\ ", "/^^\\", "\\^^/", ")()("]
+            }
+
+            (ProjectileKind::Electric, ProjectileSize::Small) => &["/", "\\", "/"],
+            (ProjectileKind::Electric, ProjectileSize::Medium) => &[" /", "/ ", " \\", "/ "],
+            (ProjectileKind::Electric, ProjectileSize::Large) => {
+                &["  /", " / ", "/  ", " \\ ", "/  "]
+            }
+
+            (ProjectileKind::EnergyBall, ProjectileSize::Small) => &[".*.", "*●*", ".*."],
+            (ProjectileKind::EnergyBall, ProjectileSize::Medium) => {
+                &["..*..", ".***.", "**●**", ".***.", "..*.."]
+            }
+            (ProjectileKind::EnergyBall, ProjectileSize::Large) => &[
+                "...*...",
+                "..***..",
+                ".*****.",
+                "**●●●**",
+                ".*****.",
+                "..***..",
+                "...*...",
+            ],
         }
     }
 
@@ -27,15 +69,15 @@ impl ProjectileKind {
         }
     }
 
-    pub fn width(&self) -> usize {
-        self.sprite()
+    pub fn width(&self, size: ProjectileSize) -> usize {
+        self.sprite(size)
             .iter()
             .map(|l| l.chars().count())
             .max()
             .unwrap_or(0)
     }
 
-    pub fn height(&self) -> usize {
-        self.sprite().len()
+    pub fn height(&self, size: ProjectileSize) -> usize {
+        self.sprite(size).len()
     }
 }

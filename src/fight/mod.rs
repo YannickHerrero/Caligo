@@ -13,5 +13,5 @@ pub use attack::{AnimationKind, Attack, BuffKind, Effect, Element, MAX_ATTACKS};
 pub use enemy::Enemy;
 pub use item::{Item, ItemStack, PotionSize, TrinketKind, UtilityKind};
 pub use particle::ParticleKind;
-pub use projectile::ProjectileKind;
+pub use projectile::{ProjectileKind, ProjectileSize};
 pub use state::{FightState, MenuState};
