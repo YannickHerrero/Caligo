@@ -1,3 +1,4 @@
+use crate::data::starters;
 use crate::map::{self, MapGraph, NodeId};
 use crate::player::Player;
 use crate::run::Run;
@@ -29,7 +30,11 @@ pub struct MapScreen {
 
 impl MapScreen {
     pub fn new() -> Self {
-        Self::with_run(Run::new(map::generate()))
+        // Default constructor used by --debug flows that bypass StarterSelect.
+        // Falls back to the first starter so the screen is functional in
+        // isolation.
+        let starter = starters::all_starters().remove(0);
+        Self::with_run(Run::new(starter, map::generate()))
     }
 
     pub fn with_run(run: Run) -> Self {
