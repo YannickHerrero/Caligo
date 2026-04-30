@@ -26,6 +26,7 @@ pub struct PlayerInfoScreen {
     pub pending_assign_attack: Option<usize>,
     last_attacks_height: u16,
     last_inventory_height: u16,
+    last_action_message: Option<String>,
 }
 
 impl PlayerInfoScreen {
@@ -41,6 +42,7 @@ impl PlayerInfoScreen {
             pending_assign_attack: None,
             last_attacks_height: 0,
             last_inventory_height: 0,
+            last_action_message: None,
         }
     }
 
@@ -50,10 +52,22 @@ impl PlayerInfoScreen {
         }
         match key {
             KeyCode::Char('q') | KeyCode::Esc | KeyCode::Tab => return self.return_to_map(),
-            KeyCode::Up | KeyCode::Char('k') => self.scroll_focused(-1, player),
-            KeyCode::Down | KeyCode::Char('j') => self.scroll_focused(1, player),
-            KeyCode::Left | KeyCode::Char('h') => self.focus = InfoFocus::Attacks,
-            KeyCode::Right | KeyCode::Char('l') => self.focus = InfoFocus::Inventory,
+            KeyCode::Up | KeyCode::Char('k') => {
+                self.last_action_message = None;
+                self.scroll_focused(-1, player);
+            }
+            KeyCode::Down | KeyCode::Char('j') => {
+                self.last_action_message = None;
+                self.scroll_focused(1, player);
+            }
+            KeyCode::Left | KeyCode::Char('h') => {
+                self.last_action_message = None;
+                self.focus = InfoFocus::Attacks;
+            }
+            KeyCode::Right | KeyCode::Char('l') => {
+                self.last_action_message = None;
+                self.focus = InfoFocus::Inventory;
+            }
             KeyCode::Enter => self.activate_focused(player),
             _ => {}
         }
@@ -71,7 +85,8 @@ impl PlayerInfoScreen {
         if self.item_cursor >= player.inventory.len() {
             return;
         }
-        player.use_inventory_item(self.item_cursor);
+        let result = player.use_inventory_item(self.item_cursor);
+        self.last_action_message = result.message();
         if self.item_cursor >= player.inventory.len() {
             self.item_cursor = player.inventory.len().saturating_sub(1);
         }
@@ -188,6 +203,10 @@ impl PlayerInfoScreen {
                 widgets::render_assign_strip(frame, attack, info_strip);
                 return;
             }
+        }
+        if let Some(msg) = self.last_action_message.as_deref() {
+            widgets::render_action_message_strip(frame, msg, info_strip);
+            return;
         }
         match self.focus {
             InfoFocus::Attacks => {

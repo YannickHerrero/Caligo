@@ -320,6 +320,28 @@ fn is_trinket_equipped(stack: &ItemStack, player: &Player) -> bool {
     }
 }
 
+pub fn render_action_message_strip(frame: &mut Frame, message: &str, area: Rect) {
+    let block = Block::default()
+        .borders(Borders::ALL)
+        .border_style(Style::default().fg(Color::Cyan))
+        .title(Span::styled(
+            " Action ",
+            Style::default()
+                .fg(Color::Cyan)
+                .add_modifier(Modifier::BOLD),
+        ));
+    let inner = block.inner(area);
+    frame.render_widget(block, area);
+    if inner.height == 0 {
+        return;
+    }
+    let line = Line::from(Span::styled(
+        message.to_string(),
+        Style::default().fg(Color::White),
+    ));
+    frame.render_widget(Paragraph::new(line), inner);
+}
+
 pub fn render_assign_strip(frame: &mut Frame, attack: &Attack, area: Rect) {
     let block = Block::default()
         .borders(Borders::ALL)

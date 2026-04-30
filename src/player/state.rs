@@ -210,3 +210,23 @@ pub enum ItemUseResult {
     TrinketUnequipped(TrinketKind),
     CombatOnly,
 }
+
+impl ItemUseResult {
+    pub fn message(&self) -> Option<String> {
+        match self {
+            ItemUseResult::Nothing => None,
+            ItemUseResult::Healed { hp, mana } => match (*hp, *mana) {
+                (0, 0) => None,
+                (h, 0) => Some(format!("Restored {} HP.", h)),
+                (0, m) => Some(format!("Restored {} MP.", m)),
+                (h, m) => Some(format!("Restored {} HP and {} MP.", h, m)),
+            },
+            ItemUseResult::LearnedAttack(name) => Some(format!("Learned {}!", name)),
+            ItemUseResult::AlreadyKnown(name) => Some(format!("Already know {}.", name)),
+            ItemUseResult::GoldGained(amount) => Some(format!("+{} gold.", amount)),
+            ItemUseResult::TrinketEquipped(kind) => Some(format!("Equipped {}.", kind.name())),
+            ItemUseResult::TrinketUnequipped(kind) => Some(format!("Removed {}.", kind.name())),
+            ItemUseResult::CombatOnly => Some("Only usable in combat.".to_string()),
+        }
+    }
+}
