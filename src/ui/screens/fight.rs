@@ -131,7 +131,11 @@ impl FightScreen {
                 }
                 Action::Flee => {
                     if self.flee_allowed() {
+                        self.fight.set_message("You fled!", 0.8);
                         self.pending_exit = Some(FightOutcome::Flee);
+                    } else {
+                        self.fight
+                            .set_message("You can't flee from this fight!", 0.8);
                     }
                 }
             },
