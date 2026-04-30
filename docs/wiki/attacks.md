@@ -6,11 +6,11 @@ The player begins with **Pinch**, **Bubble**, **Snip**, and **Cosmic Orb** equip
 
 Source of truth: [`src/data/attacks.rs`](../../src/data/attacks.rs).
 
-> **In-game previews:** the home menu has two debug screens. **Attack Preview** plays each attack's animation against a slime dummy. **Catalogue** has two tabs (toggle with `Tab`): *Attacks* (list / projectile + particles / info) for inspecting designs at rest, and *Environments* — the list shows each ground style once, and `← →` cycles the time of day so you can compare any style across Morning, Day, Evening, and Night.
+> **In-game previews:** the home menu has two debug screens. **Attack Preview** plays each attack's animation against a slime dummy. **Catalogue** has three tabs (toggle with `Tab`): *Attacks* (list / projectile + particles / info), *Environments* (each ground style with `← →` cycling time of day), and *Bestiary* (every enemy with sprite, types, weaknesses, and moveset).
 
 ## Types
 
-Caligo borrows Pokémon-style type names. The current set is **Normal, Fire, Water, Ice, Electric, Ground, Flying, Psychic** — eight types. A type-effectiveness chart isn't implemented yet; types currently just color the attacks and pick the trail/impact particle.
+Caligo borrows Pokémon-style type names. The current set is **Normal, Fire, Water, Ice, Electric, Ground, Flying, Psychic** — eight types. A 2x/1x/0.5x effectiveness chart now lives on `Element::effectiveness_against` — see the [Enemies page](enemies.md#type-effectiveness) for the full table. Combat resolution that consumes the multiplier isn't wired up yet, but the chart drives the Bestiary tab's weakness/resistance display.
 
 ## Animation kinds
 
