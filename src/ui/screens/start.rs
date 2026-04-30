@@ -105,7 +105,7 @@ impl StartScreen {
             frame,
             area,
             &mut y,
-            "A roguelike crab dungeon crawler",
+            "A roguelike dungeon crawler",
             Style::default().fg(Color::Gray),
         );
         y += gap;
