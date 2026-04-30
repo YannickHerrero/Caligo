@@ -36,20 +36,24 @@ So Ember (DMG 6) and Bubble (DMG 7) keep the small sprites, Fireball (DMG 11) an
 
 ## Particle kinds
 
-Particles are used in two places:
+Particles are used in three places:
 
-1. `SelfCast` aura — drift outward and upward around the stationary crab. Picked per-attack to match the effect.
-2. `Jump` / `Dash` elemental trails — emitted behind the moving crab when an elemental physical attack is used (no trail for Neutral attacks).
+1. **`SelfCast` aura** — drifts outward and upward around the stationary crab during heals and buffs. Picked per-attack to match the effect.
+2. **`Jump` / `Dash` elemental trails** — emitted behind the moving crab during the *outbound* leg of the animation only. The trail vanishes the moment the crab reaches the target and starts heading back. No trail for Neutral attacks.
+3. **Impact marks** — every damage attack (`Jump`, `Dash`, or `Throw`) leaves a small burst of particles at the target when the hit lands, lingering for about a second so the impact reads visually. The mark uses the attack's element, with a neutral gray fallback for Neutral attacks.
+
+The animation keeps moving as before, then waits an extra ~0.5–1.0s for the impact particles to play out before unlocking input.
 
 | Kind | Glyph | Color | Used by |
 |---|---|---|---|
 | `Hearts` | ♥ | Pink | All `Heal` attacks (Salve, Mend, First Aid, Greater Mend) |
 | `Triangles` | ▲ | Red | `AttackUp` buffs (Sharpen) |
 | `Circles` | ● | Blue | `DefenseUp` buffs (Carapace) |
-| `FireSpark` | * | Orange | Elemental Jump/Dash with Fire (Flame Dash, Pyre Charge, Magma Crush) |
-| `WaterDroplet` | . | Blue | Elemental Jump/Dash with Water (Frostbite, Riptide, Tidal Slam, Geyser) |
-| `EarthDust` | , | Brown | Elemental Jump/Dash with Earth (Granite Shell, Sandstorm, Quake Step, Stone Slam, Iron Pinch, Crystal Spike, Rockfall, Boulder Press, Earthquake, Tectonic Crush) |
-| `AirWisp` | ~ | Pale | Elemental Jump/Dash with Air (Gust, Static Charge, Tornado) |
+| `FireSpark` | * | Orange | Fire trail and impact |
+| `WaterDroplet` | . | Blue | Water trail and impact |
+| `EarthDust` | , | Brown | Earth trail and impact |
+| `AirWisp` | ~ | Pale | Air trail and impact |
+| `NeutralHit` | * | Gray | Impact for Neutral physical attacks (Pinch, Snip, Headbutt, etc.) |
 
 ## Effect kinds
 
