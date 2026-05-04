@@ -100,10 +100,9 @@ impl FightScreen {
         let mut fight = FightState::from_player_with_enemy(player, enemy);
         let active = map.run.active_member();
         fight.player_type = Some(active.template.primary_type);
-        // Permanent meta boost: +20% damage per Sharpened Edge rank for
-        // the active member.
-        let ranks = crate::meta::ranks_for(&active.id);
-        fight.player_attack_boost_pct = ranks.sharpened_edge as f32 * 0.20;
+        // Permanent meta boost: read directly off the active member so
+        // switching mid-fight automatically updates the multiplier.
+        fight.player_attack_boost_pct = active.attack_boost_pct;
         Self {
             crab: Crab::new((6.0, 100.0), 95),
             environment: Environment::generate(80, 15, GroundStyle::default()),
@@ -137,7 +136,7 @@ impl FightScreen {
             return Transition::Stay;
         }
         match self.fight.menu_state {
-            MenuState::Main => self.handle_main_menu(key),
+            MenuState::Main => self.handle_main_menu(key, player),
             MenuState::AttackSelect => self.handle_attack_menu(key),
             MenuState::ItemSelect => self.handle_item_menu(key),
         }
@@ -154,6 +153,10 @@ impl FightScreen {
                 // Sync now so the restored HP/MP and reduced pearl count
                 // are carried back to the Player when we leave the screen.
                 self.fight.commit_to_player(player);
+                // And sync the Player back into the active party
+                // member, so the resurrected HP/MP persists into the
+                // next fight.
+                self.commit_active_member(player);
                 self.exit_fight()
             }
             KeyCode::Char('n')
@@ -168,10 +171,11 @@ impl FightScreen {
         }
     }
 
-    fn handle_main_menu(&mut self, key: KeyCode) -> Transition {
+    fn handle_main_menu(&mut self, key: KeyCode, player: &Player) -> Transition {
         let action_count = Action::ALL.len();
         match key {
             KeyCode::Char('q') | KeyCode::Esc => {
+                self.commit_active_member(player);
                 return self.exit_fight();
             }
             KeyCode::Up | KeyCode::Char('k') => {
@@ -235,6 +239,18 @@ impl FightScreen {
         match self.map.take() {
             Some(map) => Transition::Goto(Screen::Map(*map)),
             None => Transition::Goto(Screen::Select(SelectScreen::new())),
+        }
+    }
+
+    /// Write the player's working HP/MP/attacks back into the run's
+    /// active party member so they persist into the next fight (or end
+    /// the run if 0 HP).
+    fn commit_active_member(&mut self, player: &Player) {
+        if let Some(map) = self.map.as_mut() {
+            let idx = map.run.active;
+            if let Some(member) = map.run.party.get_mut(idx) {
+                player.sync_to_member(member);
+            }
         }
     }
 
@@ -568,12 +584,17 @@ impl FightScreen {
     fn resolve_outcome(&mut self, outcome: FightOutcome, player: &mut Player) -> Transition {
         match outcome {
             FightOutcome::Victory => self.victory(player),
-            FightOutcome::Flee => self.exit_fight(),
+            FightOutcome::Flee => {
+                self.commit_active_member(player);
+                self.exit_fight()
+            }
             FightOutcome::Defeat => self.defeat(player),
         }
     }
 
     fn defeat(&mut self, player: &Player) -> Transition {
+        // Sync the active member's 0 HP to the party before we drop the map.
+        self.commit_active_member(player);
         let Some(map) = self.map.take() else {
             return self.exit_fight();
         };
@@ -592,6 +613,9 @@ impl FightScreen {
     }
 
     fn victory(&mut self, player: &mut Player) -> Transition {
+        // Persist the active member's post-fight HP/MP into the party
+        // before the map moves on.
+        self.commit_active_member(player);
         let (Some(map), Some(kind)) = (self.map.take(), self.node_kind) else {
             // Standalone fight without a run — nothing to reward.
             return self.exit_fight();
