@@ -34,6 +34,18 @@ pub struct FightScreen {
     /// until both queued actions have finished. Drives end-of-round
     /// bookkeeping (tick buffs once, not per-frame).
     round_active: bool,
+    /// HP at the moment the fight started — restored on Revive Pearl
+    /// consumption.
+    pre_fight_hp: u32,
+    /// MP at the moment the fight started — restored on Revive Pearl
+    /// consumption.
+    pre_fight_mana: u32,
+    /// True the moment the player drops to 0 HP if they're carrying a
+    /// Revive Pearl. The actual prompt opens after the impact message
+    /// clears.
+    revive_prompt_pending: bool,
+    /// True while the Revive Pearl prompt is on screen. Locks input to Y/N.
+    revive_prompt_open: bool,
     last_terminal_size: (u16, u16),
     last_action_height: u16,
 }
@@ -68,6 +80,10 @@ impl FightScreen {
             pending_exit: None,
             next_action: None,
             round_active: false,
+            pre_fight_hp: player.hp,
+            pre_fight_mana: player.mana,
+            revive_prompt_pending: false,
+            revive_prompt_open: false,
             last_terminal_size: (0, 0),
             last_action_height: 0,
         }
@@ -92,6 +108,10 @@ impl FightScreen {
             pending_exit: None,
             next_action: None,
             round_active: false,
+            pre_fight_hp: player.hp,
+            pre_fight_mana: player.mana,
+            revive_prompt_pending: false,
+            revive_prompt_open: false,
             last_terminal_size: (0, 0),
             last_action_height: 0,
         }
@@ -104,7 +124,10 @@ impl FightScreen {
         )
     }
 
-    pub fn handle_key(&mut self, key: KeyCode, _player: &mut Player) -> Transition {
+    pub fn handle_key(&mut self, key: KeyCode, player: &mut Player) -> Transition {
+        if self.revive_prompt_open {
+            return self.handle_revive_prompt(key, player);
+        }
         if self.fight.animation.is_some() || self.fight.message.is_some() {
             return Transition::Stay;
         }
@@ -112,6 +135,31 @@ impl FightScreen {
             MenuState::Main => self.handle_main_menu(key),
             MenuState::AttackSelect => self.handle_attack_menu(key),
             MenuState::ItemSelect => self.handle_item_menu(key),
+        }
+    }
+
+    fn handle_revive_prompt(&mut self, key: KeyCode, player: &mut Player) -> Transition {
+        match key {
+            KeyCode::Char('y') | KeyCode::Char('Y') | KeyCode::Enter => {
+                consume_one_revive_pearl(&mut self.fight.items);
+                self.fight.player_hp = self.pre_fight_hp.max(1);
+                self.fight.player_mana = self.pre_fight_mana;
+                self.revive_prompt_open = false;
+                self.revive_prompt_pending = false;
+                // Sync now so the restored HP/MP and reduced pearl count
+                // are carried back to the Player when we leave the screen.
+                self.fight.commit_to_player(player);
+                self.exit_fight()
+            }
+            KeyCode::Char('n')
+            | KeyCode::Char('N')
+            | KeyCode::Esc
+            | KeyCode::Char('q') => {
+                self.revive_prompt_open = false;
+                self.pending_exit = Some(FightOutcome::Defeat);
+                Transition::Stay
+            }
+            _ => Transition::Stay,
         }
     }
 
@@ -446,7 +494,13 @@ impl FightScreen {
                     };
                     self.fight.set_message(msg, 1.0);
                     if self.fight.player_hp == 0 {
-                        self.pending_exit = Some(FightOutcome::Defeat);
+                        if has_revive_pearl(&self.fight.items) {
+                            // Defer the defeat decision; the prompt opens
+                            // once the impact message clears.
+                            self.revive_prompt_pending = true;
+                        } else {
+                            self.pending_exit = Some(FightOutcome::Defeat);
+                        }
                     }
                 }
             }
@@ -458,6 +512,16 @@ impl FightScreen {
         self.environment.update_cycle(dt, 1.0, 1.0);
         self.fight.tick_message(dt);
         self.fight.tick_hit_flashes(dt);
+
+        // Once the impact message clears, surface the deferred Revive
+        // Pearl prompt rather than continuing into round logic.
+        if self.revive_prompt_pending
+            && self.fight.animation.is_none()
+            && self.fight.message.is_none()
+        {
+            self.revive_prompt_pending = false;
+            self.revive_prompt_open = true;
+        }
 
         // Round-loop driver: only runs when nothing is in-flight (no
         // animation, no message, no pending action, no end-of-fight).
@@ -628,5 +692,130 @@ impl FightScreen {
                 }
             }
         }
+
+        if self.revive_prompt_open {
+            render_revive_prompt(frame, area);
+        }
     }
+}
+
+fn has_revive_pearl(items: &[crate::fight::ItemStack]) -> bool {
+    use crate::fight::{Item, UtilityKind};
+    items
+        .iter()
+        .any(|s| matches!(&s.item, Item::Utility(UtilityKind::Revive)) && s.count > 0)
+}
+
+fn consume_one_revive_pearl(items: &mut Vec<crate::fight::ItemStack>) {
+    use crate::fight::{Item, UtilityKind};
+    if let Some(idx) = items
+        .iter()
+        .position(|s| matches!(&s.item, Item::Utility(UtilityKind::Revive)) && s.count > 0)
+    {
+        items[idx].count = items[idx].count.saturating_sub(1);
+        if items[idx].count == 0 {
+            items.remove(idx);
+        }
+    }
+}
+
+fn render_revive_prompt(frame: &mut Frame, area: ratatui::layout::Rect) {
+    use ratatui::layout::{Alignment, Constraint, Direction, Layout, Rect};
+    use ratatui::style::{Color, Modifier, Style};
+    use ratatui::text::{Line, Span};
+    use ratatui::widgets::{Block, Borders, Paragraph};
+
+    let popup_w: u16 = 50.min(area.width.saturating_sub(4)).max(20);
+    let popup_h: u16 = 8.min(area.height.saturating_sub(2)).max(5);
+    if popup_w < 20 || popup_h < 5 {
+        return;
+    }
+    let popup = Rect {
+        x: area.x + (area.width.saturating_sub(popup_w)) / 2,
+        y: area.y + (area.height.saturating_sub(popup_h)) / 2,
+        width: popup_w,
+        height: popup_h,
+    };
+
+    // Dim everything else, then clear the popup background.
+    let buf = frame.buffer_mut();
+    for y in area.y..(area.y + area.height) {
+        for x in area.x..(area.x + area.width) {
+            if x >= popup.x
+                && x < popup.x + popup.width
+                && y >= popup.y
+                && y < popup.y + popup.height
+            {
+                continue;
+            }
+            if let Some(cell) = buf.cell_mut((x, y)) {
+                let fg = match cell.fg {
+                    Color::Rgb(r, g, b) => Color::Rgb(r / 3, g / 3, b / 3),
+                    other => other,
+                };
+                cell.set_fg(fg);
+            }
+        }
+    }
+    for y in popup.y..(popup.y + popup.height) {
+        for x in popup.x..(popup.x + popup.width) {
+            if let Some(cell) = buf.cell_mut((x, y)) {
+                cell.set_char(' ').set_style(Style::default());
+            }
+        }
+    }
+
+    let block = Block::default()
+        .borders(Borders::ALL)
+        .border_style(Style::default().fg(Color::Rgb(220, 180, 255)))
+        .title(Span::styled(
+            " Revive Pearl ",
+            Style::default()
+                .fg(Color::Rgb(220, 180, 255))
+                .add_modifier(Modifier::BOLD),
+        ));
+    let inner = block.inner(popup);
+    frame.render_widget(block, popup);
+    if inner.height == 0 {
+        return;
+    }
+
+    let chunks = Layout::default()
+        .direction(Direction::Vertical)
+        .constraints([Constraint::Length(2), Constraint::Min(1), Constraint::Length(1)])
+        .split(inner);
+
+    frame.render_widget(
+        Paragraph::new(Line::from(Span::styled(
+            "You fell. Burn a Revive Pearl?",
+            Style::default().fg(Color::Gray),
+        )))
+        .alignment(Alignment::Center),
+        chunks[0],
+    );
+    frame.render_widget(
+        Paragraph::new(Line::from(Span::styled(
+            "(restores HP and MP to pre-fight values)",
+            Style::default().fg(Color::DarkGray),
+        )))
+        .alignment(Alignment::Center),
+        chunks[1],
+    );
+
+    let key = Style::default().fg(Color::Yellow);
+    let dim = Style::default().fg(Color::DarkGray);
+    let prompt = Line::from(vec![
+        Span::styled("Y", key),
+        Span::styled(" / ", dim),
+        Span::styled("Enter", key),
+        Span::styled("  consume   ", dim),
+        Span::styled("N", key),
+        Span::styled(" / ", dim),
+        Span::styled("Esc", key),
+        Span::styled("  game over", dim),
+    ]);
+    frame.render_widget(
+        Paragraph::new(prompt).alignment(Alignment::Center),
+        chunks[2],
+    );
 }
