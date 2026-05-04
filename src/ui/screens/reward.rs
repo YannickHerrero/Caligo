@@ -1,9 +1,11 @@
-use crate::fight::{Item, ItemStack, PotionSize, TrinketKind, UtilityKind};
+use crate::data::attacks as attack_lib;
+use crate::fight::{Attack, Effect, Item, ItemStack, PotionSize, TrinketKind, UtilityKind};
 use crate::map::NodeKind;
 use crate::player::Player;
 use crate::ui::screen::{Screen, Transition};
 use crate::ui::screens::MapScreen;
 use crossterm::event::KeyCode;
+use rand::seq::SliceRandom;
 use rand::Rng;
 use ratatui::{
     layout::{Alignment, Constraint, Direction, Layout, Rect},
@@ -169,46 +171,137 @@ fn roll_drops<R: Rng>(kind: NodeKind, player: &Player, rng: &mut R) -> Vec<Item>
     };
     match kind {
         NodeKind::EasyFight => {
-            if rng.gen_bool(scale(0.25)) {
+            if !rng.gen_bool(scale(0.25)) {
+                return vec![];
+            }
+            // 50% potion, 50% stone tiered for easy fights.
+            if rng.gen_bool(0.5) {
                 vec![Item::HpPotion(PotionSize::Small)]
             } else {
-                vec![]
+                stone_for_stage(kind, rng).into_iter().collect()
             }
         }
         NodeKind::NormalFight => {
-            if rng.gen_bool(scale(0.5)) {
-                if rng.gen_bool(0.5) {
-                    vec![Item::HpPotion(PotionSize::Small)]
-                } else {
-                    vec![Item::ManaPotion(PotionSize::Small)]
-                }
+            if !rng.gen_bool(scale(0.5)) {
+                return vec![];
+            }
+            // 60% potion, 40% stone tiered for normal fights.
+            let roll = rng.gen_range(0..100);
+            if roll < 30 {
+                vec![Item::HpPotion(PotionSize::Small)]
+            } else if roll < 60 {
+                vec![Item::ManaPotion(PotionSize::Small)]
             } else {
-                vec![]
+                stone_for_stage(kind, rng).into_iter().collect()
             }
         }
         NodeKind::EliteFight => {
-            // Always one item: wider pool including large potions and a
-            // small chance at a trinket.
+            // Always one item: wider pool including large potions, a small
+            // chance at a trinket, and a healthy chance at a stone.
             let roll = rng.gen_range(0..100);
-            if roll < 35 {
+            if roll < 25 {
                 vec![Item::HpPotion(PotionSize::Large)]
-            } else if roll < 70 {
+            } else if roll < 50 {
                 vec![Item::ManaPotion(PotionSize::Large)]
-            } else if roll < 90 {
+            } else if roll < 65 {
                 vec![Item::Utility(UtilityKind::Revive)]
-            } else {
+            } else if roll < 70 {
                 vec![Item::Trinket(random_trinket(rng))]
+            } else {
+                stone_for_stage(kind, rng)
+                    .map(|s| vec![s])
+                    .unwrap_or_default()
             }
         }
         NodeKind::Boss => {
-            // Boss reward: a trinket plus a large HP potion.
-            vec![
+            // Boss reward: a trinket, a large HP potion, and a stone.
+            let mut out = vec![
                 Item::Trinket(random_trinket(rng)),
                 Item::HpPotion(PotionSize::Large),
-            ]
+            ];
+            if let Some(stone) = stone_for_stage(kind, rng) {
+                out.push(stone);
+            }
+            out
         }
         _ => vec![],
     }
+}
+
+/// How powerful an attack is, used to bucket its stone into a drop tier.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum StoneTier {
+    Easy,
+    Normal,
+    Elite,
+    Boss,
+}
+
+fn attack_tier(attack: &Attack) -> StoneTier {
+    match attack.effect {
+        Effect::Damage(n) => match n {
+            0..=7 => StoneTier::Easy,
+            8..=12 => StoneTier::Normal,
+            13..=18 => StoneTier::Elite,
+            _ => StoneTier::Boss,
+        },
+        Effect::Heal(n) => match n {
+            0..=10 => StoneTier::Easy,
+            11..=18 => StoneTier::Normal,
+            _ => StoneTier::Elite,
+        },
+        // Buffs are utility — keep them in the easy bucket so they're a
+        // common-but-flexible find rather than a high-tier reward.
+        Effect::Buff { .. } => StoneTier::Easy,
+    }
+}
+
+/// Per-stage weights for picking which tier of stone drops. Each entry is
+/// [easy, normal, elite, boss]. Lower stages are heavily weighted toward
+/// the easy bucket but always leave a sliver of chance for higher tiers.
+fn stage_tier_weights(stage: NodeKind) -> [u32; 4] {
+    match stage {
+        NodeKind::EasyFight => [70, 20, 8, 2],
+        NodeKind::NormalFight => [25, 55, 15, 5],
+        NodeKind::EliteFight => [10, 30, 50, 10],
+        NodeKind::Boss => [5, 15, 40, 40],
+        _ => [100, 0, 0, 0],
+    }
+}
+
+fn stone_for_stage<R: Rng>(stage: NodeKind, rng: &mut R) -> Option<Item> {
+    let weights = stage_tier_weights(stage);
+    let tier = pick_tier(rng, weights);
+    let attacks = attack_lib::all_attacks();
+    let candidates: Vec<Attack> = attacks
+        .into_iter()
+        .filter(|a| attack_tier(a) == tier)
+        .collect();
+    let chosen = candidates.choose(rng)?;
+    Some(Item::AttackStone {
+        attack_name: chosen.name.clone(),
+    })
+}
+
+fn pick_tier<R: Rng>(rng: &mut R, weights: [u32; 4]) -> StoneTier {
+    let total: u32 = weights.iter().sum();
+    if total == 0 {
+        return StoneTier::Easy;
+    }
+    let mut r = rng.gen_range(0..total);
+    let tiers = [
+        StoneTier::Easy,
+        StoneTier::Normal,
+        StoneTier::Elite,
+        StoneTier::Boss,
+    ];
+    for (i, w) in weights.iter().enumerate() {
+        if r < *w {
+            return tiers[i];
+        }
+        r -= w;
+    }
+    StoneTier::Easy
 }
 
 fn has_lucky_shell(player: &Player) -> bool {
