@@ -528,7 +528,7 @@ impl FightScreen {
             return self.exit_fight();
         };
         let mut rng = rand::thread_rng();
-        let (gold, items) = roll_rewards(kind, &mut rng);
+        let (gold, items) = roll_rewards(kind, player, &mut rng);
         apply_rewards(player, gold, &items);
 
         if matches!(kind, NodeKind::Boss) {

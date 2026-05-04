@@ -147,7 +147,7 @@ impl RewardScreen {
 }
 
 /// Roll a fight reward: gold amount and any item drops.
-pub fn roll_rewards<R: Rng>(kind: NodeKind, rng: &mut R) -> (u32, Vec<Item>) {
+pub fn roll_rewards<R: Rng>(kind: NodeKind, player: &Player, rng: &mut R) -> (u32, Vec<Item>) {
     let gold = match kind {
         NodeKind::EasyFight => rng.gen_range(8..=15),
         NodeKind::NormalFight => rng.gen_range(15..=30),
@@ -155,23 +155,28 @@ pub fn roll_rewards<R: Rng>(kind: NodeKind, rng: &mut R) -> (u32, Vec<Item>) {
         NodeKind::Boss => rng.gen_range(80..=120),
         _ => 0,
     };
-    let items = roll_drops(kind, rng);
+    let items = roll_drops(kind, player, rng);
     (gold, items)
 }
 
-fn roll_drops<R: Rng>(kind: NodeKind, rng: &mut R) -> Vec<Item> {
+fn roll_drops<R: Rng>(kind: NodeKind, player: &Player, rng: &mut R) -> Vec<Item> {
+    let lucky = has_lucky_shell(player);
+    // Lucky Shell doubles the per-fight chance that anything drops, capped
+    // at 100%. Doesn't stack — only one shell counts even if two are
+    // equipped. Guaranteed-drop tiers (Elite, Boss) are unaffected.
+    let scale = |p: f64| -> f64 {
+        if lucky { (p * 2.0).min(1.0) } else { p }
+    };
     match kind {
         NodeKind::EasyFight => {
-            // 25% chance for a Small HP Potion.
-            if rng.gen_bool(0.25) {
+            if rng.gen_bool(scale(0.25)) {
                 vec![Item::HpPotion(PotionSize::Small)]
             } else {
                 vec![]
             }
         }
         NodeKind::NormalFight => {
-            // 50% chance for a small potion of either flavor.
-            if rng.gen_bool(0.5) {
+            if rng.gen_bool(scale(0.5)) {
                 if rng.gen_bool(0.5) {
                     vec![Item::HpPotion(PotionSize::Small)]
                 } else {
@@ -204,6 +209,13 @@ fn roll_drops<R: Rng>(kind: NodeKind, rng: &mut R) -> Vec<Item> {
         }
         _ => vec![],
     }
+}
+
+fn has_lucky_shell(player: &Player) -> bool {
+    player
+        .equipped_trinkets
+        .iter()
+        .any(|slot| matches!(slot, Some(TrinketKind::LuckyShell)))
 }
 
 fn random_trinket<R: Rng>(rng: &mut R) -> TrinketKind {
