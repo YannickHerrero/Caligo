@@ -1,21 +1,68 @@
+use crate::data::attacks as attack_lib;
 use crate::data::starters::Starter;
+use crate::fight::Attack;
 use crate::map::MapGraph;
-use crate::meta::MonsterId;
+use crate::meta::{self, MonsterId};
 
-/// A single member of the player's run-time party. Today only starters
-/// can occupy a slot; wild captures will land in Phase 4 with an
-/// expanded template type.
+const BASE_MAX_HP: u32 = 25;
+const BASE_MAX_MANA: u32 = 15;
+const BASE_SPEED: u32 = 10;
+
+/// A single member of the player's run-time party. Owns its own
+/// persistent HP/MP across fights within a run; resets to full at run
+/// start.
 #[derive(Clone)]
 pub struct PartyMember {
     pub id: MonsterId,
-    /// Species template (visual / type / starting attacks). Will widen
-    /// to a `MonsterTemplate` once wild monsters can be party members.
+    /// Species template (visual / type / starting attacks). Today this
+    /// is always a `Starter`; captured wilds get a synthesised wrapper
+    /// in `ui::screens::capture` until a unified MonsterTemplate lands.
     pub template: Starter,
+    pub current_hp: u32,
+    pub current_mana: u32,
+    pub max_hp: u32,
+    pub max_mana: u32,
+    pub speed: u32,
+    /// Permanent meta-shop boost from this member's Sharpened Edge rank.
+    /// Stored as a fraction (0.40 = +40% damage).
+    pub attack_boost_pct: f32,
+    /// Per-member attack list. Built from `template.starting_attacks`
+    /// at construction time; stones taught mid-run will append here.
+    pub attacks: Vec<Attack>,
 }
 
 impl PartyMember {
+    /// Build a fresh PartyMember at full HP/MP, applying the meta-shop
+    /// rank investment for its MonsterId.
+    pub fn fresh(id: MonsterId, template: Starter) -> Self {
+        let ranks = meta::ranks_for(&id);
+        let max_hp = BASE_MAX_HP + ranks.tidepool * 2;
+        let max_mana = BASE_MAX_MANA + ranks.wellspring;
+        let speed = BASE_SPEED + ranks.quickfoot;
+        let attack_boost_pct = ranks.sharpened_edge as f32 * 0.20;
+        let attacks: Vec<Attack> = template
+            .starting_attacks
+            .iter()
+            .filter_map(|name| attack_lib::find_by_name(name))
+            .collect();
+        Self {
+            id,
+            template,
+            current_hp: max_hp,
+            current_mana: max_mana,
+            max_hp,
+            max_mana,
+            speed,
+            attack_boost_pct,
+            attacks,
+        }
+    }
+
+    /// Backwards-compat constructor for the few places that build a
+    /// member without immediately needing per-member stats. Equivalent
+    /// to `fresh`.
     pub fn from_starter(id: MonsterId, starter: Starter) -> Self {
-        Self { id, template: starter }
+        Self::fresh(id, starter)
     }
 }
 
