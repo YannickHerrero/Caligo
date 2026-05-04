@@ -48,6 +48,23 @@ fn tick_buff_list(buffs: &mut Vec<ActiveBuff>) {
     buffs.retain(|b| b.turns_remaining > 0);
 }
 
+/// How long a hit-flash lasts after damage applies.
+pub const HIT_FLASH_DURATION: f32 = 0.4;
+/// Half-cycle of the blink — the sprite is hidden for one period and
+/// shown for the next.
+const HIT_FLASH_PERIOD: f32 = 0.07;
+
+fn sprite_visible(remaining: f32) -> bool {
+    if remaining <= 0.0 {
+        return true;
+    }
+    let elapsed = HIT_FLASH_DURATION - remaining;
+    let cycle = (elapsed / HIT_FLASH_PERIOD).floor() as i32;
+    // Even cycle -> hidden, odd cycle -> shown. Starting hidden makes the
+    // first frame after impact already register as a hit.
+    cycle % 2 != 0
+}
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum MenuState {
     Main,
@@ -98,6 +115,11 @@ pub struct FightState {
     pub player_buffs: Vec<ActiveBuff>,
     /// Active buffs on the enemy.
     pub enemy_buffs: Vec<ActiveBuff>,
+    /// Seconds of hit-flash remaining on the player. Drives a blink in
+    /// `render_crab` until it ticks down to 0.
+    pub player_hit_remaining: f32,
+    /// Seconds of hit-flash remaining on the enemy.
+    pub enemy_hit_remaining: f32,
 }
 
 impl FightState {
@@ -136,6 +158,8 @@ impl FightState {
             enemy_first_this_round: false,
             player_buffs: Vec::new(),
             enemy_buffs: Vec::new(),
+            player_hit_remaining: 0.0,
+            enemy_hit_remaining: 0.0,
         }
     }
 
@@ -258,6 +282,33 @@ impl FightState {
     pub fn tick_buffs(&mut self) {
         tick_buff_list(&mut self.player_buffs);
         tick_buff_list(&mut self.enemy_buffs);
+    }
+
+    /// Start a fresh hit-flash on the player.
+    pub fn flash_player(&mut self) {
+        self.player_hit_remaining = HIT_FLASH_DURATION;
+    }
+
+    /// Start a fresh hit-flash on the enemy.
+    pub fn flash_enemy(&mut self) {
+        self.enemy_hit_remaining = HIT_FLASH_DURATION;
+    }
+
+    /// Tick both hit-flash timers.
+    pub fn tick_hit_flashes(&mut self, dt: f32) {
+        self.player_hit_remaining = (self.player_hit_remaining - dt).max(0.0);
+        self.enemy_hit_remaining = (self.enemy_hit_remaining - dt).max(0.0);
+    }
+
+    /// Should the player sprite be drawn this frame, accounting for the
+    /// blink while hit-flashing?
+    pub fn player_visible(&self) -> bool {
+        sprite_visible(self.player_hit_remaining)
+    }
+
+    /// Should the enemy sprite be drawn this frame?
+    pub fn enemy_visible(&self) -> bool {
+        sprite_visible(self.enemy_hit_remaining)
     }
 
     pub fn commit_to_player(&self, player: &mut Player) {

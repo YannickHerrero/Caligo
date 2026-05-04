@@ -341,6 +341,9 @@ impl FightScreen {
                     let mut rng = rand::thread_rng();
                     let hp_before = self.fight.player_hp;
                     let damage = self.fight.resolve_player_attack(&attack, &mut rng);
+                    if matches!(attack.effect, crate::fight::Effect::Damage(_)) && damage > 0 {
+                        self.fight.flash_enemy();
+                    }
                     let enemy_name = self.fight.enemy.name.clone();
                     let msg = match attack.effect {
                         crate::fight::Effect::Damage(_) => {
@@ -367,6 +370,9 @@ impl FightScreen {
                 } else if let Some(attack) = self.fight.pending_enemy_attack.take() {
                     let mut rng = rand::thread_rng();
                     let damage = self.fight.resolve_enemy_attack(&attack, &mut rng);
+                    if matches!(attack.effect, crate::fight::Effect::Damage(_)) && damage > 0 {
+                        self.fight.flash_player();
+                    }
                     let enemy_name = self.fight.enemy.name.clone();
                     let msg = match attack.effect {
                         crate::fight::Effect::Damage(_) => {
@@ -398,6 +404,7 @@ impl FightScreen {
 
         self.environment.update_cycle(dt, 1.0, 1.0);
         self.fight.tick_message(dt);
+        self.fight.tick_hit_flashes(dt);
 
         // Round-loop driver: only runs when nothing is in-flight (no
         // animation, no message, no pending action, no end-of-fight).
@@ -539,8 +546,12 @@ impl FightScreen {
         };
 
         widgets::render_environment_background(frame, &self.environment, scene_area);
-        widgets::render_crab(frame, &self.crab, scene_area, crab_override);
-        widgets::render_enemy(frame, &self.fight.enemy, scene_area, enemy_override);
+        if self.fight.player_visible() {
+            widgets::render_crab(frame, &self.crab, scene_area, crab_override);
+        }
+        if self.fight.enemy_visible() {
+            widgets::render_enemy(frame, &self.fight.enemy, scene_area, enemy_override);
+        }
         if let Some(anim) = self.fight.animation.as_ref() {
             // Particles and projectile arc use whoever the attacker is as
             // their reference base.
