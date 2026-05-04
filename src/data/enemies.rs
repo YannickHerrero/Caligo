@@ -20,6 +20,32 @@ pub fn all_enemies() -> Vec<Enemy> {
     ]
 }
 
+/// Tier classification used to price recruits in the post-run shop.
+/// `Elite` is reserved — no bestiary entry currently maps to it (Elite
+/// fights reuse the Normal pool with a stat boost), but the variant is
+/// kept so `recruit_price` already covers the case for the future.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[allow(dead_code)]
+pub enum EnemyTier {
+    Easy,
+    Normal,
+    Elite,
+    Boss,
+}
+
+/// Look up the tier of a species by name. Returns None if the species
+/// isn't in the bestiary (e.g., a starter species).
+pub fn tier_for_species(species: &str) -> Option<EnemyTier> {
+    match species {
+        "Slime" | "Fire Slime" | "Frost Slime" | "Wisp" | "Volt Wisp" | "Mind Wisp" => {
+            Some(EnemyTier::Easy)
+        }
+        "Sandling" | "Shark" | "Cataphract" => Some(EnemyTier::Normal),
+        "Crab King" | "Wisp Lord" => Some(EnemyTier::Boss),
+        _ => None,
+    }
+}
+
 /// Pick a random enemy appropriate for the given map node kind. Elite
 /// fights reuse the Normal pool with a stat boost (HP +50%) until a
 /// dedicated elite roster exists.

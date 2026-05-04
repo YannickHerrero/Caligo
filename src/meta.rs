@@ -215,6 +215,39 @@ pub fn push_pending_capture(instance: MonsterInstance) {
     save_to_disk(&snap);
 }
 
+/// Try to buy a recruit from the pending-captures pile. Returns true if
+/// the purchase succeeded: embers deducted, monster moved into
+/// `monsters`, and added to `party` if there's room.
+pub fn try_buy_recruit(index: usize, price: u32) -> bool {
+    let snap = with_meta_mut(|meta| {
+        if index >= meta.pending_captures.len() {
+            return None;
+        }
+        if meta.embers < price {
+            return None;
+        }
+        let instance = meta.pending_captures.remove(index);
+        meta.embers -= price;
+        meta.monsters.insert(instance.id.clone(), instance.clone());
+        // Auto-add to party when there's room. Players reorganise via
+        // the Collection screen (Phase 5).
+        if meta.party.len() < PARTY_CAP && !meta.party.contains(&instance.id) {
+            meta.party.push(instance.id.clone());
+        }
+        Some(meta.clone())
+    });
+    let Some(snap) = snap else {
+        return false;
+    };
+    save_to_disk(&snap);
+    true
+}
+
+/// Maximum party size enforced by `try_buy_recruit`. Mirrored in the
+/// capture flow so an in-run pickup of a 7th member triggers the
+/// replace-slot picker.
+pub const PARTY_CAP: usize = 6;
+
 /// Register a freshly-chosen starter as owned and add it to the party.
 /// No-op if it's already owned.
 pub fn add_owned_starter(species: &str) {
