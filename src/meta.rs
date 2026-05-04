@@ -72,16 +72,18 @@ impl Upgrade {
     }
 
     /// Cost in embers to advance from `current_rank` to `current_rank + 1`.
-    /// Returns `None` if already at max.
+    /// Returns `None` if already at max. Curves are tuned so that maxing
+    /// every ladder for a single monster costs ~75 embers — about three
+    /// successful runs at ~24 embers per win.
     pub fn cost_for_next(&self, current_rank: u32) -> Option<u32> {
         if current_rank >= self.max_rank() {
             return None;
         }
         let costs: &[u32] = match self {
-            Upgrade::TidepoolBounty => &[1, 2, 3, 4, 6, 8, 10, 14, 19, 25],
-            Upgrade::ManaWellspring => &[1, 2, 3, 6, 10, 15],
-            Upgrade::Quickfoot => &[7, 15, 25],
-            Upgrade::SharpenedEdge => &[2, 4, 6, 8, 12, 16, 22, 30, 40, 55],
+            Upgrade::TidepoolBounty => &[1, 1, 1, 1, 2, 2, 2, 3, 3, 3], // 19
+            Upgrade::ManaWellspring => &[1, 2, 2, 2, 3, 3],             // 13
+            Upgrade::Quickfoot => &[4, 5, 7],                           // 16
+            Upgrade::SharpenedEdge => &[1, 2, 2, 2, 2, 3, 3, 3, 3, 5],  // 26
         };
         costs.get(current_rank as usize).copied()
     }
