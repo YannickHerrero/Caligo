@@ -1,23 +1,48 @@
-//! Cross-run meta state: embers (the meta-currency) and per-starter
-//! ranks in permanent stat upgrades. Persists to a small file alongside
-//! the settings.
+//! Cross-run meta state: embers (the meta-currency), the player's
+//! permanent collection of monsters and their party assignments, and
+//! per-monster permanent stat ranks. Persists to a file alongside the
+//! settings.
 //!
-//! Ranks are stored per starter (and, in the future, per party member)
-//! rather than globally — buying a rank for Pinchy doesn't affect Cinder
-//! or Sprout. The on-disk format uses dotted keys (e.g.
-//! `pinchy.tidepool=3`) so adding more upgrades or characters is purely
-//! additive.
+//! Each owned monster has a stable `MonsterId` string key
+//! (`starter:pinchy`, `wild:42`) that identifies it across the meta
+//! data. Ranks are scoped per `MonsterId`; the same data shape supports
+//! starters, captured wild monsters, and any future party member.
 
 use std::collections::HashMap;
 use std::path::PathBuf;
 use std::sync::RwLock;
 
+/// Stable identifier for an owned monster. Strings rather than a newtype
+/// for trivial serialisation; format is `starter:<species>` for starter
+/// monsters and `wild:<n>` for captures (n from `next_wild_id`).
+pub type MonsterId = String;
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct MonsterInstance {
+    pub id: MonsterId,
+    /// Species name; resolves through the data registry to a template
+    /// (starter visuals + attacks for starter species, enemy sprite +
+    /// moveset for captured wilds).
+    pub species: String,
+}
+
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct Meta {
     /// Total unspent meta-currency.
     pub embers: u32,
-    /// Permanent ranks per starter (key = starter.name lowercased).
-    pub starter_ranks: HashMap<String, StarterRanks>,
+    /// All monsters the player has permanently acquired.
+    pub monsters: HashMap<MonsterId, MonsterInstance>,
+    /// Active party (max 6), ordered. Each entry is a key into `monsters`.
+    pub party: Vec<MonsterId>,
+    /// Captures from completed or attempted runs that haven't been
+    /// purchased into `monsters` yet. Accumulates across runs; emptied
+    /// as the player buys them in the post-run shop.
+    pub pending_captures: Vec<MonsterInstance>,
+    /// Counter for minting unique `wild:<n>` IDs when a capture
+    /// succeeds.
+    pub next_wild_id: u32,
+    /// Permanent ranks per owned monster.
+    pub monster_ranks: HashMap<MonsterId, StarterRanks>,
 }
 
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
@@ -135,45 +160,61 @@ fn with_meta<R>(f: impl FnOnce(&Meta) -> R) -> R {
     f(meta)
 }
 
+fn with_meta_mut<R>(f: impl FnOnce(&mut Meta) -> R) -> R {
+    let mut guard = META.write().unwrap();
+    let meta = guard.as_mut().expect("meta::init not called");
+    f(meta)
+}
+
 pub fn snapshot() -> Meta {
     with_meta(|m| m.clone())
 }
 
-/// Read a single starter's ranks (returns defaults if the starter has
-/// never had a rank purchased).
-pub fn ranks_for(starter: &str) -> StarterRanks {
-    let key = normalize_starter(starter);
-    with_meta(|m| m.starter_ranks.get(&key).copied().unwrap_or_default())
+/// Build the canonical id string for a starter species.
+pub fn starter_id(species: &str) -> MonsterId {
+    format!("starter:{}", species.trim().to_lowercase())
+}
+
+/// Read a single monster's ranks (returns defaults if no rank has been
+/// purchased for that monster yet).
+pub fn ranks_for(monster_id: &str) -> StarterRanks {
+    with_meta(|m| {
+        m.monster_ranks
+            .get(monster_id)
+            .copied()
+            .unwrap_or_default()
+    })
 }
 
 pub fn add_embers(amount: u32) {
-    let snap = {
-        let mut guard = META.write().unwrap();
-        let meta = guard.as_mut().expect("meta::init not called");
+    let snap = with_meta_mut(|meta| {
         meta.embers = meta.embers.saturating_add(amount);
         meta.clone()
-    };
+    });
     save_to_disk(&snap);
 }
 
-/// Try to purchase the next rank of an upgrade for a specific starter.
+/// Try to purchase the next rank of an upgrade for a specific monster.
 /// Returns true if the purchase succeeded.
-pub fn try_buy(upgrade: Upgrade, starter: &str) -> bool {
-    let key = normalize_starter(starter);
-    let snap = {
-        let mut guard = META.write().unwrap();
-        let meta = guard.as_mut().expect("meta::init not called");
-        let ranks = meta.starter_ranks.entry(key).or_default();
+pub fn try_buy(upgrade: Upgrade, monster_id: &str) -> bool {
+    let result = with_meta_mut(|meta| {
+        let ranks = meta
+            .monster_ranks
+            .entry(monster_id.to_string())
+            .or_default();
         let current = upgrade.current_rank(ranks);
         let Some(cost) = upgrade.cost_for_next(current) else {
-            return false;
+            return None;
         };
         if meta.embers < cost {
-            return false;
+            return None;
         }
         meta.embers -= cost;
         upgrade.set_rank(ranks, current + 1);
-        meta.clone()
+        Some(meta.clone())
+    });
+    let Some(snap) = result else {
+        return false;
     };
     save_to_disk(&snap);
     true
@@ -190,10 +231,6 @@ pub fn wipe() {
     if let Some(path) = config_path() {
         let _ = std::fs::remove_file(&path);
     }
-}
-
-fn normalize_starter(name: &str) -> String {
-    name.trim().to_lowercase()
 }
 
 fn config_path() -> Option<PathBuf> {
@@ -218,19 +255,52 @@ fn load_from_disk() -> Option<Meta> {
         };
         let key = key.trim();
         let value = value.trim();
-        let parsed: u32 = value.parse().unwrap_or(0);
         if key == "embers" {
-            meta.embers = parsed;
+            meta.embers = value.parse().unwrap_or(0);
             continue;
         }
-        // Per-starter ranks use dotted keys: `pinchy.tidepool=3`.
-        if let Some((starter, upgrade_key)) = key.split_once('.') {
+        if key == "next_wild_id" {
+            meta.next_wild_id = value.parse().unwrap_or(0);
+            continue;
+        }
+        if key == "party" {
+            meta.party = value
+                .split(',')
+                .map(|s| s.trim().to_string())
+                .filter(|s| !s.is_empty())
+                .collect();
+            continue;
+        }
+        if key == "pending_capture" {
+            // Format: pending_capture=<id>|<species>
+            if let Some((id, species)) = value.split_once('|') {
+                meta.pending_captures.push(MonsterInstance {
+                    id: id.to_string(),
+                    species: species.to_string(),
+                });
+            }
+            continue;
+        }
+        if let Some(rest) = key.strip_prefix("monster.") {
+            // Format: monster.<id>=<species>  -> owned monster entry.
+            meta.monsters.insert(
+                rest.to_string(),
+                MonsterInstance {
+                    id: rest.to_string(),
+                    species: value.to_string(),
+                },
+            );
+            continue;
+        }
+        // Per-monster ranks: <MonsterId>.<upgrade>=<rank>
+        if let Some((monster_id, upgrade_key)) = key.rsplit_once('.') {
             if let Some(upgrade) = Upgrade::from_key(upgrade_key) {
+                let rank: u32 = value.parse().unwrap_or(0);
                 let entry = meta
-                    .starter_ranks
-                    .entry(starter.to_string())
+                    .monster_ranks
+                    .entry(monster_id.to_string())
                     .or_default();
-                upgrade.set_rank(entry, parsed);
+                upgrade.set_rank(entry, rank);
             }
         }
     }
@@ -246,14 +316,37 @@ fn save_to_disk(meta: &Meta) {
     }
     let mut out = String::new();
     out.push_str(&format!("embers={}\n", meta.embers));
-    let mut keys: Vec<&String> = meta.starter_ranks.keys().collect();
-    keys.sort();
-    for starter in keys {
-        let ranks = &meta.starter_ranks[starter];
+    out.push_str(&format!("next_wild_id={}\n", meta.next_wild_id));
+
+    // Owned monsters.
+    let mut monster_keys: Vec<&MonsterId> = meta.monsters.keys().collect();
+    monster_keys.sort();
+    for id in monster_keys {
+        out.push_str(&format!("monster.{}={}\n", id, meta.monsters[id].species));
+    }
+
+    // Party assignment (single comma-separated line).
+    if !meta.party.is_empty() {
+        out.push_str(&format!("party={}\n", meta.party.join(",")));
+    }
+
+    // Pending captures (one per line).
+    for capture in &meta.pending_captures {
+        out.push_str(&format!(
+            "pending_capture={}|{}\n",
+            capture.id, capture.species
+        ));
+    }
+
+    // Per-monster ranks. Sorted for stable diffs.
+    let mut rank_keys: Vec<&MonsterId> = meta.monster_ranks.keys().collect();
+    rank_keys.sort();
+    for monster_id in rank_keys {
+        let ranks = &meta.monster_ranks[monster_id];
         for upgrade in Upgrade::ALL {
             let rank = upgrade.current_rank(ranks);
             if rank > 0 {
-                out.push_str(&format!("{}.{}={}\n", starter, upgrade.key(), rank));
+                out.push_str(&format!("{}.{}={}\n", monster_id, upgrade.key(), rank));
             }
         }
     }

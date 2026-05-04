@@ -121,8 +121,9 @@ impl ShopScreen {
         let Some(starter) = self.active_starter().cloned() else {
             return;
         };
+        let monster_id = meta::starter_id(&starter.name);
         let snap = meta::snapshot();
-        let ranks = meta::ranks_for(&starter.name);
+        let ranks = meta::ranks_for(&monster_id);
         let current = upgrade.current_rank(&ranks);
         let Some(cost) = upgrade.cost_for_next(current) else {
             self.message = Some(format!(
@@ -140,7 +141,7 @@ impl ShopScreen {
             ));
             return;
         }
-        if meta::try_buy(upgrade, &starter.name) {
+        if meta::try_buy(upgrade, &monster_id) {
             self.message = Some(format!(
                 "{} \u{2192} rank {} for {}.",
                 upgrade.name(),
@@ -220,7 +221,7 @@ fn render_upgrades(
 
     let snap = meta::snapshot();
     let ranks = match starter {
-        Some(s) => meta::ranks_for(&s.name),
+        Some(s) => meta::ranks_for(&meta::starter_id(&s.name)),
         None => Default::default(),
     };
 

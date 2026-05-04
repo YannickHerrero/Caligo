@@ -66,7 +66,7 @@ impl Player {
         let owned_attacks = attack_lib::all_attacks();
         let equipped_attacks = resolve_starter_attack_slots(&owned_attacks, &starter.starting_attacks);
         let inventory = vec![ItemStack::new(Item::HpPotion(PotionSize::Small), 1)];
-        let ranks = crate::meta::ranks_for(&starter.name);
+        let ranks = crate::meta::ranks_for(&crate::meta::starter_id(&starter.name));
         let base_max_hp = 25 + ranks.tidepool * 2;
         let base_max_mana = 15 + ranks.wellspring;
         let speed = PLAYER_BASE_SPEED + ranks.quickfoot;
