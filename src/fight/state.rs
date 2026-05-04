@@ -115,6 +115,11 @@ pub struct FightState {
     pub player_buffs: Vec<ActiveBuff>,
     /// Active buffs on the enemy.
     pub enemy_buffs: Vec<ActiveBuff>,
+    /// Permanent outgoing-damage multiplier from the meta-shop's
+    /// Sharpened Edge ladder for the active starter. Stored as a
+    /// percentage (0.20 = +20%). Stacks multiplicatively with
+    /// `BuffKind::AttackUp` from in-fight buffs.
+    pub player_attack_boost_pct: f32,
     /// Seconds of hit-flash remaining on the player. Drives a blink in
     /// `render_crab` until it ticks down to 0.
     pub player_hit_remaining: f32,
@@ -160,6 +165,7 @@ impl FightState {
             enemy_buffs: Vec::new(),
             player_hit_remaining: 0.0,
             enemy_hit_remaining: 0.0,
+            player_attack_boost_pct: 0.0,
         }
     }
 
@@ -210,6 +216,7 @@ impl FightState {
                     * type_mult
                     * (1.0 + atk_pct)
                     * (1.0 - def_pct).max(0.0)
+                    * (1.0 + self.player_attack_boost_pct)
                     * variance)
                     .round()
                     .max(1.0) as u32;

@@ -99,6 +99,10 @@ impl FightScreen {
     ) -> Self {
         let mut fight = FightState::from_player_with_enemy(player, enemy);
         fight.player_type = Some(map.run.starter.primary_type);
+        // Permanent meta boost: +20% damage per Sharpened Edge rank for
+        // the active starter.
+        let ranks = crate::meta::ranks_for(&map.run.starter.name);
+        fight.player_attack_boost_pct = ranks.sharpened_edge as f32 * 0.20;
         Self {
             crab: Crab::new((6.0, 100.0), 95),
             environment: Environment::generate(80, 15, GroundStyle::default()),
