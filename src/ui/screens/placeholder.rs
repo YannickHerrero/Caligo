@@ -21,10 +21,19 @@ pub struct PlaceholderNodeScreen {
 }
 
 impl PlaceholderNodeScreen {
-    pub fn new(map: Box<MapScreen>, kind: NodeKind, player: &mut Player) -> Self {
+    pub fn new(mut map: Box<MapScreen>, kind: NodeKind, player: &mut Player) -> Self {
         let healed_to = if matches!(kind, NodeKind::Camp) {
-            player.hp = player.max_hp();
-            player.mana = player.max_mana();
+            // Restore every party member to full HP/MP (active and bench).
+            for member in map.run.party.iter_mut() {
+                member.current_hp = member.max_hp;
+                member.current_mana = member.max_mana;
+            }
+            // Re-sync the active member into Player so the active stats
+            // reflect the heal as soon as we leave the Camp screen.
+            let active = map.run.active;
+            if let Some(member) = map.run.party.get(active) {
+                player.sync_from_member(member);
+            }
             Some(player.hp)
         } else {
             None
