@@ -61,15 +61,15 @@ impl Player {
     /// Build a fresh Player for the start of a real run with the chosen
     /// starter. The starter dictates the four equipped attacks; HP/mana
     /// are the standard run baseline plus permanent meta-shop ladder
-    /// bonuses; inventory holds a single Small HP Potion.
+    /// bonuses for that starter; inventory holds a single Small HP Potion.
     pub fn for_starter(starter: &Starter) -> Self {
         let owned_attacks = attack_lib::all_attacks();
         let equipped_attacks = resolve_starter_attack_slots(&owned_attacks, &starter.starting_attacks);
         let inventory = vec![ItemStack::new(Item::HpPotion(PotionSize::Small), 1)];
-        let meta = crate::meta::snapshot();
-        let base_max_hp = 25 + meta.tidepool_rank * 2;
-        let base_max_mana = 15 + meta.wellspring_rank;
-        let speed = PLAYER_BASE_SPEED + meta.quickfoot_rank;
+        let ranks = crate::meta::ranks_for(&starter.name);
+        let base_max_hp = 25 + ranks.tidepool * 2;
+        let base_max_mana = 15 + ranks.wellspring;
+        let speed = PLAYER_BASE_SPEED + ranks.quickfoot;
         Self {
             hp: base_max_hp,
             base_max_hp,

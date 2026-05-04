@@ -1,3 +1,4 @@
+use crate::data::starters::{self, Starter};
 use crate::meta::{self, Upgrade};
 use crate::player::Player;
 use crate::ui::screen::{Screen, Transition};
@@ -12,8 +13,13 @@ use ratatui::{
 };
 
 /// Between-runs shop where the player spends embers on permanent
-/// stat-ladder ranks.
+/// stat-ladder ranks. Ranks are scoped per-starter; the player picks
+/// which starter they're upgrading via Tab.
 pub struct ShopScreen {
+    starters: Vec<Starter>,
+    /// Index into `starters` for the currently-active selector.
+    starter_idx: usize,
+    /// Index into `Upgrade::ALL` for the highlighted upgrade row.
     selected: usize,
     /// Transient one-line message shown under the menu (e.g. "Not enough
     /// embers!" or "Already at max rank."). Cleared on next nav.
@@ -23,6 +29,8 @@ pub struct ShopScreen {
 impl ShopScreen {
     pub fn new() -> Self {
         Self {
+            starters: starters::all_starters(),
+            starter_idx: 0,
             selected: 0,
             message: None,
         }
@@ -33,6 +41,21 @@ impl ShopScreen {
         match key {
             KeyCode::Esc | KeyCode::Char('q') => {
                 Transition::Goto(Screen::Start(StartScreen::new()))
+            }
+            KeyCode::Tab | KeyCode::Right | KeyCode::Char('l') => {
+                if !self.starters.is_empty() {
+                    self.starter_idx = (self.starter_idx + 1) % self.starters.len();
+                }
+                self.message = None;
+                Transition::Stay
+            }
+            KeyCode::BackTab | KeyCode::Left | KeyCode::Char('h') => {
+                if !self.starters.is_empty() {
+                    let n = self.starters.len();
+                    self.starter_idx = (self.starter_idx + n - 1) % n;
+                }
+                self.message = None;
+                Transition::Stay
             }
             KeyCode::Up | KeyCode::Char('k') => {
                 if len > 0 {
@@ -70,7 +93,7 @@ impl ShopScreen {
             .direction(Direction::Vertical)
             .constraints([
                 Constraint::Length(1), // title
-                Constraint::Length(1), // ember balance
+                Constraint::Length(1), // ember balance + active starter
                 Constraint::Length(1), // spacer
                 Constraint::Min(8),    // upgrade list
                 Constraint::Length(1), // message strip
@@ -79,22 +102,34 @@ impl ShopScreen {
             .split(area);
 
         render_title(frame, chunks[0]);
-        render_balance(frame, chunks[1]);
-        render_upgrades(frame, self.selected, chunks[3]);
+        render_header(frame, self.active_starter(), chunks[1]);
+        render_upgrades(frame, self.active_starter(), self.selected, chunks[3]);
         if let Some(msg) = self.message.as_deref() {
             render_message(frame, msg, chunks[4]);
         }
         render_hint(frame, chunks[5]);
     }
 
+    fn active_starter(&self) -> Option<&Starter> {
+        self.starters.get(self.starter_idx)
+    }
+
     fn try_buy(&mut self) {
         let Some(upgrade) = Upgrade::ALL.get(self.selected).copied() else {
             return;
         };
+        let Some(starter) = self.active_starter().cloned() else {
+            return;
+        };
         let snap = meta::snapshot();
-        let current = upgrade.current_rank(&snap);
+        let ranks = meta::ranks_for(&starter.name);
+        let current = upgrade.current_rank(&ranks);
         let Some(cost) = upgrade.cost_for_next(current) else {
-            self.message = Some(format!("{} is already maxed.", upgrade.name()));
+            self.message = Some(format!(
+                "{} is maxed for {}.",
+                upgrade.name(),
+                starter.name
+            ));
             return;
         };
         if snap.embers < cost {
@@ -105,11 +140,12 @@ impl ShopScreen {
             ));
             return;
         }
-        if meta::try_buy(upgrade) {
+        if meta::try_buy(upgrade, &starter.name) {
             self.message = Some(format!(
-                "{} \u{2192} rank {}.",
+                "{} \u{2192} rank {} for {}.",
                 upgrade.name(),
-                current + 1
+                current + 1,
+                starter.name
             ));
         }
     }
@@ -125,9 +161,9 @@ fn render_title(frame: &mut Frame, area: Rect) {
     frame.render_widget(Paragraph::new(line).alignment(Alignment::Center), area);
 }
 
-fn render_balance(frame: &mut Frame, area: Rect) {
+fn render_header(frame: &mut Frame, starter: Option<&Starter>, area: Rect) {
     let snap = meta::snapshot();
-    let line = Line::from(vec![
+    let mut spans = vec![
         Span::styled("Embers ", Style::default().fg(Color::DarkGray)),
         Span::styled(
             format!("{}", snap.embers),
@@ -135,11 +171,29 @@ fn render_balance(frame: &mut Frame, area: Rect) {
                 .fg(Color::Rgb(255, 140, 90))
                 .add_modifier(Modifier::BOLD),
         ),
-    ]);
+    ];
+    if let Some(starter) = starter {
+        spans.extend([
+            Span::styled("   \u{00B7}   ", Style::default().fg(Color::DarkGray)),
+            Span::styled("Upgrades for ", Style::default().fg(Color::DarkGray)),
+            Span::styled(
+                format!("\u{25C0} {} \u{25B6}", starter.name),
+                Style::default()
+                    .fg(starter.primary_type.color())
+                    .add_modifier(Modifier::BOLD),
+            ),
+        ]);
+    }
+    let line = Line::from(spans);
     frame.render_widget(Paragraph::new(line).alignment(Alignment::Center), area);
 }
 
-fn render_upgrades(frame: &mut Frame, selected: usize, area: Rect) {
+fn render_upgrades(
+    frame: &mut Frame,
+    starter: Option<&Starter>,
+    selected: usize,
+    area: Rect,
+) {
     let panel_w = 64.min(area.width.saturating_sub(2)).max(40);
     let needed_h = (Upgrade::ALL.len() as u16) * 3 + 2;
     let panel_h = needed_h.min(area.height);
@@ -165,11 +219,16 @@ fn render_upgrades(frame: &mut Frame, selected: usize, area: Rect) {
     }
 
     let snap = meta::snapshot();
+    let ranks = match starter {
+        Some(s) => meta::ranks_for(&s.name),
+        None => Default::default(),
+    };
+
     let mut lines: Vec<Line> = Vec::new();
     for (idx, upgrade) in Upgrade::ALL.iter().enumerate() {
         let is_selected = idx == selected;
         let cursor = if is_selected { "\u{25B6} " } else { "  " };
-        let current = upgrade.current_rank(&snap);
+        let current = upgrade.current_rank(&ranks);
         let max = upgrade.max_rank();
         let cost_text = match upgrade.cost_for_next(current) {
             Some(c) => format!("{} embers", c),
@@ -187,7 +246,10 @@ fn render_upgrades(frame: &mut Frame, selected: usize, area: Rect) {
             Style::default()
                 .fg(Color::Rgb(120, 200, 120))
                 .add_modifier(Modifier::BOLD)
-        } else if upgrade.cost_for_next(current).map_or(false, |c| snap.embers >= c) {
+        } else if upgrade
+            .cost_for_next(current)
+            .map_or(false, |c| snap.embers >= c)
+        {
             Style::default()
                 .fg(Color::Rgb(255, 140, 90))
                 .add_modifier(Modifier::BOLD)
@@ -229,6 +291,8 @@ fn render_hint(frame: &mut Frame, area: Rect) {
     let key = Style::default().fg(Color::Yellow);
     let dim = Style::default().fg(Color::DarkGray);
     let hint = Line::from(vec![
+        Span::styled("Tab", key),
+        Span::styled(" starter   ", dim),
         Span::styled("\u{2191}\u{2193}", key),
         Span::styled(" navigate   ", dim),
         Span::styled("Enter", key),
