@@ -121,6 +121,7 @@ impl FightScreen {
         // Permanent meta boost: read directly off the active member so
         // switching mid-fight automatically updates the multiplier.
         fight.player_attack_boost_pct = active.attack_boost_pct;
+        fight.active_member_name = active.template.name.clone();
         Self {
             crab: Crab::new((6.0, 100.0), 95),
             environment: Environment::generate(80, 15, GroundStyle::default()),
@@ -344,6 +345,7 @@ impl FightScreen {
         self.fight.player_max_mana = player.max_mana();
         self.fight.player_type = Some(incoming.template.primary_type);
         self.fight.player_attack_boost_pct = incoming.attack_boost_pct;
+        self.fight.active_member_name = incoming.template.name.clone();
         self.fight.attacks = incoming.attacks.clone();
         self.fight.attack_selected = 0;
         // Reset the active member's hit-flash so the new sprite isn't

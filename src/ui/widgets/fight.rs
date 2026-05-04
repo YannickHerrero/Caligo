@@ -62,7 +62,7 @@ pub fn render_hp_bars(frame: &mut Frame, fight: &FightState, area: Rect) {
     let player_width = 32u16.min(area.width);
 
     let player_hp = hp_bar(
-        " HP",
+        &fight.active_member_name,
         fight.player_hp,
         fight.player_max_hp,
         Color::Rgb(255, 120, 80),

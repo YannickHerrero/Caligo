@@ -120,6 +120,9 @@ pub struct FightState {
     /// percentage (0.20 = +20%). Stacks multiplicatively with
     /// `BuffKind::AttackUp` from in-fight buffs.
     pub player_attack_boost_pct: f32,
+    /// Display name of the active party member; surfaced on the HP bar
+    /// so the player can see who's out at a glance.
+    pub active_member_name: String,
     /// Seconds of hit-flash remaining on the player. Drives a blink in
     /// `render_crab` until it ticks down to 0.
     pub player_hit_remaining: f32,
@@ -166,6 +169,7 @@ impl FightState {
             player_hit_remaining: 0.0,
             enemy_hit_remaining: 0.0,
             player_attack_boost_pct: 0.0,
+            active_member_name: "You".to_string(),
         }
     }
 
