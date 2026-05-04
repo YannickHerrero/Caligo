@@ -46,6 +46,13 @@ pub struct FightScreen {
     revive_prompt_pending: bool,
     /// True while the Revive Pearl prompt is on screen. Locks input to Y/N.
     revive_prompt_open: bool,
+    /// True after the active member faints AND there's at least one
+    /// other alive member. Drives the forced member-select popup that
+    /// opens once the impact message clears.
+    faint_swap_pending: bool,
+    /// State for the member-select popup. None when not active.
+    /// `forced` blocks Esc/cancel (set when invoked by a faint).
+    switch_prompt: Option<SwitchPromptState>,
     last_terminal_size: (u16, u16),
     last_action_height: u16,
 }
@@ -60,6 +67,15 @@ enum Actor {
 struct QueuedAction {
     actor: Actor,
     attack: crate::fight::Attack,
+}
+
+#[derive(Debug, Clone)]
+struct SwitchPromptState {
+    /// Index into `Run.party` highlighted for swap-in.
+    selected: usize,
+    /// True when the prompt was opened by a faint — Esc / cancel doesn't
+    /// dismiss it.
+    forced: bool,
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -84,6 +100,8 @@ impl FightScreen {
             pre_fight_mana: player.mana,
             revive_prompt_pending: false,
             revive_prompt_open: false,
+            faint_swap_pending: false,
+            switch_prompt: None,
             last_terminal_size: (0, 0),
             last_action_height: 0,
         }
@@ -116,6 +134,8 @@ impl FightScreen {
             pre_fight_mana: player.mana,
             revive_prompt_pending: false,
             revive_prompt_open: false,
+            faint_swap_pending: false,
+            switch_prompt: None,
             last_terminal_size: (0, 0),
             last_action_height: 0,
         }
@@ -131,6 +151,9 @@ impl FightScreen {
     pub fn handle_key(&mut self, key: KeyCode, player: &mut Player) -> Transition {
         if self.revive_prompt_open {
             return self.handle_revive_prompt(key, player);
+        }
+        if self.switch_prompt.is_some() {
+            return self.handle_switch_prompt(key, player);
         }
         if self.fight.animation.is_some() || self.fight.message.is_some() {
             return Transition::Stay;
@@ -164,7 +187,16 @@ impl FightScreen {
             | KeyCode::Esc
             | KeyCode::Char('q') => {
                 self.revive_prompt_open = false;
-                self.pending_exit = Some(FightOutcome::Defeat);
+                if !self.alive_other_members().is_empty() {
+                    // Other members can still fight — pop the forced
+                    // member-select instead of ending the run.
+                    self.switch_prompt = Some(SwitchPromptState {
+                        selected: self.first_alive_other(),
+                        forced: true,
+                    });
+                } else {
+                    self.pending_exit = Some(FightOutcome::Defeat);
+                }
                 Transition::Stay
             }
             _ => Transition::Stay,
@@ -191,6 +223,17 @@ impl FightScreen {
                 }
                 Action::Item => {
                     self.fight.menu_state = MenuState::ItemSelect;
+                }
+                Action::Switch => {
+                    if self.alive_other_members().is_empty() {
+                        self.fight
+                            .set_message("No other members able to fight.", 0.8);
+                    } else {
+                        self.switch_prompt = Some(SwitchPromptState {
+                            selected: self.first_alive_other(),
+                            forced: false,
+                        });
+                    }
                 }
                 Action::Flee => {
                     if self.flee_allowed() {
@@ -251,6 +294,125 @@ impl FightScreen {
             if let Some(member) = map.run.party.get_mut(idx) {
                 player.sync_to_member(member);
             }
+        }
+    }
+
+    /// Indices of party members other than the active one that still
+    /// have HP > 0.
+    fn alive_other_members(&self) -> Vec<usize> {
+        let Some(map) = self.map.as_ref() else {
+            return Vec::new();
+        };
+        let active = map.run.active;
+        map.run
+            .party
+            .iter()
+            .enumerate()
+            .filter(|(idx, m)| *idx != active && m.current_hp > 0)
+            .map(|(idx, _)| idx)
+            .collect()
+    }
+
+    fn first_alive_other(&self) -> usize {
+        self.alive_other_members().first().copied().unwrap_or(0)
+    }
+
+    /// Swap the run's active member to `slot`. Costs the player's turn
+    /// (Pokemon-rules) so the round logic should fire the enemy's
+    /// response after this returns.
+    fn perform_switch(&mut self, slot: usize, player: &mut Player) {
+        let Some(map) = self.map.as_mut() else {
+            return;
+        };
+        if slot >= map.run.party.len() || slot == map.run.active {
+            return;
+        }
+        // Sync working state back to the outgoing member.
+        let outgoing_idx = map.run.active;
+        if let Some(outgoing) = map.run.party.get_mut(outgoing_idx) {
+            player.sync_to_member(outgoing);
+        }
+        // Swap active.
+        map.run.active = slot;
+        // Pull the new member's stats into Player.
+        let incoming = map.run.party[slot].clone();
+        player.sync_from_member(&incoming);
+        // Reflect the new active in fight state too.
+        self.fight.player_hp = player.hp;
+        self.fight.player_max_hp = player.max_hp();
+        self.fight.player_mana = player.mana;
+        self.fight.player_max_mana = player.max_mana();
+        self.fight.player_type = Some(incoming.template.primary_type);
+        self.fight.player_attack_boost_pct = incoming.attack_boost_pct;
+        self.fight.attacks = incoming.attacks.clone();
+        self.fight.attack_selected = 0;
+        // Reset the active member's hit-flash so the new sprite isn't
+        // mid-blink.
+        self.fight.player_hit_remaining = 0.0;
+    }
+
+    fn handle_switch_prompt(
+        &mut self,
+        key: KeyCode,
+        player: &mut Player,
+    ) -> Transition {
+        let Some(prompt) = self.switch_prompt.clone() else {
+            return Transition::Stay;
+        };
+        let alive = self.alive_other_members();
+        match key {
+            KeyCode::Up | KeyCode::Char('k') => {
+                if !alive.is_empty() {
+                    let pos = alive.iter().position(|i| *i == prompt.selected).unwrap_or(0);
+                    let new_pos = (pos + alive.len() - 1) % alive.len();
+                    self.switch_prompt = Some(SwitchPromptState {
+                        selected: alive[new_pos],
+                        forced: prompt.forced,
+                    });
+                }
+                Transition::Stay
+            }
+            KeyCode::Down | KeyCode::Char('j') => {
+                if !alive.is_empty() {
+                    let pos = alive.iter().position(|i| *i == prompt.selected).unwrap_or(0);
+                    let new_pos = (pos + 1) % alive.len();
+                    self.switch_prompt = Some(SwitchPromptState {
+                        selected: alive[new_pos],
+                        forced: prompt.forced,
+                    });
+                }
+                Transition::Stay
+            }
+            KeyCode::Enter => {
+                let was_forced = prompt.forced;
+                self.switch_prompt = None;
+                self.perform_switch(prompt.selected, player);
+                if was_forced {
+                    // Forced (faint) swap: the enemy's turn was already
+                    // queued or running; just resume the round logic. Do
+                    // NOT cost a turn — the player didn't choose to faint.
+                } else {
+                    // Voluntary switch costs the player's action this round.
+                    let mut rng = rand::thread_rng();
+                    self.fight
+                        .set_message("You swapped in a fresh teammate!", 0.5);
+                    self.round_active = true;
+                    if let Some(enemy_attack) = self.pick_enemy_move(&mut rng) {
+                        self.next_action = Some(QueuedAction {
+                            actor: Actor::Enemy,
+                            attack: enemy_attack,
+                        });
+                    }
+                }
+                Transition::Stay
+            }
+            KeyCode::Esc | KeyCode::Char('q') => {
+                if !prompt.forced {
+                    self.switch_prompt = None;
+                }
+                Transition::Stay
+            }
+            _ => Transition::Stay,
         }
     }
 
@@ -515,10 +677,14 @@ impl FightScreen {
                     };
                     self.fight.set_message(msg, 1.0);
                     if self.fight.player_hp == 0 {
+                        // Sync the 0 HP into the active party member now
+                        // so alive_other_members has accurate state.
+                        self.commit_active_member(player);
                         if has_revive_pearl(&self.fight.items) {
-                            // Defer the defeat decision; the prompt opens
-                            // once the impact message clears.
                             self.revive_prompt_pending = true;
+                        } else if !self.alive_other_members().is_empty() {
+                            // Other party members can step in.
+                            self.faint_swap_pending = true;
                         } else {
                             self.pending_exit = Some(FightOutcome::Defeat);
                         }
@@ -542,6 +708,18 @@ impl FightScreen {
         {
             self.revive_prompt_pending = false;
             self.revive_prompt_open = true;
+        }
+
+        // Same gate for the forced member-select on faint.
+        if self.faint_swap_pending
+            && self.fight.animation.is_none()
+            && self.fight.message.is_none()
+        {
+            self.faint_swap_pending = false;
+            self.switch_prompt = Some(SwitchPromptState {
+                selected: self.first_alive_other(),
+                forced: true,
+            });
         }
 
         // Round-loop driver: only runs when nothing is in-flight (no
@@ -762,6 +940,11 @@ impl FightScreen {
         if self.revive_prompt_open {
             render_revive_prompt(frame, area);
         }
+        if let Some(prompt) = self.switch_prompt.as_ref() {
+            if let Some(map) = self.map.as_ref() {
+                render_switch_prompt(frame, area, &map.run, prompt);
+            }
+        }
     }
 }
 
@@ -808,6 +991,158 @@ fn consume_one_revive_pearl(items: &mut Vec<crate::fight::ItemStack>) {
             items.remove(idx);
         }
     }
+}
+
+fn render_switch_prompt(
+    frame: &mut Frame,
+    area: ratatui::layout::Rect,
+    run: &crate::run::Run,
+    prompt: &SwitchPromptState,
+) {
+    use ratatui::layout::Rect;
+    use ratatui::style::{Color, Modifier, Style};
+    use ratatui::text::{Line, Span};
+    use ratatui::widgets::{Block, Borders, Paragraph};
+
+    let popup_w: u16 = 50.min(area.width.saturating_sub(4)).max(20);
+    let popup_h: u16 =
+        (run.party.len() as u16 + 5).min(area.height.saturating_sub(2)).max(7);
+    if popup_w < 20 || popup_h < 5 {
+        return;
+    }
+    let popup = Rect {
+        x: area.x + (area.width.saturating_sub(popup_w)) / 2,
+        y: area.y + (area.height.saturating_sub(popup_h)) / 2,
+        width: popup_w,
+        height: popup_h,
+    };
+
+    // Dim outside, clear inside.
+    let buf = frame.buffer_mut();
+    for y in area.y..(area.y + area.height) {
+        for x in area.x..(area.x + area.width) {
+            if x >= popup.x
+                && x < popup.x + popup.width
+                && y >= popup.y
+                && y < popup.y + popup.height
+            {
+                continue;
+            }
+            if let Some(cell) = buf.cell_mut((x, y)) {
+                let fg = match cell.fg {
+                    Color::Rgb(r, g, b) => Color::Rgb(r / 3, g / 3, b / 3),
+                    other => other,
+                };
+                cell.set_fg(fg);
+            }
+        }
+    }
+    for y in popup.y..(popup.y + popup.height) {
+        for x in popup.x..(popup.x + popup.width) {
+            if let Some(cell) = buf.cell_mut((x, y)) {
+                cell.set_char(' ').set_style(Style::default());
+            }
+        }
+    }
+
+    let title = if prompt.forced {
+        " Choose a teammate "
+    } else {
+        " Switch member "
+    };
+    let block = Block::default()
+        .borders(Borders::ALL)
+        .border_style(Style::default().fg(Color::Rgb(160, 220, 200)))
+        .title(Span::styled(
+            title,
+            Style::default()
+                .fg(Color::Rgb(160, 220, 200))
+                .add_modifier(Modifier::BOLD),
+        ));
+    let inner = block.inner(popup);
+    frame.render_widget(block, popup);
+    if inner.height == 0 {
+        return;
+    }
+
+    let mut lines: Vec<Line> = Vec::new();
+    let headline = if prompt.forced {
+        format!(
+            "{} fainted. Send in...",
+            run.party
+                .get(run.active)
+                .map(|m| m.template.name.as_str())
+                .unwrap_or("Your monster")
+        )
+    } else {
+        "Swap to which teammate? (costs your turn)".to_string()
+    };
+    lines.push(Line::from(Span::styled(
+        headline,
+        Style::default().fg(Color::Gray),
+    )));
+    lines.push(Line::from(""));
+    for (idx, member) in run.party.iter().enumerate() {
+        let is_active = idx == run.active;
+        let is_alive = member.current_hp > 0;
+        let is_selected = idx == prompt.selected;
+        let style = if is_active || !is_alive {
+            Style::default().fg(Color::DarkGray)
+        } else if is_selected {
+            Style::default()
+                .fg(Color::Yellow)
+                .add_modifier(Modifier::BOLD)
+        } else {
+            Style::default().fg(Color::Gray)
+        };
+        let cursor = if is_selected && !is_active && is_alive {
+            "\u{25B6} "
+        } else {
+            "  "
+        };
+        let suffix = if is_active {
+            " (active)"
+        } else if !is_alive {
+            " (fainted)"
+        } else {
+            ""
+        };
+        lines.push(Line::from(vec![
+            Span::styled(cursor, style),
+            Span::styled(
+                format!(
+                    "{}  HP {}/{}{}",
+                    member.template.name, member.current_hp, member.max_hp, suffix
+                ),
+                style,
+            ),
+        ]));
+    }
+    lines.push(Line::from(""));
+    let key = Style::default().fg(Color::Yellow);
+    let dim = Style::default().fg(Color::DarkGray);
+    let hint_spans = if prompt.forced {
+        vec![
+            Span::styled("\u{2191}\u{2193}", key),
+            Span::styled(" pick   ", dim),
+            Span::styled("Enter", key),
+            Span::styled(" send", dim),
+        ]
+    } else {
+        vec![
+            Span::styled("\u{2191}\u{2193}", key),
+            Span::styled(" pick   ", dim),
+            Span::styled("Enter", key),
+            Span::styled(" swap   ", dim),
+            Span::styled("Esc", key),
+            Span::styled(" cancel", dim),
+        ]
+    };
+    lines.push(Line::from(hint_spans));
+    frame.render_widget(
+        Paragraph::new(lines).alignment(ratatui::layout::Alignment::Center),
+        inner,
+    );
 }
 
 fn render_revive_prompt(frame: &mut Frame, area: ratatui::layout::Rect) {

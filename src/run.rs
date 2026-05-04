@@ -13,6 +13,11 @@ const BASE_SPEED: u32 = 10;
 /// start.
 #[derive(Clone)]
 pub struct PartyMember {
+    /// Stable identity referencing Meta.monsters / Meta.monster_ranks.
+    /// Currently only used at construction time (PartyMember::fresh
+    /// reads ranks via this id), but kept on the struct for re-syncs
+    /// when ladders are bought mid-run, party serialisation, etc.
+    #[allow(dead_code)]
     pub id: MonsterId,
     /// Species template (visual / type / starting attacks). Today this
     /// is always a `Starter`; captured wilds get a synthesised wrapper
