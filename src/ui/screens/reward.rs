@@ -18,15 +18,23 @@ use ratatui::{
 pub struct RewardScreen {
     pub map: Option<Box<MapScreen>>,
     pub gold: u32,
+    pub embers: u32,
     pub items: Vec<Item>,
     pub kind: NodeKind,
 }
 
 impl RewardScreen {
-    pub fn new(map: Box<MapScreen>, gold: u32, items: Vec<Item>, kind: NodeKind) -> Self {
+    pub fn new(
+        map: Box<MapScreen>,
+        gold: u32,
+        embers: u32,
+        items: Vec<Item>,
+        kind: NodeKind,
+    ) -> Self {
         Self {
             map: Some(map),
             gold,
+            embers,
             items,
             kind,
         }
@@ -86,7 +94,8 @@ impl RewardScreen {
         let chunks = Layout::default()
             .direction(Direction::Vertical)
             .constraints([
-                Constraint::Length(2), // gold
+                Constraint::Length(1), // gold
+                Constraint::Length(1), // embers
                 Constraint::Min(1),    // items
                 Constraint::Length(2), // hint
             ])
@@ -105,6 +114,22 @@ impl RewardScreen {
             Paragraph::new(gold_line).alignment(Alignment::Center),
             chunks[0],
         );
+
+        if self.embers > 0 {
+            let ember_line = Line::from(vec![
+                Span::styled(
+                    format!("+{}", self.embers),
+                    Style::default()
+                        .fg(Color::Rgb(255, 140, 90))
+                        .add_modifier(Modifier::BOLD),
+                ),
+                Span::styled(" ember", Style::default().fg(Color::Gray)),
+            ]);
+            frame.render_widget(
+                Paragraph::new(ember_line).alignment(Alignment::Center),
+                chunks[1],
+            );
+        }
 
         let mut item_lines: Vec<Line> = Vec::new();
         if self.items.is_empty() {
@@ -128,7 +153,7 @@ impl RewardScreen {
         }
         frame.render_widget(
             Paragraph::new(item_lines).alignment(Alignment::Center),
-            chunks[1],
+            chunks[2],
         );
 
         let hint = Line::from(vec![
@@ -143,7 +168,7 @@ impl RewardScreen {
         ]);
         frame.render_widget(
             Paragraph::new(hint).alignment(Alignment::Center),
-            chunks[2],
+            chunks[3],
         );
     }
 }

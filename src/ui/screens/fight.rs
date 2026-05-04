@@ -598,7 +598,8 @@ impl FightScreen {
         // Cross-run embers: 1 per fight cleared, +10 bonus on boss kill.
         let ember_drip = 1;
         let ember_bonus = if matches!(kind, NodeKind::Boss) { 10 } else { 0 };
-        crate::meta::add_embers(ember_drip + ember_bonus);
+        let embers_earned = ember_drip + ember_bonus;
+        crate::meta::add_embers(embers_earned);
 
         if matches!(kind, NodeKind::Boss) {
             let starter = map.run.starter.clone();
@@ -613,11 +614,18 @@ impl FightScreen {
                 floor_reached,
                 player.gold,
                 gold,
+                embers_earned,
                 items,
             )));
         }
 
-        Transition::Goto(Screen::Reward(RewardScreen::new(map, gold, items, kind)))
+        Transition::Goto(Screen::Reward(RewardScreen::new(
+            map,
+            gold,
+            embers_earned,
+            items,
+            kind,
+        )))
     }
 
     pub fn draw(&mut self, frame: &mut Frame, _player: &Player) {

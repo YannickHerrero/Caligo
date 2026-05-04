@@ -19,6 +19,7 @@ pub struct VictoryScreen {
     pub floor_reached: u32,
     pub gold_total: u32,
     pub boss_gold: u32,
+    pub boss_embers: u32,
     pub boss_items: Vec<Item>,
 }
 
@@ -28,6 +29,7 @@ impl VictoryScreen {
         floor_reached: u32,
         gold_total: u32,
         boss_gold: u32,
+        boss_embers: u32,
         boss_items: Vec<Item>,
     ) -> Self {
         Self {
@@ -35,6 +37,7 @@ impl VictoryScreen {
             floor_reached,
             gold_total,
             boss_gold,
+            boss_embers,
             boss_items,
         }
     }
@@ -86,7 +89,8 @@ impl VictoryScreen {
             .direction(Direction::Vertical)
             .constraints([
                 Constraint::Length(2), // headline
-                Constraint::Length(2), // boss reward gold
+                Constraint::Length(1), // boss reward gold
+                Constraint::Length(1), // boss reward embers
                 Constraint::Min(1),    // boss item drops
                 Constraint::Length(1), // separator
                 Constraint::Length(1), // starter
@@ -119,6 +123,20 @@ impl VictoryScreen {
             chunks[1],
         );
 
+        let boss_embers = Line::from(vec![
+            Span::styled(
+                format!("+{}", self.boss_embers),
+                Style::default()
+                    .fg(Color::Rgb(255, 140, 90))
+                    .add_modifier(Modifier::BOLD),
+            ),
+            Span::styled(" ember", Style::default().fg(Color::Gray)),
+        ]);
+        frame.render_widget(
+            Paragraph::new(boss_embers).alignment(Alignment::Center),
+            chunks[2],
+        );
+
         let item_lines: Vec<Line> = if self.boss_items.is_empty() {
             vec![Line::from(Span::styled(
                 "(no items)",
@@ -145,7 +163,7 @@ impl VictoryScreen {
         };
         frame.render_widget(
             Paragraph::new(item_lines).alignment(Alignment::Center),
-            chunks[2],
+            chunks[3],
         );
 
         let separator = Line::from(Span::styled(
@@ -154,7 +172,7 @@ impl VictoryScreen {
         ));
         frame.render_widget(
             Paragraph::new(separator).alignment(Alignment::Center),
-            chunks[3],
+            chunks[4],
         );
 
         let starter_line = Line::from(vec![
@@ -168,7 +186,7 @@ impl VictoryScreen {
         ]);
         frame.render_widget(
             Paragraph::new(starter_line).alignment(Alignment::Center),
-            chunks[4],
+            chunks[5],
         );
 
         let floor_line = Line::from(vec![
@@ -180,7 +198,7 @@ impl VictoryScreen {
         ]);
         frame.render_widget(
             Paragraph::new(floor_line).alignment(Alignment::Center),
-            chunks[5],
+            chunks[6],
         );
 
         let gold_total_line = Line::from(vec![
@@ -192,7 +210,7 @@ impl VictoryScreen {
         ]);
         frame.render_widget(
             Paragraph::new(gold_total_line).alignment(Alignment::Center),
-            chunks[6],
+            chunks[7],
         );
 
         let hint = Line::from(vec![
@@ -201,7 +219,7 @@ impl VictoryScreen {
         ]);
         frame.render_widget(
             Paragraph::new(hint).alignment(Alignment::Center),
-            chunks[7],
+            chunks[8],
         );
     }
 }
