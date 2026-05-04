@@ -3,6 +3,7 @@ mod data;
 mod environment;
 mod fight;
 mod map;
+mod meta;
 mod palette;
 mod player;
 mod run;
@@ -23,6 +24,7 @@ fn main() -> Result<()> {
     let debug = std::env::args().any(|arg| arg == "--debug");
 
     settings::init();
+    meta::init();
     enable_raw_mode()?;
     let mut stdout = io::stdout();
     execute!(stdout, EnterAlternateScreen)?;
