@@ -606,6 +606,11 @@ impl FightScreen {
         let embers_earned = ember_drip + ember_bonus;
         crate::meta::add_embers(embers_earned);
 
+        // Boss kills can drop unowned starters into the post-run shop.
+        if matches!(kind, NodeKind::Boss) {
+            roll_starter_recruits(&mut rng);
+        }
+
         if matches!(kind, NodeKind::Boss) {
             let starter = map.run.active_member().template.clone();
             let floor_reached = map
@@ -732,6 +737,31 @@ impl FightScreen {
 
         if self.revive_prompt_open {
             render_revive_prompt(frame, area);
+        }
+    }
+}
+
+/// 33% chance per unowned starter to drop into the post-run shop. Run
+/// once on boss kill.
+fn roll_starter_recruits<R: rand::Rng>(rng: &mut R) {
+    use crate::data::starters;
+    use crate::meta;
+    let snap = meta::snapshot();
+    for starter in starters::all_starters() {
+        let id = meta::starter_id(&starter.name);
+        let already_owned = snap.monsters.contains_key(&id);
+        let already_pending = snap
+            .pending_captures
+            .iter()
+            .any(|c| c.id == id);
+        if already_owned || already_pending {
+            continue;
+        }
+        if rng.gen_bool(0.33) {
+            meta::push_pending_capture(meta::MonsterInstance {
+                id,
+                species: starter.name,
+            });
         }
     }
 }
