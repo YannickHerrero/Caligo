@@ -367,12 +367,23 @@ impl FightScreen {
                 } else if let Some(attack) = self.fight.pending_enemy_attack.take() {
                     let mut rng = rand::thread_rng();
                     let damage = self.fight.resolve_enemy_attack(&attack, &mut rng);
-                    let msg = if self.fight.player_hp == 0 {
-                        "You fainted!".to_string()
-                    } else if damage > 0 {
-                        format!("You took {} damage!", damage)
-                    } else {
-                        "It had no effect.".to_string()
+                    let enemy_name = self.fight.enemy.name.clone();
+                    let msg = match attack.effect {
+                        crate::fight::Effect::Damage(_) => {
+                            if self.fight.player_hp == 0 {
+                                "You fainted!".to_string()
+                            } else if damage > 0 {
+                                format!("You took {} damage!", damage)
+                            } else {
+                                "It had no effect.".to_string()
+                            }
+                        }
+                        crate::fight::Effect::Heal(_) => {
+                            format!("{} regained some HP.", enemy_name)
+                        }
+                        crate::fight::Effect::Buff { kind, magnitude, .. } => {
+                            format!("{}'s {} rose by {}%!", enemy_name, kind.label(), magnitude)
+                        }
                     };
                     self.fight.set_message(msg, 1.0);
                     if self.fight.player_hp == 0 {
