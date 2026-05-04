@@ -595,6 +595,11 @@ impl FightScreen {
         let (gold, items) = roll_rewards(kind, player, &mut rng);
         apply_rewards(player, gold, &items);
 
+        // Cross-run embers: 1 per fight cleared, +10 bonus on boss kill.
+        let ember_drip = 1;
+        let ember_bonus = if matches!(kind, NodeKind::Boss) { 10 } else { 0 };
+        crate::meta::add_embers(ember_drip + ember_bonus);
+
         if matches!(kind, NodeKind::Boss) {
             let starter = map.run.starter.clone();
             let floor_reached = map
