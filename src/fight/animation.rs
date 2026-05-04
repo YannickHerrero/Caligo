@@ -2,6 +2,14 @@ use super::attack::{AnimationKind, Attack, Effect, Element};
 use super::particle::ParticleKind;
 use super::projectile::{ProjectileKind, ProjectileSize};
 
+/// Which combatant is attacking. Drives small directional differences
+/// in projectile clearance and tells renderers which sprite to displace.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum AttackerSide {
+    Player,
+    Enemy,
+}
+
 const JUMP_DURATION: f32 = 0.8;
 const DASH_DURATION: f32 = 0.5;
 const THROW_DURATION: f32 = 0.6;
@@ -30,17 +38,31 @@ pub struct Animation {
     pub elapsed: f32,
     pub move_duration: f32,
     pub total_duration: f32,
+    pub side: AttackerSide,
 }
 
 impl Animation {
     pub fn for_attack(attack: &Attack, start_x: f32, target_x: f32) -> Self {
+        Self::for_attack_with_side(attack, start_x, target_x, AttackerSide::Player)
+    }
+
+    pub fn for_enemy_attack(attack: &Attack, start_x: f32, target_x: f32) -> Self {
+        Self::for_attack_with_side(attack, start_x, target_x, AttackerSide::Enemy)
+    }
+
+    fn for_attack_with_side(
+        attack: &Attack,
+        start_x: f32,
+        target_x: f32,
+        side: AttackerSide,
+    ) -> Self {
         let size = match attack.effect {
             Effect::Damage(d) => ProjectileSize::for_damage(d),
             _ => ProjectileSize::Small,
         };
         let trail = trail_for(attack.kind, attack.element);
         let impact = impact_for(attack.kind, attack.element, &attack.effect);
-        Self::build(attack.kind, size, trail, impact, start_x, target_x)
+        Self::build(attack.kind, size, trail, impact, start_x, target_x, side)
     }
 
     fn build(
@@ -50,6 +72,7 @@ impl Animation {
         impact: Option<ParticleKind>,
         start_x: f32,
         target_x: f32,
+        side: AttackerSide,
     ) -> Self {
         let move_duration = match kind {
             AnimationKind::Jump => JUMP_DURATION,
@@ -73,6 +96,7 @@ impl Animation {
             elapsed: 0.0,
             move_duration,
             total_duration,
+            side,
         }
     }
 
@@ -126,7 +150,15 @@ impl Animation {
                     return None;
                 }
                 let p = self.progress();
-                let x = self.start_x + 12.0 + (self.target_x - self.start_x - 12.0) * p;
+                // Push the projectile away from the attacker's body before
+                // it starts traveling. Offset sign depends on side.
+                let clearance = match self.side {
+                    AttackerSide::Player => 12.0,
+                    AttackerSide::Enemy => -12.0,
+                };
+                let x = self.start_x
+                    + clearance
+                    + (self.target_x - self.start_x - clearance) * p;
                 let arc = THROW_ARC_HEIGHT * (std::f32::consts::PI * p).sin();
                 Some((x, base_y + 2.0 - arc))
             }

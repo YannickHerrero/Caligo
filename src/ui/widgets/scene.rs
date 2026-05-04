@@ -159,7 +159,12 @@ pub fn render_ground(frame: &mut Frame, env: &Environment, area: Rect) {
     frame.render_widget(ground_widget, ground_area);
 }
 
-pub fn render_enemy(frame: &mut Frame, enemy: &Enemy, area: Rect) {
+pub fn render_enemy(
+    frame: &mut Frame,
+    enemy: &Enemy,
+    area: Rect,
+    position_override: Option<(f32, f32)>,
+) {
     let sprite_width = enemy
         .sprite
         .iter()
@@ -172,8 +177,13 @@ pub fn render_enemy(frame: &mut Frame, enemy: &Enemy, area: Rect) {
         return;
     }
 
-    let x = area.width as i32 - sprite_width - 4;
-    let y = area.height as i32 - sprite_height - 1;
+    let (x, y) = match position_override {
+        Some((px, py)) => (px.round() as i32, py.round() as i32),
+        None => (
+            area.width as i32 - sprite_width - 4,
+            area.height as i32 - sprite_height - 1,
+        ),
+    };
 
     render_element(frame, &enemy.sprite, x, y, enemy.color(), area);
 }

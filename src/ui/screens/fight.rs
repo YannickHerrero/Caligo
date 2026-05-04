@@ -504,7 +504,7 @@ impl FightScreen {
 
         widgets::render_environment_background(frame, &self.environment, scene_area);
         widgets::render_crab(frame, &self.crab, scene_area, crab_override);
-        widgets::render_enemy(frame, &self.fight.enemy, scene_area);
+        widgets::render_enemy(frame, &self.fight.enemy, scene_area, None);
         if let Some(anim) = self.fight.animation.as_ref() {
             widgets::render_projectile(frame, anim, self.crab.position.1, scene_area);
             widgets::render_particles(frame, anim, self.crab.position, scene_area);
