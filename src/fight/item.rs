@@ -74,6 +74,9 @@ pub enum Item {
     AttackStone { attack_name: String },
     Trinket(TrinketKind),
     Utility(UtilityKind),
+    /// Single-use capture device. Consumed at the post-fight prompt
+    /// regardless of catch success.
+    MonsterNet,
 }
 
 impl Item {
@@ -86,6 +89,7 @@ impl Item {
             Item::AttackStone { attack_name } => format!("Stone of {}", attack_name),
             Item::Trinket(t) => t.name().to_string(),
             Item::Utility(u) => u.name().to_string(),
+            Item::MonsterNet => "Monster Net".to_string(),
         }
     }
 
@@ -100,6 +104,9 @@ impl Item {
             }
             Item::Trinket(t) => t.description().to_string(),
             Item::Utility(u) => u.description().to_string(),
+            Item::MonsterNet => {
+                "Throw at a defeated enemy to attempt capture.".to_string()
+            }
         }
     }
 
@@ -110,6 +117,7 @@ impl Item {
             Item::AttackStone { .. } => Color::Rgb(200, 180, 120),
             Item::Trinket(_) => Color::Rgb(220, 180, 255),
             Item::Utility(_) => Color::Rgb(200, 200, 160),
+            Item::MonsterNet => Color::Rgb(160, 220, 200),
         }
     }
 }

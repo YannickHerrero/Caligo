@@ -1,4 +1,5 @@
 pub mod attack_preview;
+pub mod capture;
 pub mod catalogue;
 pub mod demo;
 pub mod fight;
@@ -16,6 +17,7 @@ pub mod transition;
 pub mod victory;
 
 pub use attack_preview::AttackPreviewScreen;
+pub use capture::CapturePromptScreen;
 pub use catalogue::CatalogueScreen;
 pub use demo::DemoScreen;
 pub use fight::FightScreen;

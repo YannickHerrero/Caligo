@@ -624,6 +624,25 @@ impl FightScreen {
             )));
         }
 
+        // Detour into the capture prompt if the player has a Monster Net
+        // and the kind is catchable. Otherwise go straight to RewardScreen.
+        let enemy_species = self.fight.enemy.name.clone();
+        let catch_rate = crate::ui::screens::capture::catch_rate(kind);
+        let has_net = crate::ui::screens::capture::has_net(&player.inventory);
+        if let (Some(rate), true) = (catch_rate, has_net) {
+            return Transition::Goto(Screen::CapturePrompt(
+                crate::ui::screens::CapturePromptScreen::new(
+                    map,
+                    gold,
+                    embers_earned,
+                    items,
+                    kind,
+                    enemy_species,
+                    rate,
+                ),
+            ));
+        }
+
         Transition::Goto(Screen::Reward(RewardScreen::new(
             map,
             gold,

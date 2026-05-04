@@ -192,6 +192,29 @@ pub fn active_party_species() -> Option<String> {
     })
 }
 
+/// Mint and reserve a fresh `wild:<n>` MonsterId. Increments the
+/// internal counter and persists immediately.
+pub fn mint_wild_id() -> MonsterId {
+    let snap = with_meta_mut(|meta| {
+        let id = format!("wild:{}", meta.next_wild_id);
+        meta.next_wild_id = meta.next_wild_id.saturating_add(1);
+        (id, meta.clone())
+    });
+    save_to_disk(&snap.1);
+    snap.0
+}
+
+/// Push a freshly-captured monster onto the pending-purchases pile. The
+/// player can buy it from the post-run shop later (independently of run
+/// outcome).
+pub fn push_pending_capture(instance: MonsterInstance) {
+    let snap = with_meta_mut(|meta| {
+        meta.pending_captures.push(instance);
+        meta.clone()
+    });
+    save_to_disk(&snap);
+}
+
 /// Register a freshly-chosen starter as owned and add it to the party.
 /// No-op if it's already owned.
 pub fn add_owned_starter(species: &str) {
