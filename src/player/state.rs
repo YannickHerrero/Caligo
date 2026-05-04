@@ -67,8 +67,10 @@ impl Player {
         let equipped_attacks = resolve_starter_attack_slots(&owned_attacks, &starter.starting_attacks);
         let inventory = vec![
             ItemStack::new(Item::HpPotion(PotionSize::Small), 1),
-            // Three nets to start, until in-run drops / shop stock land.
-            ItemStack::new(Item::MonsterNet, 3),
+            // One Monster Net at run start — gentle floor for capture
+            // attempts. Additional nets drop from fights and (later)
+            // appear in Shop nodes.
+            ItemStack::new(Item::MonsterNet, 1),
         ];
         let ranks = crate::meta::ranks_for(&crate::meta::starter_id(&starter.name));
         let base_max_hp = 25 + ranks.tidepool * 2;

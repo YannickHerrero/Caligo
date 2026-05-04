@@ -194,13 +194,11 @@ fn roll_drops<R: Rng>(kind: NodeKind, player: &Player, rng: &mut R) -> Vec<Item>
     let scale = |p: f64| -> f64 {
         if lucky { (p * 2.0).min(1.0) } else { p }
     };
-    match kind {
+    let mut out = match kind {
         NodeKind::EasyFight => {
             if !rng.gen_bool(scale(0.25)) {
-                return vec![];
-            }
-            // 50% potion, 50% stone tiered for easy fights.
-            if rng.gen_bool(0.5) {
+                Vec::new()
+            } else if rng.gen_bool(0.5) {
                 vec![Item::HpPotion(PotionSize::Small)]
             } else {
                 stone_for_stage(kind, rng).into_iter().collect()
@@ -208,21 +206,20 @@ fn roll_drops<R: Rng>(kind: NodeKind, player: &Player, rng: &mut R) -> Vec<Item>
         }
         NodeKind::NormalFight => {
             if !rng.gen_bool(scale(0.5)) {
-                return vec![];
-            }
-            // 60% potion, 40% stone tiered for normal fights.
-            let roll = rng.gen_range(0..100);
-            if roll < 30 {
-                vec![Item::HpPotion(PotionSize::Small)]
-            } else if roll < 60 {
-                vec![Item::ManaPotion(PotionSize::Small)]
+                Vec::new()
             } else {
-                stone_for_stage(kind, rng).into_iter().collect()
+                let roll = rng.gen_range(0..100);
+                if roll < 30 {
+                    vec![Item::HpPotion(PotionSize::Small)]
+                } else if roll < 60 {
+                    vec![Item::ManaPotion(PotionSize::Small)]
+                } else {
+                    stone_for_stage(kind, rng).into_iter().collect()
+                }
             }
         }
         NodeKind::EliteFight => {
-            // Always one item: wider pool including large potions, a small
-            // chance at a trinket, and a healthy chance at a stone.
+            // Always one item from the elite pool.
             let roll = rng.gen_range(0..100);
             if roll < 25 {
                 vec![Item::HpPotion(PotionSize::Large)]
@@ -239,18 +236,33 @@ fn roll_drops<R: Rng>(kind: NodeKind, player: &Player, rng: &mut R) -> Vec<Item>
             }
         }
         NodeKind::Boss => {
-            // Boss reward: a trinket, a large HP potion, and a stone.
+            // Boss reward: a trinket, a large HP potion, a stone, and a
+            // guaranteed Monster Net (rewards capture attempts on the
+            // next run).
             let mut out = vec![
                 Item::Trinket(random_trinket(rng)),
                 Item::HpPotion(PotionSize::Large),
+                Item::MonsterNet,
             ];
             if let Some(stone) = stone_for_stage(kind, rng) {
                 out.push(stone);
             }
             out
         }
-        _ => vec![],
+        _ => Vec::new(),
+    };
+    // Independent small chance per non-boss fight to drop a Monster Net.
+    // Lucky Shell doubles the base chance like other drops.
+    let net_base = match kind {
+        NodeKind::EasyFight => 0.10,
+        NodeKind::NormalFight => 0.15,
+        NodeKind::EliteFight => 0.25,
+        _ => 0.0,
+    };
+    if net_base > 0.0 && rng.gen_bool(scale(net_base)) {
+        out.push(Item::MonsterNet);
     }
+    out
 }
 
 /// How powerful an attack is, used to bucket its stone into a drop tier.
