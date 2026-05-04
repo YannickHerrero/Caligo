@@ -1,7 +1,7 @@
 use crate::player::Player;
 use crate::ui::screen::{Screen, Transition};
 use crate::ui::screens::settings::SettingsOrigin;
-use crate::ui::screens::{SettingsScreen, StarterSelectScreen};
+use crate::ui::screens::{SettingsScreen, ShopScreen, StarterSelectScreen};
 use crossterm::event::KeyCode;
 use ratatui::{
     layout::{Alignment, Rect},
@@ -23,15 +23,21 @@ const TITLE_ART: &[&str] = &[
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 enum StartChoice {
     Play,
+    Shop,
     Settings,
 }
 
 impl StartChoice {
-    const ALL: &'static [StartChoice] = &[StartChoice::Play, StartChoice::Settings];
+    const ALL: &'static [StartChoice] = &[
+        StartChoice::Play,
+        StartChoice::Shop,
+        StartChoice::Settings,
+    ];
 
     fn label(&self) -> &'static str {
         match self {
             StartChoice::Play => "Play",
+            StartChoice::Shop => "Shop",
             StartChoice::Settings => "Settings",
         }
     }
@@ -62,6 +68,7 @@ impl StartScreen {
                 StartChoice::Play => {
                     Transition::Goto(Screen::StarterSelect(StarterSelectScreen::new()))
                 }
+                StartChoice::Shop => Transition::Goto(Screen::Shop(ShopScreen::new())),
                 StartChoice::Settings => Transition::Goto(Screen::Settings(
                     SettingsScreen::new(SettingsOrigin::Start),
                 )),
@@ -85,10 +92,12 @@ impl StartScreen {
         let menu_w: u16 = 32;
         let menu_h: u16 = (StartChoice::ALL.len() as u16) * 2 + 2;
         let tagline_h: u16 = 1;
+        let balance_h: u16 = 1;
         let hint_h: u16 = 1;
         let gap: u16 = 1;
 
-        let total_h = title_h + gap + tagline_h + gap + menu_h + gap + hint_h;
+        let total_h =
+            title_h + gap + tagline_h + gap + balance_h + gap + menu_h + gap + hint_h;
         let mut y = area.y + area.height.saturating_sub(total_h) / 2;
 
         render_centered_lines(
@@ -110,6 +119,9 @@ impl StartScreen {
             "A roguelike dungeon crawler",
             Style::default().fg(Color::Gray),
         );
+        y += gap;
+
+        render_balance(frame, area, &mut y);
         y += gap;
 
         render_menu(frame, area, &mut y, menu_w, menu_h, self.selected);
@@ -150,6 +162,30 @@ fn render_centered_lines(
         .collect();
     frame.render_widget(Paragraph::new(lines).alignment(Alignment::Left), block_area);
     *y += height;
+}
+
+fn render_balance(frame: &mut Frame, area: Rect, y: &mut u16) {
+    if *y >= area.y + area.height {
+        return;
+    }
+    let row = Rect {
+        x: area.x,
+        y: *y,
+        width: area.width,
+        height: 1,
+    };
+    let snap = crate::meta::snapshot();
+    let line = Line::from(vec![
+        Span::styled("Embers ", Style::default().fg(Color::DarkGray)),
+        Span::styled(
+            format!("{}", snap.embers),
+            Style::default()
+                .fg(Color::Rgb(255, 140, 90))
+                .add_modifier(Modifier::BOLD),
+        ),
+    ]);
+    frame.render_widget(Paragraph::new(line).alignment(Alignment::Center), row);
+    *y += 1;
 }
 
 fn render_centered_text(frame: &mut Frame, area: Rect, y: &mut u16, text: &str, style: Style) {
