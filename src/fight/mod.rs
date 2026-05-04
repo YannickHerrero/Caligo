@@ -8,7 +8,7 @@ pub mod projectile;
 pub mod state;
 
 pub use actions::Action;
-pub use animation::{impact_for, trail_for, Animation};
+pub use animation::{impact_for, trail_for, Animation, AttackerSide};
 pub use attack::{AnimationKind, Attack, BuffKind, Effect, Element, MAX_ATTACKS};
 pub use enemy::Enemy;
 pub use item::{Item, ItemStack, PotionSize, TrinketKind, UtilityKind};

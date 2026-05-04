@@ -196,8 +196,8 @@ impl FightScreen {
     }
 
     /// Pick a uniform-random move from the enemy moveset, telegraph it,
-    /// and store the resolved Attack so the impact lands once the message
-    /// clears.
+    /// and start the right-to-left animation. The impact lands once the
+    /// animation finishes.
     fn queue_enemy_attack(&mut self) {
         let mut rng = rand::thread_rng();
         let Some(name) = self.fight.enemy.moveset.choose(&mut rng) else {
@@ -212,8 +212,30 @@ impl FightScreen {
         let enemy_name = self.fight.enemy.name.clone();
         self.fight
             .set_message(format!("{} used {}!", enemy_name, attack.name), 0.7);
+        let (start_x, _) = self.enemy_base_position();
+        let target_x = self.crab.position.0;
+        self.fight.animation = Some(Animation::for_enemy_attack(&attack, start_x, target_x));
         self.fight.pending_enemy_attack = Some(attack);
         self.enemy_acted = true;
+    }
+
+    /// Where the enemy sprite is anchored in the scene (top-left corner).
+    /// Mirrors what `widgets::render_enemy` uses by default.
+    fn enemy_base_position(&self) -> (f32, f32) {
+        let scene_w = self.last_terminal_size.0 as f32;
+        let scene_h = self.last_terminal_size.1 as f32;
+        let sprite_w = self
+            .fight
+            .enemy
+            .sprite
+            .iter()
+            .map(|l| l.chars().count())
+            .max()
+            .unwrap_or(0) as f32;
+        let sprite_h = self.fight.enemy.sprite.len() as f32;
+        let x = (scene_w - sprite_w - 4.0).max(0.0);
+        let y = (scene_h - sprite_h - 1.0).max(0.0);
+        (x, y)
     }
 
     fn handle_item_menu(&mut self, key: KeyCode) -> Transition {
@@ -342,6 +364,20 @@ impl FightScreen {
                     if self.fight.enemy.hp == 0 {
                         self.pending_exit = Some(FightOutcome::Victory);
                     }
+                } else if let Some(attack) = self.fight.pending_enemy_attack.take() {
+                    let mut rng = rand::thread_rng();
+                    let damage = self.fight.resolve_enemy_attack(&attack, &mut rng);
+                    let msg = if self.fight.player_hp == 0 {
+                        "You fainted!".to_string()
+                    } else if damage > 0 {
+                        format!("You took {} damage!", damage)
+                    } else {
+                        "It had no effect.".to_string()
+                    };
+                    self.fight.set_message(msg, 1.0);
+                    if self.fight.player_hp == 0 {
+                        self.pending_exit = Some(FightOutcome::Defeat);
+                    }
                 }
             }
         } else if bounds.0 > 0.0 && bounds.1 > 0.0 {
@@ -351,26 +387,6 @@ impl FightScreen {
 
         self.environment.update_cycle(dt, 1.0, 1.0);
         self.fight.tick_message(dt);
-
-        // Apply the enemy's chosen attack once its telegraph message has
-        // cleared. This is the "impact" step of the enemy turn.
-        if self.fight.animation.is_none() && self.fight.message.is_none() {
-            if let Some(attack) = self.fight.pending_enemy_attack.take() {
-                let mut rng = rand::thread_rng();
-                let damage = self.fight.resolve_enemy_attack(&attack, &mut rng);
-                let msg = if self.fight.player_hp == 0 {
-                    "You fainted!".to_string()
-                } else if damage > 0 {
-                    format!("You took {} damage!", damage)
-                } else {
-                    "It had no effect.".to_string()
-                };
-                self.fight.set_message(msg, 1.0);
-                if self.fight.player_hp == 0 {
-                    self.pending_exit = Some(FightOutcome::Defeat);
-                }
-            }
-        }
 
         // Round-loop driver: only runs when nothing is in-flight (no
         // animation, no message, no pending action, no end-of-fight).
@@ -496,18 +512,33 @@ impl FightScreen {
         }
 
         widgets::render_top_bar(frame, &self.fight, top_bar_area);
-        let crab_override = self
-            .fight
-            .animation
-            .as_ref()
-            .map(|anim| anim.crab_position(self.crab.position));
+
+        // The animation displaces whichever combatant is the attacker.
+        let enemy_base = self.enemy_base_position();
+        let (crab_override, enemy_override) = match self.fight.animation.as_ref() {
+            Some(anim) => match anim.side {
+                crate::fight::AttackerSide::Player => {
+                    (Some(anim.crab_position(self.crab.position)), None)
+                }
+                crate::fight::AttackerSide::Enemy => {
+                    (None, Some(anim.crab_position(enemy_base)))
+                }
+            },
+            None => (None, None),
+        };
 
         widgets::render_environment_background(frame, &self.environment, scene_area);
         widgets::render_crab(frame, &self.crab, scene_area, crab_override);
-        widgets::render_enemy(frame, &self.fight.enemy, scene_area, None);
+        widgets::render_enemy(frame, &self.fight.enemy, scene_area, enemy_override);
         if let Some(anim) = self.fight.animation.as_ref() {
-            widgets::render_projectile(frame, anim, self.crab.position.1, scene_area);
-            widgets::render_particles(frame, anim, self.crab.position, scene_area);
+            // Particles and projectile arc use whoever the attacker is as
+            // their reference base.
+            let attacker_base = match anim.side {
+                crate::fight::AttackerSide::Player => self.crab.position,
+                crate::fight::AttackerSide::Enemy => enemy_base,
+            };
+            widgets::render_projectile(frame, anim, attacker_base.1, scene_area);
+            widgets::render_particles(frame, anim, attacker_base, scene_area);
         }
         widgets::render_ground(frame, &self.environment, scene_area);
         widgets::render_hp_bars(frame, &self.fight, scene_area);
