@@ -29,23 +29,29 @@ pub fn render_element(
             continue;
         }
 
-        let line_start = if x < 0 { (-x) as usize } else { 0 };
-        if line_start >= line.len() {
+        // Slice by char count, not byte count — sprites and particles
+        // can include multi-byte glyphs (e.g. "▲", emoji-adjacent box-
+        // drawing characters) and byte-slicing them panics when the
+        // clip falls inside a char.
+        let total_chars = line.chars().count();
+        let line_start_chars = if x < 0 { (-x) as usize } else { 0 };
+        if line_start_chars >= total_chars {
             continue;
         }
-
-        let visible = &line[line_start..];
-        let width = visible.len().min(max_width) as u16;
-        let visible = &visible[..width as usize];
+        let take = (total_chars - line_start_chars).min(max_width);
+        if take == 0 {
+            continue;
+        }
+        let visible: String = line.chars().skip(line_start_chars).take(take).collect();
 
         let line_area = Rect {
             x: area.x + x_start,
             y: area.y + y_pos as u16,
-            width,
+            width: take as u16,
             height: 1,
         };
 
-        let line_widget = Paragraph::new(visible.to_string()).style(Style::default().fg(color));
+        let line_widget = Paragraph::new(visible).style(Style::default().fg(color));
         frame.render_widget(line_widget, line_area);
     }
 }
