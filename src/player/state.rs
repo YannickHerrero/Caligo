@@ -59,35 +59,65 @@ impl Player {
     }
 
     /// Build a fresh Player for the start of a real run with the chosen
-    /// starter. The starter dictates the four equipped attacks; HP/mana
-    /// are the standard run baseline plus permanent meta-shop ladder
-    /// bonuses for that starter; inventory holds a single Small HP Potion.
+    /// starter. Stats are sourced from the starter's PartyMember view;
+    /// inventory holds a single Small HP Potion and a single Monster
+    /// Net.
     pub fn for_starter(starter: &Starter) -> Self {
-        let owned_attacks = attack_lib::all_attacks();
-        let equipped_attacks = resolve_starter_attack_slots(&owned_attacks, &starter.starting_attacks);
+        let id = crate::meta::starter_id(&starter.name);
+        let member = crate::run::PartyMember::fresh(id, starter.clone());
+        Self::for_run_party_member(&member)
+    }
+
+    /// Build a Player whose stats mirror the given (active) party
+    /// member. Used at run start with the first member, and on switch.
+    pub fn for_run_party_member(member: &crate::run::PartyMember) -> Self {
         let inventory = vec![
             ItemStack::new(Item::HpPotion(PotionSize::Small), 1),
-            // One Monster Net at run start — gentle floor for capture
-            // attempts. Additional nets drop from fights and (later)
-            // appear in Shop nodes.
             ItemStack::new(Item::MonsterNet, 1),
         ];
-        let ranks = crate::meta::ranks_for(&crate::meta::starter_id(&starter.name));
-        let base_max_hp = 25 + ranks.tidepool * 2;
-        let base_max_mana = 15 + ranks.wellspring;
-        let speed = PLAYER_BASE_SPEED + ranks.quickfoot;
-        Self {
-            hp: base_max_hp,
-            base_max_hp,
-            mana: base_max_mana,
-            base_max_mana,
-            speed,
+        let mut player = Self {
+            hp: 0,
+            base_max_hp: 0,
+            mana: 0,
+            base_max_mana: 0,
+            speed: 0,
             gold: 0,
-            owned_attacks,
-            equipped_attacks,
+            owned_attacks: Vec::new(),
+            equipped_attacks: [None; MAX_ATTACKS],
             inventory,
             equipped_trinkets: [None; MAX_TRINKETS],
+        };
+        player.sync_from_member(member);
+        player
+    }
+
+    /// Copy a party member's stats into this Player so combat reads
+    /// reflect the new active member. Called at run start and on
+    /// switch-in.
+    pub fn sync_from_member(&mut self, member: &crate::run::PartyMember) {
+        self.hp = member.current_hp;
+        self.base_max_hp = member.max_hp;
+        self.mana = member.current_mana;
+        self.base_max_mana = member.max_mana;
+        self.speed = member.speed;
+        self.owned_attacks = member.attacks.clone();
+        let n = member.attacks.len().min(MAX_ATTACKS);
+        let mut equipped = [None; MAX_ATTACKS];
+        for i in 0..n {
+            equipped[i] = Some(i);
         }
+        self.equipped_attacks = equipped;
+    }
+
+    /// Write this Player's working state back into the given member.
+    /// Called at fight end and on switch-out so per-member HP/MP
+    /// persists.
+    pub fn sync_to_member(&self, member: &mut crate::run::PartyMember) {
+        member.current_hp = self.hp;
+        member.current_mana = self.mana;
+        // owned_attacks may have grown via an AttackStone teach; persist
+        // the new list back.
+        member.attacks = self.owned_attacks.clone();
     }
 
     pub fn max_hp(&self) -> u32 {
