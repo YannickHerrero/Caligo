@@ -497,6 +497,57 @@ impl FightScreen {
         }
     }
 
+    /// Render whichever member is currently active. Starters with an
+    /// `AnimatedCrab` visual go through the existing animated Crab
+    /// entity; everything else (captured wild monsters using a Frames
+    /// visual) renders its sprite directly at the player position.
+    fn render_active_member(
+        &self,
+        frame: &mut Frame,
+        scene_area: ratatui::layout::Rect,
+        position_override: Option<(f32, f32)>,
+    ) {
+        use crate::data::starters::StarterVisual;
+        let visual = self
+            .map
+            .as_ref()
+            .map(|m| m.run.active_member().template.visual.clone());
+        match visual {
+            None | Some(StarterVisual::AnimatedCrab) => {
+                widgets::render_crab(frame, &self.crab, scene_area, position_override);
+            }
+            Some(StarterVisual::Frames(frames)) => {
+                if frames.is_empty() {
+                    return;
+                }
+                let (px, py) = position_override.unwrap_or(self.crab.position);
+                let color = self
+                    .map
+                    .as_ref()
+                    .map(|m| m.run.active_member().template.color())
+                    .unwrap_or(ratatui::style::Color::Gray);
+                let sprite = &frames[0];
+                let width = sprite
+                    .iter()
+                    .map(|l| l.chars().count())
+                    .max()
+                    .unwrap_or(0) as i32;
+                let height = sprite.len() as i32;
+                if width == 0 || height == 0 {
+                    return;
+                }
+                crate::ui::widgets::helpers::render_element(
+                    frame,
+                    sprite,
+                    px.round() as i32,
+                    py.round() as i32,
+                    color,
+                    scene_area,
+                );
+            }
+        }
+    }
+
     /// Where the enemy sprite is anchored in the scene (top-left corner).
     /// Mirrors what `widgets::render_enemy` uses by default.
     fn enemy_base_position(&self) -> (f32, f32) {
@@ -906,7 +957,7 @@ impl FightScreen {
 
         widgets::render_environment_background(frame, &self.environment, scene_area);
         if self.fight.player_visible() {
-            widgets::render_crab(frame, &self.crab, scene_area, crab_override);
+            self.render_active_member(frame, scene_area, crab_override);
         }
         if self.fight.enemy_visible() {
             widgets::render_enemy(frame, &self.fight.enemy, scene_area, enemy_override);
