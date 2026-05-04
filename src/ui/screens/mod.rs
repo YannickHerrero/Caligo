@@ -1,6 +1,7 @@
 pub mod attack_preview;
 pub mod capture;
 pub mod catalogue;
+pub mod collection;
 pub mod demo;
 pub mod fight;
 pub mod game_over;
@@ -19,6 +20,7 @@ pub mod victory;
 pub use attack_preview::AttackPreviewScreen;
 pub use capture::CapturePromptScreen;
 pub use catalogue::CatalogueScreen;
+pub use collection::CollectionScreen;
 pub use demo::DemoScreen;
 pub use fight::FightScreen;
 pub use game_over::GameOverScreen;

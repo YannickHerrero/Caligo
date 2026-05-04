@@ -5,7 +5,9 @@ use crate::player::Player;
 use crate::run::Run;
 use crate::ui::screen::{Screen, Transition};
 use crate::ui::screens::settings::SettingsOrigin;
-use crate::ui::screens::{MapScreen, SettingsScreen, ShopScreen, StarterSelectScreen};
+use crate::ui::screens::{
+    CollectionScreen, MapScreen, SettingsScreen, ShopScreen, StarterSelectScreen,
+};
 use crossterm::event::KeyCode;
 use ratatui::{
     layout::{Alignment, Rect},
@@ -27,6 +29,7 @@ const TITLE_ART: &[&str] = &[
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 enum StartChoice {
     Play,
+    Collection,
     Shop,
     Settings,
 }
@@ -34,6 +37,7 @@ enum StartChoice {
 impl StartChoice {
     const ALL: &'static [StartChoice] = &[
         StartChoice::Play,
+        StartChoice::Collection,
         StartChoice::Shop,
         StartChoice::Settings,
     ];
@@ -41,6 +45,7 @@ impl StartChoice {
     fn label(&self) -> &'static str {
         match self {
             StartChoice::Play => "Play",
+            StartChoice::Collection => "Collection",
             StartChoice::Shop => "Shop",
             StartChoice::Settings => "Settings",
         }
@@ -70,6 +75,9 @@ impl StartScreen {
             }
             KeyCode::Enter => match StartChoice::ALL[self.selected] {
                 StartChoice::Play => start_play(player),
+                StartChoice::Collection => {
+                    Transition::Goto(Screen::Collection(CollectionScreen::new()))
+                }
                 StartChoice::Shop => Transition::Goto(Screen::Shop(ShopScreen::new())),
                 StartChoice::Settings => Transition::Goto(Screen::Settings(
                     SettingsScreen::new(SettingsOrigin::Start),

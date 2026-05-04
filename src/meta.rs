@@ -192,6 +192,39 @@ pub fn active_party_species() -> Option<String> {
     })
 }
 
+/// Toggle a monster's membership in the party. If it's already in the
+/// party, remove it. If it's not in the party and there's room, add it.
+/// Returns Ok(true) if the toggle landed, Ok(false) if it was a no-op
+/// (e.g., trying to add but party is full), or Err with a hint message.
+pub fn toggle_party(monster_id: &str) -> Result<bool, String> {
+    let result = with_meta_mut(|meta| {
+        if !meta.monsters.contains_key(monster_id) {
+            return Err("That monster isn't owned.".to_string());
+        }
+        if let Some(idx) = meta.party.iter().position(|id| id == monster_id) {
+            // Don't let the player end up with an empty party — at least
+            // one member must remain to start a run.
+            if meta.party.len() == 1 {
+                return Err("Party can't be empty.".to_string());
+            }
+            meta.party.remove(idx);
+            return Ok((true, meta.clone()));
+        }
+        if meta.party.len() >= PARTY_CAP {
+            return Err(format!("Party is full (max {}).", PARTY_CAP));
+        }
+        meta.party.push(monster_id.to_string());
+        Ok((true, meta.clone()))
+    });
+    match result {
+        Ok((flipped, snap)) => {
+            save_to_disk(&snap);
+            Ok(flipped)
+        }
+        Err(e) => Err(e),
+    }
+}
+
 /// Mint and reserve a fresh `wild:<n>` MonsterId. Increments the
 /// internal counter and persists immediately.
 pub fn mint_wild_id() -> MonsterId {
