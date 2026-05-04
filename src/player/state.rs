@@ -1,9 +1,6 @@
 use crate::data::attacks as attack_lib;
 use crate::data::starters::Starter;
-use crate::fight::{
-    AnimationKind, Attack, Element, Item, ItemStack, PotionSize, TrinketKind, UtilityKind,
-    MAX_ATTACKS,
-};
+use crate::fight::{Attack, Item, ItemStack, PotionSize, TrinketKind, UtilityKind, MAX_ATTACKS};
 
 pub const MAX_TRINKETS: usize = 2;
 
@@ -159,18 +156,16 @@ impl Player {
                 ItemUseResult::Healed { hp: 0, mana: amount }
             }
             Some(Item::AttackStone { attack_name }) => {
-                if !self.owned_attacks.iter().any(|a| a.name == attack_name) {
-                    self.owned_attacks.push(Attack::new(
-                        &attack_name,
-                        AnimationKind::Dash,
-                        6,
-                        2,
-                        Element::Normal,
-                        "A new attack learned from a stone.",
-                    ));
+                if self.owned_attacks.iter().any(|a| a.name == attack_name) {
+                    ItemUseResult::AlreadyKnown(attack_name)
+                } else if let Some(real) = attack_lib::find_by_name(&attack_name) {
+                    self.owned_attacks.push(real);
                     ItemUseResult::LearnedAttack(attack_name)
                 } else {
-                    ItemUseResult::AlreadyKnown(attack_name)
+                    // Stone references an attack that no longer exists in
+                    // the registry — treat as a no-op rather than teaching
+                    // a placeholder.
+                    ItemUseResult::Nothing
                 }
             }
             Some(Item::Utility(UtilityKind::GoldPouch)) => {
