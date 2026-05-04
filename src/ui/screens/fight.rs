@@ -27,14 +27,27 @@ pub struct FightScreen {
     /// end the fight on the next update tick (lets the in-flight animation
     /// finish before the screen hands off).
     pending_exit: Option<FightOutcome>,
-    /// True once the player has committed to and resolved their action
-    /// for the current round. Reset on round reroll.
-    player_acted: bool,
-    /// True once the enemy has resolved its action for the current round.
-    /// Reset on round reroll.
-    enemy_acted: bool,
+    /// The second action of the current round, queued to fire once the
+    /// first action finishes resolving. `None` between rounds.
+    next_action: Option<QueuedAction>,
+    /// True from the moment the player commits an action this round
+    /// until both queued actions have finished. Drives end-of-round
+    /// bookkeeping (tick buffs once, not per-frame).
+    round_active: bool,
     last_terminal_size: (u16, u16),
     last_action_height: u16,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum Actor {
+    Player,
+    Enemy,
+}
+
+#[derive(Debug, Clone)]
+struct QueuedAction {
+    actor: Actor,
+    attack: crate::fight::Attack,
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -53,8 +66,8 @@ impl FightScreen {
             map: None,
             node_kind: None,
             pending_exit: None,
-            player_acted: false,
-            enemy_acted: false,
+            next_action: None,
+            round_active: false,
             last_terminal_size: (0, 0),
             last_action_height: 0,
         }
@@ -70,8 +83,6 @@ impl FightScreen {
     ) -> Self {
         let mut fight = FightState::from_player_with_enemy(player, enemy);
         fight.player_type = Some(map.run.starter.primary_type);
-        let mut rng = rand::thread_rng();
-        fight.roll_round_order(&mut rng);
         Self {
             crab: Crab::new((6.0, 100.0), 95),
             environment: Environment::generate(80, 15, GroundStyle::default()),
@@ -79,8 +90,8 @@ impl FightScreen {
             map: Some(map),
             node_kind: Some(node_kind),
             pending_exit: None,
-            player_acted: false,
-            enemy_acted: false,
+            next_action: None,
+            round_active: false,
             last_terminal_size: (0, 0),
             last_action_height: 0,
         }
@@ -158,7 +169,7 @@ impl FightScreen {
                 }
             }
             KeyCode::Enter => {
-                self.start_attack_animation();
+                self.commit_player_attack();
             }
             _ => {}
         }
@@ -174,7 +185,10 @@ impl FightScreen {
         }
     }
 
-    fn start_attack_animation(&mut self) {
+    /// Player committed to an attack from the menu. Validate mana, pick
+    /// the enemy's response, roll speed-based order, then start the
+    /// faster combatant's animation. The slower one becomes `next_action`.
+    fn commit_player_attack(&mut self) {
         let idx = self.fight.attack_selected;
         if idx >= self.fight.attacks.len() {
             return;
@@ -185,38 +199,69 @@ impl FightScreen {
             return;
         }
         self.fight.player_mana -= attack.mana_cost;
-        let start_x = self.crab.position.0;
-        let target_x = (self.last_terminal_size.0 as f32 - 18.0).max(start_x + 5.0);
-        self.fight
-            .set_message(format!("You used {}!", attack.name), 0.6);
-        self.fight.animation = Some(Animation::for_attack(&attack, start_x, target_x));
-        self.fight.pending_player_attack = Some(attack);
         self.fight.menu_state = MenuState::Main;
-        self.player_acted = true;
+        self.round_active = true;
+
+        let mut rng = rand::thread_rng();
+        let enemy_choice = self.pick_enemy_move(&mut rng);
+        self.fight.roll_round_order(&mut rng);
+
+        let player_action = QueuedAction {
+            actor: Actor::Player,
+            attack,
+        };
+
+        match enemy_choice {
+            Some(enemy_attack) => {
+                let enemy_action = QueuedAction {
+                    actor: Actor::Enemy,
+                    attack: enemy_attack,
+                };
+                if self.fight.enemy_first_this_round {
+                    self.next_action = Some(player_action);
+                    self.start_action(enemy_action);
+                } else {
+                    self.next_action = Some(enemy_action);
+                    self.start_action(player_action);
+                }
+            }
+            None => {
+                // Enemy has no usable move — player just acts.
+                self.start_action(player_action);
+            }
+        }
     }
 
-    /// Pick a uniform-random move from the enemy moveset, telegraph it,
-    /// and start the right-to-left animation. The impact lands once the
-    /// animation finishes.
-    fn queue_enemy_attack(&mut self) {
-        let mut rng = rand::thread_rng();
-        let Some(name) = self.fight.enemy.moveset.choose(&mut rng) else {
-            // Empty moveset — skip the enemy's turn rather than stalling.
-            self.enemy_acted = true;
-            return;
-        };
-        let Some(attack) = attack_lib::find_by_name(name) else {
-            self.enemy_acted = true;
-            return;
-        };
-        let enemy_name = self.fight.enemy.name.clone();
-        self.fight
-            .set_message(format!("{} used {}!", enemy_name, attack.name), 0.7);
-        let (start_x, _) = self.enemy_base_position();
-        let target_x = self.crab.position.0;
-        self.fight.animation = Some(Animation::for_enemy_attack(&attack, start_x, target_x));
-        self.fight.pending_enemy_attack = Some(attack);
-        self.enemy_acted = true;
+    /// Pick a uniform-random move from the enemy's moveset, resolved
+    /// against the global attack registry.
+    fn pick_enemy_move<R: rand::Rng>(&self, rng: &mut R) -> Option<crate::fight::Attack> {
+        let name = self.fight.enemy.moveset.choose(rng)?;
+        attack_lib::find_by_name(name)
+    }
+
+    /// Start an action's animation and stash the chosen attack so the
+    /// "anim done" branch can apply its effect.
+    fn start_action(&mut self, action: QueuedAction) {
+        let QueuedAction { actor, attack } = action;
+        match actor {
+            Actor::Player => {
+                let start_x = self.crab.position.0;
+                let target_x = (self.last_terminal_size.0 as f32 - 18.0).max(start_x + 5.0);
+                self.fight
+                    .set_message(format!("You used {}!", attack.name), 0.6);
+                self.fight.animation = Some(Animation::for_attack(&attack, start_x, target_x));
+                self.fight.pending_player_attack = Some(attack);
+            }
+            Actor::Enemy => {
+                let enemy_name = self.fight.enemy.name.clone();
+                self.fight
+                    .set_message(format!("{} used {}!", enemy_name, attack.name), 0.7);
+                let (start_x, _) = self.enemy_base_position();
+                let target_x = self.crab.position.0;
+                self.fight.animation = Some(Animation::for_enemy_attack(&attack, start_x, target_x));
+                self.fight.pending_enemy_attack = Some(attack);
+            }
+        }
     }
 
     /// Where the enemy sprite is anchored in the scene (top-left corner).
@@ -322,8 +367,16 @@ impl FightScreen {
         }
         self.fight.set_message(message, 1.0);
         self.fight.menu_state = MenuState::Main;
-        // Using an item costs the player's turn this round.
-        self.player_acted = true;
+        self.round_active = true;
+        // Using an item costs the player's turn this round. Queue the
+        // enemy's reaction to fire after the item message clears.
+        let mut rng = rand::thread_rng();
+        if let Some(enemy_attack) = self.pick_enemy_move(&mut rng) {
+            self.next_action = Some(QueuedAction {
+                actor: Actor::Enemy,
+                attack: enemy_attack,
+            });
+        }
     }
 
     pub fn update(&mut self, player: &mut Player) -> Transition {
@@ -418,20 +471,16 @@ impl FightScreen {
             && self.fight.player_hp > 0;
 
         if idle {
-            if self.player_acted && self.enemy_acted {
-                // Round complete; tick buffs and reroll for the next round.
+            if let Some(action) = self.next_action.take() {
+                // Second action of the current round resolves now.
+                self.start_action(action);
+            } else if self.round_active {
+                // Round complete; tick buffs once and wait for the next
+                // player input. Order is rerolled inside
+                // commit_player_attack when the player actually acts.
                 self.fight.tick_buffs();
-                let mut rng = rand::thread_rng();
-                self.fight.roll_round_order(&mut rng);
-                self.player_acted = false;
-                self.enemy_acted = false;
-            } else if !self.enemy_acted
-                && (self.fight.enemy_first_this_round || self.player_acted)
-            {
-                // Enemy's turn this round.
-                self.queue_enemy_attack();
+                self.round_active = false;
             }
-            // Otherwise: it's the player's turn. We just wait for input.
         }
 
         self.fight.commit_to_player(player);
