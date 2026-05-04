@@ -182,6 +182,14 @@ pub fn init() {
     *META.write().unwrap() = Some(loaded);
 }
 
+/// Delete the meta file from disk. Used by `--reset` at startup so the
+/// next `init()` loads a fresh, empty Meta.
+pub fn wipe() {
+    if let Some(path) = config_path() {
+        let _ = std::fs::remove_file(&path);
+    }
+}
+
 fn normalize_starter(name: &str) -> String {
     name.trim().to_lowercase()
 }

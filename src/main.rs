@@ -21,9 +21,14 @@ use std::io;
 use ui::app::App;
 
 fn main() -> Result<()> {
-    let debug = std::env::args().any(|arg| arg == "--debug");
+    let args: Vec<String> = std::env::args().collect();
+    let debug = args.iter().any(|arg| arg == "--debug");
+    let reset = args.iter().any(|arg| arg == "--reset");
 
     settings::init();
+    if reset {
+        meta::wipe();
+    }
     meta::init();
     enable_raw_mode()?;
     let mut stdout = io::stdout();
