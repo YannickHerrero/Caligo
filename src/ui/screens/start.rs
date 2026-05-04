@@ -1,7 +1,11 @@
+use crate::data::starters;
+use crate::map;
+use crate::meta;
 use crate::player::Player;
+use crate::run::Run;
 use crate::ui::screen::{Screen, Transition};
 use crate::ui::screens::settings::SettingsOrigin;
-use crate::ui::screens::{SettingsScreen, ShopScreen, StarterSelectScreen};
+use crate::ui::screens::{MapScreen, SettingsScreen, ShopScreen, StarterSelectScreen};
 use crossterm::event::KeyCode;
 use ratatui::{
     layout::{Alignment, Rect},
@@ -52,7 +56,7 @@ impl StartScreen {
         Self { selected: 0 }
     }
 
-    pub fn handle_key(&mut self, key: KeyCode, _player: &mut Player) -> Transition {
+    pub fn handle_key(&mut self, key: KeyCode, player: &mut Player) -> Transition {
         let len = StartChoice::ALL.len();
         match key {
             KeyCode::Char('q') | KeyCode::Esc => Transition::Quit,
@@ -65,9 +69,7 @@ impl StartScreen {
                 Transition::Stay
             }
             KeyCode::Enter => match StartChoice::ALL[self.selected] {
-                StartChoice::Play => {
-                    Transition::Goto(Screen::StarterSelect(StarterSelectScreen::new()))
-                }
+                StartChoice::Play => start_play(player),
                 StartChoice::Shop => Transition::Goto(Screen::Shop(ShopScreen::new())),
                 StartChoice::Settings => Transition::Goto(Screen::Settings(
                     SettingsScreen::new(SettingsOrigin::Start),
@@ -135,6 +137,28 @@ impl StartScreen {
             Style::default().fg(Color::DarkGray),
         );
     }
+}
+
+fn start_play(player: &mut Player) -> Transition {
+    // First-launch path: nobody owned yet, send the player to pick.
+    if !meta::has_any_monster() {
+        return Transition::Goto(Screen::StarterSelect(StarterSelectScreen::new()));
+    }
+    // Otherwise build a run from the active party member's species.
+    let Some(species) = meta::active_party_species() else {
+        return Transition::Goto(Screen::StarterSelect(StarterSelectScreen::new()));
+    };
+    let Some(starter) = starters::all_starters()
+        .into_iter()
+        .find(|s| s.name == species)
+    else {
+        // Stored species no longer matches a known starter (renamed?
+        // removed?) — fall back to the picker.
+        return Transition::Goto(Screen::StarterSelect(StarterSelectScreen::new()));
+    };
+    *player = Player::for_starter(&starter);
+    let run = Run::new(starter, map::generate());
+    Transition::Goto(Screen::Map(MapScreen::with_run(run)))
 }
 
 fn render_centered_lines(

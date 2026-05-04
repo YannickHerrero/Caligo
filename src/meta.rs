@@ -175,6 +175,42 @@ pub fn starter_id(species: &str) -> MonsterId {
     format!("starter:{}", species.trim().to_lowercase())
 }
 
+/// True iff the player owns at least one monster (i.e. has gone through
+/// the first-launch starter pick).
+pub fn has_any_monster() -> bool {
+    with_meta(|m| !m.monsters.is_empty())
+}
+
+/// Return the species name of the player's first party member (if any).
+/// While the party is single-monster this drives run starter selection.
+pub fn active_party_species() -> Option<String> {
+    with_meta(|m| {
+        m.party
+            .first()
+            .and_then(|id| m.monsters.get(id))
+            .map(|inst| inst.species.clone())
+    })
+}
+
+/// Register a freshly-chosen starter as owned and add it to the party.
+/// No-op if it's already owned.
+pub fn add_owned_starter(species: &str) {
+    let id = starter_id(species);
+    let snap = with_meta_mut(|meta| {
+        meta.monsters.entry(id.clone()).or_insert_with(|| {
+            MonsterInstance {
+                id: id.clone(),
+                species: species.to_string(),
+            }
+        });
+        if !meta.party.contains(&id) {
+            meta.party.push(id);
+        }
+        meta.clone()
+    });
+    save_to_disk(&snap);
+}
+
 /// Read a single monster's ranks (returns defaults if no rank has been
 /// purchased for that monster yet).
 pub fn ranks_for(monster_id: &str) -> StarterRanks {

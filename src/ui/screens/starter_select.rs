@@ -63,6 +63,9 @@ impl StarterSelectScreen {
                 let Some(starter) = self.starters.get(self.selected).cloned() else {
                     return Transition::Stay;
                 };
+                // Persist the pick: the player permanently owns this
+                // starter and joins it as their first party member.
+                crate::meta::add_owned_starter(&starter.name);
                 *player = Player::for_starter(&starter);
                 let run = Run::new(starter, map::generate());
                 Transition::Goto(Screen::Map(MapScreen::with_run(run)))
