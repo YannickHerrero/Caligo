@@ -67,7 +67,9 @@ impl StarterSelectScreen {
                 // starter and joins it as their first party member.
                 crate::meta::add_owned_starter(&starter.name);
                 *player = Player::for_starter(&starter);
-                let run = Run::new(starter, map::generate());
+                let id = crate::meta::starter_id(&starter.name);
+                let party = vec![crate::run::PartyMember::from_starter(id, starter)];
+                let run = Run::new(party, map::generate());
                 Transition::Goto(Screen::Map(MapScreen::with_run(run)))
             }
             _ => Transition::Stay,

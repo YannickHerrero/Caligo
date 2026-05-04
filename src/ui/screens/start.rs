@@ -157,7 +157,9 @@ fn start_play(player: &mut Player) -> Transition {
         return Transition::Goto(Screen::StarterSelect(StarterSelectScreen::new()));
     };
     *player = Player::for_starter(&starter);
-    let run = Run::new(starter, map::generate());
+    let id = meta::starter_id(&starter.name);
+    let party = vec![crate::run::PartyMember::from_starter(id, starter)];
+    let run = Run::new(party, map::generate());
     Transition::Goto(Screen::Map(MapScreen::with_run(run)))
 }
 

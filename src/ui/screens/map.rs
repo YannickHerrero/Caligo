@@ -50,7 +50,9 @@ impl MapScreen {
         // Falls back to the first starter so the screen is functional in
         // isolation.
         let starter = starters::all_starters().remove(0);
-        Self::with_run_and_origin(Run::new(starter, map::generate()), MapOrigin::DebugSelect)
+        let id = crate::meta::starter_id(&starter.name);
+        let party = vec![crate::run::PartyMember::from_starter(id, starter)];
+        Self::with_run_and_origin(Run::new(party, map::generate()), MapOrigin::DebugSelect)
     }
 
     pub fn with_run(run: Run) -> Self {

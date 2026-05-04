@@ -98,10 +98,11 @@ impl FightScreen {
         node_kind: NodeKind,
     ) -> Self {
         let mut fight = FightState::from_player_with_enemy(player, enemy);
-        fight.player_type = Some(map.run.starter.primary_type);
+        let active = map.run.active_member();
+        fight.player_type = Some(active.template.primary_type);
         // Permanent meta boost: +20% damage per Sharpened Edge rank for
-        // the active starter.
-        let ranks = crate::meta::ranks_for(&map.run.starter.name);
+        // the active member.
+        let ranks = crate::meta::ranks_for(&active.id);
         fight.player_attack_boost_pct = ranks.sharpened_edge as f32 * 0.20;
         Self {
             crab: Crab::new((6.0, 100.0), 95),
@@ -576,7 +577,7 @@ impl FightScreen {
         let Some(map) = self.map.take() else {
             return self.exit_fight();
         };
-        let starter = map.run.starter.clone();
+        let starter = map.run.active_member().template.clone();
         let floor_reached = map
             .run
             .map
@@ -606,7 +607,7 @@ impl FightScreen {
         crate::meta::add_embers(embers_earned);
 
         if matches!(kind, NodeKind::Boss) {
-            let starter = map.run.starter.clone();
+            let starter = map.run.active_member().template.clone();
             let floor_reached = map
                 .run
                 .map
