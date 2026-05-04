@@ -1,7 +1,6 @@
 use crate::fight::{Item, ItemStack};
 use crate::map::NodeKind;
 use crate::player::Player;
-use crate::run::PartyMember;
 use crate::ui::screen::{Screen, Transition};
 use crate::ui::screens::{MapScreen, RewardScreen};
 use crossterm::event::KeyCode;
@@ -400,7 +399,7 @@ impl CapturePromptScreen {
                 // sourced from the bestiary so the run can render and
                 // act on it. A unified MonsterTemplate replaces this in
                 // a follow-up.
-                if let Some(member) = build_party_member_from_capture(&instance) {
+                if let Some(member) = crate::run::build_party_member_from_instance(&instance) {
                     map.run.party.push(member);
                     self.phase = CapturePhase::Caught;
                     return;
@@ -423,7 +422,7 @@ impl CapturePromptScreen {
         // pending_capture was already pushed in resolve_roll(); don't
         // double-push. Just swap the run slot.
         if let (Some(map), Some(member)) =
-            (self.map.as_mut(), build_party_member_from_capture(&instance))
+            (self.map.as_mut(), crate::run::build_party_member_from_instance(&instance))
         {
             if slot < map.run.party.len() {
                 map.run.party[slot] = member;
@@ -483,37 +482,3 @@ fn consume_one_net(items: &mut Vec<ItemStack>) {
     }
 }
 
-/// Build a PartyMember for a capture by looking up the species in the
-/// starters registry first (in case it's a starter-class species), then
-/// falling back to the bestiary. Returns None if the species isn't
-/// known. Until Phase 5 unifies templates, this stuffs the species into
-/// a synthesized Starter so the run can carry it.
-fn build_party_member_from_capture(instance: &crate::meta::MonsterInstance) -> Option<PartyMember> {
-    use crate::data::{enemies, starters};
-    if let Some(starter) = starters::all_starters()
-        .into_iter()
-        .find(|s| s.name == instance.species)
-    {
-        return Some(PartyMember::from_starter(instance.id.clone(), starter));
-    }
-    if let Some(enemy) = enemies::all_enemies()
-        .into_iter()
-        .find(|e| e.name == instance.species)
-    {
-        // Synthesise a Starter wrapper from enemy data. Visual is a
-        // single-frame fallback using the enemy sprite. Starting attacks
-        // come from the enemy's moveset.
-        use crate::data::starters::{Starter, StarterVisual};
-        let visual = StarterVisual::Frames(vec![enemy.sprite.clone()]);
-        let starter = Starter {
-            name: enemy.name.clone(),
-            primary_type: enemy.primary_type,
-            starting_attacks: enemy.moveset.clone(),
-            visual,
-            palette: enemy.palette.clone(),
-            description: enemy.description.clone(),
-        };
-        return Some(PartyMember::from_starter(instance.id.clone(), starter));
-    }
-    None
-}
