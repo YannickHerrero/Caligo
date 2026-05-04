@@ -1,4 +1,3 @@
-use crate::data::starters;
 use crate::map;
 use crate::meta;
 use crate::player::Player;
@@ -152,21 +151,15 @@ fn start_play(player: &mut Player) -> Transition {
     if !meta::has_any_monster() {
         return Transition::Goto(Screen::StarterSelect(StarterSelectScreen::new()));
     }
-    // Otherwise build a run from the active party member's species.
-    let Some(species) = meta::active_party_species() else {
+    // Build the full party from Meta — every member of Meta.party
+    // becomes a PartyMember at run start with full HP/MP.
+    let party = crate::run::build_party_from_meta();
+    if party.is_empty() {
+        // No resolvable members — bail to the picker as a safety net.
         return Transition::Goto(Screen::StarterSelect(StarterSelectScreen::new()));
-    };
-    let Some(starter) = starters::all_starters()
-        .into_iter()
-        .find(|s| s.name == species)
-    else {
-        // Stored species no longer matches a known starter (renamed?
-        // removed?) — fall back to the picker.
-        return Transition::Goto(Screen::StarterSelect(StarterSelectScreen::new()));
-    };
-    *player = Player::for_starter(&starter);
-    let id = meta::starter_id(&starter.name);
-    let party = vec![crate::run::PartyMember::from_starter(id, starter)];
+    }
+    // Sync Player to the active (first) member.
+    *player = Player::for_run_party_member(&party[0]);
     let run = Run::new(party, map::generate());
     Transition::Goto(Screen::Map(MapScreen::with_run(run)))
 }

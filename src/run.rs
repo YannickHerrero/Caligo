@@ -71,6 +71,55 @@ impl PartyMember {
     }
 }
 
+/// Build a `PartyMember` for an owned monster instance by resolving its
+/// species against the starters registry first, then the bestiary.
+/// Returns None if the species isn't known.
+pub fn build_party_member_from_instance(
+    instance: &meta::MonsterInstance,
+) -> Option<PartyMember> {
+    use crate::data::{enemies, starters};
+    use crate::data::starters::{Starter, StarterVisual};
+    if let Some(starter) = starters::all_starters()
+        .into_iter()
+        .find(|s| s.name == instance.species)
+    {
+        return Some(PartyMember::fresh(instance.id.clone(), starter));
+    }
+    if let Some(enemy) = enemies::all_enemies()
+        .into_iter()
+        .find(|e| e.name == instance.species)
+    {
+        let visual = StarterVisual::Frames(vec![enemy.sprite.clone()]);
+        let starter = Starter {
+            name: enemy.name.clone(),
+            primary_type: enemy.primary_type,
+            starting_attacks: enemy.moveset.clone(),
+            visual,
+            palette: enemy.palette.clone(),
+            description: enemy.description.clone(),
+        };
+        return Some(PartyMember::fresh(instance.id.clone(), starter));
+    }
+    None
+}
+
+/// Build the run-time party from `Meta.party`. Skips members whose
+/// species can no longer be resolved. Returns at minimum a default
+/// fallback if the persisted party is empty/unknown.
+pub fn build_party_from_meta() -> Vec<PartyMember> {
+    let snap = meta::snapshot();
+    let mut out = Vec::with_capacity(snap.party.len());
+    for id in &snap.party {
+        let Some(instance) = snap.monsters.get(id) else {
+            continue;
+        };
+        if let Some(member) = build_party_member_from_instance(instance) {
+            out.push(member);
+        }
+    }
+    out
+}
+
 /// One end-to-end playthrough of the dungeon.
 ///
 /// Holds the player's party for the run and the generated map graph. A

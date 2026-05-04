@@ -181,17 +181,6 @@ pub fn has_any_monster() -> bool {
     with_meta(|m| !m.monsters.is_empty())
 }
 
-/// Return the species name of the player's first party member (if any).
-/// While the party is single-monster this drives run starter selection.
-pub fn active_party_species() -> Option<String> {
-    with_meta(|m| {
-        m.party
-            .first()
-            .and_then(|id| m.monsters.get(id))
-            .map(|inst| inst.species.clone())
-    })
-}
-
 /// Toggle a monster's membership in the party. If it's already in the
 /// party, remove it. If it's not in the party and there's room, add it.
 /// Returns Ok(true) if the toggle landed, Ok(false) if it was a no-op
