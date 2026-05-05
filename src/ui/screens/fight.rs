@@ -390,9 +390,11 @@ impl FightScreen {
                 self.switch_prompt = None;
                 self.perform_switch(prompt.selected, player);
                 if was_forced {
-                    // Forced (faint) swap: the enemy's turn was already
-                    // queued or running; just resume the round logic. Do
-                    // NOT cost a turn — the player didn't choose to faint.
+                    // Forced (faint) swap: the fainted member never got
+                    // to use their queued attack. Discard any pending
+                    // next_action so the round ends after the swap and
+                    // the new active gets a fresh input next round.
+                    self.next_action = None;
                 } else {
                     // Voluntary switch costs the player's action this round.
                     let mut rng = rand::thread_rng();
