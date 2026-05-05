@@ -1,6 +1,6 @@
 use crate::data::enemies::{self, EnemyTier};
-use crate::data::starters::{self, Starter};
-use crate::meta::{self, Upgrade};
+use crate::data::starters::Starter;
+use crate::meta::{self, MonsterId, Upgrade};
 use crate::player::Player;
 use crate::ui::screen::{Screen, Transition};
 use crate::ui::screens::StartScreen;
@@ -21,17 +21,25 @@ enum ShopMode {
     Recruits,
 }
 
+/// Sub-states inside `ShopMode::Upgrades`. The player picks which
+/// monster to invest in, then drills into that monster's upgrade list.
+#[derive(Debug, Clone, PartialEq, Eq)]
+enum UpgradeStage {
+    PickMonster,
+    UpgradeList { monster_id: MonsterId },
+}
+
 /// Between-runs shop. Two modes accessible via Tab:
-///   * Upgrades — permanent stat ranks per owned monster (Left/Right
-///     cycles which monster, Up/Down picks the upgrade row).
+///   * Upgrades — staged: pick which owned monster, then buy ranks.
 ///   * Recruits — buy captured monsters from `Meta.pending_captures`.
 pub struct ShopScreen {
     mode: ShopMode,
-    starters: Vec<Starter>,
-    /// Index into `starters` for the active monster in Upgrades mode.
-    starter_idx: usize,
+    /// Sub-state for the Upgrades mode.
+    upgrade_stage: UpgradeStage,
+    /// Index into the sorted owned-monster list for the picker.
+    monster_idx: usize,
     /// Index into `Upgrade::ALL` for the highlighted upgrade row.
-    selected: usize,
+    upgrade_selected: usize,
     /// Index into the pending-captures vec for the highlighted recruit row.
     recruit_idx: usize,
     /// Transient one-line message shown under the menu (e.g. "Not enough
@@ -43,9 +51,9 @@ impl ShopScreen {
     pub fn new() -> Self {
         Self {
             mode: ShopMode::Upgrades,
-            starters: starters::all_starters(),
-            starter_idx: 0,
-            selected: 0,
+            upgrade_stage: UpgradeStage::PickMonster,
+            monster_idx: 0,
+            upgrade_selected: 0,
             recruit_idx: 0,
             message: None,
         }
@@ -53,11 +61,15 @@ impl ShopScreen {
 
     pub fn handle_key(&mut self, key: KeyCode, _player: &mut Player) -> Transition {
         // Mode toggle: Tab flips Upgrades <-> Recruits in either mode.
+        // Switching back to Upgrades always lands on the picker stage.
         if matches!(key, KeyCode::Tab | KeyCode::BackTab) {
             self.mode = match self.mode {
                 ShopMode::Upgrades => ShopMode::Recruits,
                 ShopMode::Recruits => ShopMode::Upgrades,
             };
+            if matches!(self.mode, ShopMode::Upgrades) {
+                self.upgrade_stage = UpgradeStage::PickMonster;
+            }
             self.message = None;
             return Transition::Stay;
         }
@@ -68,42 +80,74 @@ impl ShopScreen {
     }
 
     fn handle_upgrades(&mut self, key: KeyCode) -> Transition {
-        let len = Upgrade::ALL.len();
+        match self.upgrade_stage.clone() {
+            UpgradeStage::PickMonster => self.handle_pick_monster(key),
+            UpgradeStage::UpgradeList { monster_id } => {
+                self.handle_upgrade_list(key, &monster_id)
+            }
+        }
+    }
+
+    fn handle_pick_monster(&mut self, key: KeyCode) -> Transition {
+        let owned = sorted_owned_ids();
+        let len = owned.len();
         match key {
             KeyCode::Esc | KeyCode::Char('q') => {
                 Transition::Goto(Screen::Start(StartScreen::new()))
             }
-            KeyCode::Right | KeyCode::Char('l') => {
-                if !self.starters.is_empty() {
-                    self.starter_idx = (self.starter_idx + 1) % self.starters.len();
-                }
-                self.message = None;
-                Transition::Stay
-            }
-            KeyCode::Left | KeyCode::Char('h') => {
-                if !self.starters.is_empty() {
-                    let n = self.starters.len();
-                    self.starter_idx = (self.starter_idx + n - 1) % n;
-                }
-                self.message = None;
-                Transition::Stay
-            }
             KeyCode::Up | KeyCode::Char('k') => {
                 if len > 0 {
-                    self.selected = (self.selected + len - 1) % len;
+                    self.monster_idx = (self.monster_idx + len - 1) % len;
                 }
                 self.message = None;
                 Transition::Stay
             }
             KeyCode::Down | KeyCode::Char('j') => {
                 if len > 0 {
-                    self.selected = (self.selected + 1) % len;
+                    self.monster_idx = (self.monster_idx + 1) % len;
                 }
                 self.message = None;
                 Transition::Stay
             }
             KeyCode::Enter => {
-                self.try_buy_upgrade();
+                if let Some(id) = owned.get(self.monster_idx) {
+                    self.upgrade_stage = UpgradeStage::UpgradeList {
+                        monster_id: id.clone(),
+                    };
+                    self.upgrade_selected = 0;
+                    self.message = None;
+                }
+                Transition::Stay
+            }
+            _ => Transition::Stay,
+        }
+    }
+
+    fn handle_upgrade_list(&mut self, key: KeyCode, monster_id: &MonsterId) -> Transition {
+        let len = Upgrade::ALL.len();
+        match key {
+            // Esc backs out to the picker rather than leaving the shop.
+            KeyCode::Esc | KeyCode::Char('q') => {
+                self.upgrade_stage = UpgradeStage::PickMonster;
+                self.message = None;
+                Transition::Stay
+            }
+            KeyCode::Up | KeyCode::Char('k') => {
+                if len > 0 {
+                    self.upgrade_selected = (self.upgrade_selected + len - 1) % len;
+                }
+                self.message = None;
+                Transition::Stay
+            }
+            KeyCode::Down | KeyCode::Char('j') => {
+                if len > 0 {
+                    self.upgrade_selected = (self.upgrade_selected + 1) % len;
+                }
+                self.message = None;
+                Transition::Stay
+            }
+            KeyCode::Enter => {
+                self.try_buy_upgrade(monster_id);
                 Transition::Stay
             }
             _ => Transition::Stay,
@@ -167,6 +211,44 @@ impl ShopScreen {
         }
     }
 
+    fn try_buy_upgrade(&mut self, monster_id: &MonsterId) {
+        let Some(upgrade) = Upgrade::ALL.get(self.upgrade_selected).copied() else {
+            return;
+        };
+        let snap = meta::snapshot();
+        let species = snap
+            .monsters
+            .get(monster_id)
+            .map(|m| m.species.clone())
+            .unwrap_or_else(|| "monster".to_string());
+        let ranks = meta::ranks_for(monster_id);
+        let current = upgrade.current_rank(&ranks);
+        let Some(cost) = upgrade.cost_for_next(current) else {
+            self.message = Some(format!(
+                "{} is maxed for {}.",
+                upgrade.name(),
+                species
+            ));
+            return;
+        };
+        if snap.embers < cost {
+            self.message = Some(format!(
+                "Need {} embers ({} short).",
+                cost,
+                cost - snap.embers
+            ));
+            return;
+        }
+        if meta::try_buy(upgrade, monster_id) {
+            self.message = Some(format!(
+                "{} \u{2192} rank {} for {}.",
+                upgrade.name(),
+                current + 1,
+                species
+            ));
+        }
+    }
+
     pub fn update(&mut self, _player: &mut Player) -> Transition {
         Transition::Stay
     }
@@ -190,11 +272,23 @@ impl ShopScreen {
             .split(area);
 
         render_title(frame, chunks[0]);
-        render_mode_header(frame, self.mode, self.active_starter(), chunks[1]);
+        let active_template = self.active_upgrade_template();
+        render_mode_header(
+            frame,
+            self.mode,
+            &self.upgrade_stage,
+            active_template.as_ref(),
+            chunks[1],
+        );
         match self.mode {
-            ShopMode::Upgrades => {
-                render_upgrades(frame, self.active_starter(), self.selected, chunks[3]);
-            }
+            ShopMode::Upgrades => match &self.upgrade_stage {
+                UpgradeStage::PickMonster => {
+                    render_monster_picker(frame, self.monster_idx, chunks[3]);
+                }
+                UpgradeStage::UpgradeList { monster_id } => {
+                    render_upgrades(frame, monster_id, self.upgrade_selected, chunks[3]);
+                }
+            },
             ShopMode::Recruits => {
                 render_recruits(frame, self.recruit_idx, chunks[3]);
             }
@@ -202,49 +296,27 @@ impl ShopScreen {
         if let Some(msg) = self.message.as_deref() {
             render_message(frame, msg, chunks[4]);
         }
-        render_hint(frame, self.mode, chunks[5]);
+        render_hint(frame, self.mode, &self.upgrade_stage, chunks[5]);
     }
 
-    fn active_starter(&self) -> Option<&Starter> {
-        self.starters.get(self.starter_idx)
-    }
-
-    fn try_buy_upgrade(&mut self) {
-        let Some(upgrade) = Upgrade::ALL.get(self.selected).copied() else {
-            return;
+    /// When the user is buying upgrades for a specific monster, return a
+    /// `Starter`-shaped template for it (synthesised for wild captures)
+    /// so the header can render its name in its type color.
+    fn active_upgrade_template(&self) -> Option<Starter> {
+        let UpgradeStage::UpgradeList { monster_id } = &self.upgrade_stage else {
+            return None;
         };
-        let Some(starter) = self.active_starter().cloned() else {
-            return;
-        };
-        let monster_id = meta::starter_id(&starter.name);
         let snap = meta::snapshot();
-        let ranks = meta::ranks_for(&monster_id);
-        let current = upgrade.current_rank(&ranks);
-        let Some(cost) = upgrade.cost_for_next(current) else {
-            self.message = Some(format!(
-                "{} is maxed for {}.",
-                upgrade.name(),
-                starter.name
-            ));
-            return;
-        };
-        if snap.embers < cost {
-            self.message = Some(format!(
-                "Need {} embers ({} short).",
-                cost,
-                cost - snap.embers
-            ));
-            return;
-        }
-        if meta::try_buy(upgrade, &monster_id) {
-            self.message = Some(format!(
-                "{} \u{2192} rank {} for {}.",
-                upgrade.name(),
-                current + 1,
-                starter.name
-            ));
-        }
+        let instance = snap.monsters.get(monster_id)?;
+        crate::run::build_party_member_from_instance(instance).map(|m| m.template)
     }
+}
+
+fn sorted_owned_ids() -> Vec<MonsterId> {
+    let snap = meta::snapshot();
+    let mut ids: Vec<MonsterId> = snap.monsters.keys().cloned().collect();
+    ids.sort();
+    ids
 }
 
 fn render_title(frame: &mut Frame, area: Rect) {
@@ -260,7 +332,8 @@ fn render_title(frame: &mut Frame, area: Rect) {
 fn render_mode_header(
     frame: &mut Frame,
     mode: ShopMode,
-    starter: Option<&Starter>,
+    stage: &UpgradeStage,
+    template: Option<&Starter>,
     area: Rect,
 ) {
     let snap = meta::snapshot();
@@ -307,20 +380,96 @@ fn render_mode_header(
         ),
     ];
     if mode == ShopMode::Upgrades {
-        if let Some(starter) = starter {
-            spans.extend([
-                Span::styled("   \u{00B7}   ", Style::default().fg(Color::DarkGray)),
-                Span::styled(
-                    format!("\u{25C0} {} \u{25B6}", starter.name),
-                    Style::default()
-                        .fg(starter.primary_type.color())
-                        .add_modifier(Modifier::BOLD),
-                ),
-            ]);
+        if let UpgradeStage::UpgradeList { .. } = stage {
+            if let Some(template) = template {
+                spans.extend([
+                    Span::styled("   \u{00B7}   ", Style::default().fg(Color::DarkGray)),
+                    Span::styled(
+                        format!("\u{2192} {}", template.name),
+                        Style::default()
+                            .fg(template.primary_type.color())
+                            .add_modifier(Modifier::BOLD),
+                    ),
+                ]);
+            }
         }
     }
     let line = Line::from(spans);
     frame.render_widget(Paragraph::new(line).alignment(Alignment::Center), area);
+}
+
+fn render_monster_picker(frame: &mut Frame, selected: usize, area: Rect) {
+    let snap = meta::snapshot();
+    let owned = sorted_owned_ids();
+    let panel_w = 64.min(area.width.saturating_sub(2)).max(40);
+    let needed_h = (owned.len().max(1) as u16) * 2 + 2;
+    let panel_h = needed_h.min(area.height);
+    let panel = Rect {
+        x: area.x + (area.width.saturating_sub(panel_w)) / 2,
+        y: area.y + (area.height.saturating_sub(panel_h)) / 2,
+        width: panel_w,
+        height: panel_h,
+    };
+    let block = Block::default()
+        .borders(Borders::ALL)
+        .border_style(Style::default().fg(Color::DarkGray))
+        .title(Span::styled(
+            " Pick a monster to upgrade ",
+            Style::default()
+                .fg(Color::Yellow)
+                .add_modifier(Modifier::BOLD),
+        ));
+    let inner = block.inner(panel);
+    frame.render_widget(block, panel);
+    if inner.height == 0 {
+        return;
+    }
+
+    if owned.is_empty() {
+        let line = Line::from(Span::styled(
+            "(no monsters owned yet)",
+            Style::default().fg(Color::DarkGray),
+        ));
+        frame.render_widget(
+            Paragraph::new(line).alignment(Alignment::Center),
+            inner,
+        );
+        return;
+    }
+
+    let mut lines: Vec<Line> = Vec::new();
+    for (idx, id) in owned.iter().enumerate() {
+        let is_selected = idx == selected;
+        let cursor = if is_selected { "\u{25B6} " } else { "  " };
+        let species = snap
+            .monsters
+            .get(id)
+            .map(|m| m.species.clone())
+            .unwrap_or_else(|| id.clone());
+        let ranks = snap.monster_ranks.get(id).copied().unwrap_or_default();
+        let total =
+            ranks.tidepool + ranks.wellspring + ranks.quickfoot + ranks.sharpened_edge;
+        let style = if is_selected {
+            Style::default()
+                .fg(Color::Yellow)
+                .add_modifier(Modifier::BOLD)
+        } else {
+            Style::default().fg(Color::Gray)
+        };
+        let in_party = snap.party.iter().any(|p| p == id);
+        let suffix = if in_party { "  (in party)" } else { "" };
+        lines.push(Line::from(vec![
+            Span::styled(cursor, style),
+            Span::styled(format!("{:<22}", species), style),
+            Span::styled(
+                format!("ranks {}", total),
+                Style::default().fg(Color::DarkGray),
+            ),
+            Span::styled(suffix.to_string(), Style::default().fg(Color::DarkGray)),
+        ]));
+        lines.push(Line::from(""));
+    }
+    frame.render_widget(Paragraph::new(lines), inner);
 }
 
 fn render_recruits(frame: &mut Frame, selected: usize, area: Rect) {
@@ -404,7 +553,7 @@ pub fn recruit_price(species: &str) -> u32 {
 
 fn render_upgrades(
     frame: &mut Frame,
-    starter: Option<&Starter>,
+    monster_id: &MonsterId,
     selected: usize,
     area: Rect,
 ) {
@@ -433,10 +582,7 @@ fn render_upgrades(
     }
 
     let snap = meta::snapshot();
-    let ranks = match starter {
-        Some(s) => meta::ranks_for(&meta::starter_id(&s.name)),
-        None => Default::default(),
-    };
+    let ranks = meta::ranks_for(monster_id);
 
     let mut lines: Vec<Line> = Vec::new();
     for (idx, upgrade) in Upgrade::ALL.iter().enumerate() {
@@ -501,34 +647,30 @@ fn render_message(frame: &mut Frame, message: &str, area: Rect) {
     frame.render_widget(Paragraph::new(line).alignment(Alignment::Center), area);
 }
 
-fn render_hint(frame: &mut Frame, mode: ShopMode, area: Rect) {
+fn render_hint(
+    frame: &mut Frame,
+    mode: ShopMode,
+    stage: &UpgradeStage,
+    area: Rect,
+) {
     let key = Style::default().fg(Color::Yellow);
     let dim = Style::default().fg(Color::DarkGray);
     let mut spans = vec![
         Span::styled("Tab", key),
         Span::styled(" mode   ", dim),
+        Span::styled("\u{2191}\u{2193}", key),
+        Span::styled(" navigate   ", dim),
     ];
-    match mode {
-        ShopMode::Upgrades => {
-            spans.extend([
-                Span::styled("\u{2190}\u{2192}", key),
-                Span::styled(" monster   ", dim),
-                Span::styled("\u{2191}\u{2193}", key),
-                Span::styled(" upgrade   ", dim),
-            ]);
-        }
-        ShopMode::Recruits => {
-            spans.extend([
-                Span::styled("\u{2191}\u{2193}", key),
-                Span::styled(" recruit   ", dim),
-            ]);
-        }
-    }
+    let (action_label, esc_label) = match (mode, stage) {
+        (ShopMode::Upgrades, UpgradeStage::PickMonster) => ("pick", "back to menu"),
+        (ShopMode::Upgrades, UpgradeStage::UpgradeList { .. }) => ("buy", "monsters"),
+        (ShopMode::Recruits, _) => ("buy", "back to menu"),
+    };
     spans.extend([
         Span::styled("Enter", key),
-        Span::styled(" buy   ", dim),
+        Span::styled(format!(" {}   ", action_label), dim),
         Span::styled("Esc", key),
-        Span::styled(" back", dim),
+        Span::styled(format!(" {}", esc_label), dim),
     ]);
     let hint = Line::from(spans);
     frame.render_widget(Paragraph::new(hint).alignment(Alignment::Center), area);
