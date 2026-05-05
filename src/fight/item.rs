@@ -22,14 +22,6 @@ impl TrinketKind {
         }
     }
 
-    pub fn description(&self) -> &'static str {
-        match self {
-            TrinketKind::HeartCharm => "+10 max HP while equipped.",
-            TrinketKind::ManaPearl => "+5 max MP while equipped.",
-            TrinketKind::LuckyShell => "Slight luck bonus while equipped.",
-        }
-    }
-
     pub fn bonus_max_hp(&self) -> u32 {
         match self {
             TrinketKind::HeartCharm => 10,
@@ -58,13 +50,6 @@ impl UtilityKind {
             UtilityKind::GoldPouch => "Gold Pouch",
         }
     }
-
-    pub fn description(&self) -> &'static str {
-        match self {
-            UtilityKind::Revive => "Auto-revives on defeat (used in combat).",
-            UtilityKind::GoldPouch => "Contains 25 gold. Open to claim.",
-        }
-    }
 }
 
 #[derive(Debug, Clone)]
@@ -90,23 +75,6 @@ impl Item {
             Item::Trinket(t) => t.name().to_string(),
             Item::Utility(u) => u.name().to_string(),
             Item::MonsterNet => "Monster Net".to_string(),
-        }
-    }
-
-    pub fn description(&self) -> String {
-        match self {
-            Item::HpPotion(PotionSize::Small) => "Restores 10 HP.".to_string(),
-            Item::HpPotion(PotionSize::Large) => "Restores 30 HP.".to_string(),
-            Item::ManaPotion(PotionSize::Small) => "Restores 6 MP.".to_string(),
-            Item::ManaPotion(PotionSize::Large) => "Restores 15 MP.".to_string(),
-            Item::AttackStone { attack_name } => {
-                format!("Teaches the attack '{}' when used.", attack_name)
-            }
-            Item::Trinket(t) => t.description().to_string(),
-            Item::Utility(u) => u.description().to_string(),
-            Item::MonsterNet => {
-                "Throw at a defeated enemy to attempt capture.".to_string()
-            }
         }
     }
 
