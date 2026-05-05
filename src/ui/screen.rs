@@ -1,8 +1,8 @@
 use crate::player::Player;
 use crate::ui::screens::{
     AttackPreviewScreen, CapturePromptScreen, CatalogueScreen, CollectionScreen, DemoScreen,
-    FightScreen, GameOverScreen, MapScreen, PlaceholderNodeScreen, PlayerInfoScreen,
-    RewardScreen, SelectScreen, SettingsScreen, ShopScreen, StartScreen,
+    FightScreen, GameOverScreen, InRunShopScreen, MapScreen, PlaceholderNodeScreen,
+    PlayerInfoScreen, RewardScreen, SelectScreen, SettingsScreen, ShopScreen, StartScreen,
     StarterSelectScreen, TransitionScreen, VictoryScreen,
 };
 use crossterm::event::KeyCode;
@@ -27,6 +27,7 @@ pub enum Screen {
     Shop(ShopScreen),
     CapturePrompt(CapturePromptScreen),
     Collection(CollectionScreen),
+    InRunShop(InRunShopScreen),
 }
 
 pub enum Transition {
@@ -56,6 +57,7 @@ impl Screen {
             Screen::Shop(s) => s.handle_key(key, player),
             Screen::CapturePrompt(s) => s.handle_key(key, player),
             Screen::Collection(s) => s.handle_key(key, player),
+            Screen::InRunShop(s) => s.handle_key(key, player),
         }
     }
 
@@ -79,6 +81,7 @@ impl Screen {
             Screen::Shop(s) => s.update(player),
             Screen::CapturePrompt(s) => s.update(player),
             Screen::Collection(s) => s.update(player),
+            Screen::InRunShop(s) => s.update(player),
         }
     }
 
@@ -102,6 +105,7 @@ impl Screen {
             Screen::Shop(s) => s.draw(frame, player),
             Screen::CapturePrompt(s) => s.draw(frame, player),
             Screen::Collection(s) => s.draw(frame, player),
+            Screen::InRunShop(s) => s.draw(frame, player),
         }
     }
 }

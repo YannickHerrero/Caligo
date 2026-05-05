@@ -198,30 +198,30 @@ fn random_kind<R: Rng>(floor: u8, banned: &HashSet<NodeKind>, rng: &mut R) -> No
     } else if floor <= 5 {
         // Easy / Normal / Elite / Camp / Shop / Mystery
         &[
-            (NodeKind::EasyFight, 35),
-            (NodeKind::NormalFight, 30),
+            (NodeKind::EasyFight, 32),
+            (NodeKind::NormalFight, 28),
             (NodeKind::EliteFight, 4),
-            (NodeKind::Camp, 12),
-            (NodeKind::Shop, 8),
-            (NodeKind::Mystery, 11),
+            (NodeKind::Camp, 11),
+            (NodeKind::Shop, 15),
+            (NodeKind::Mystery, 10),
         ]
     } else if floor <= 8 {
         &[
-            (NodeKind::EasyFight, 22),
-            (NodeKind::NormalFight, 30),
+            (NodeKind::EasyFight, 20),
+            (NodeKind::NormalFight, 26),
             (NodeKind::EliteFight, 8),
-            (NodeKind::Camp, 12),
-            (NodeKind::Shop, 10),
-            (NodeKind::Mystery, 18),
+            (NodeKind::Camp, 11),
+            (NodeKind::Shop, 18),
+            (NodeKind::Mystery, 17),
         ]
     } else {
         &[
-            (NodeKind::EasyFight, 12),
-            (NodeKind::NormalFight, 32),
+            (NodeKind::EasyFight, 10),
+            (NodeKind::NormalFight, 28),
             (NodeKind::EliteFight, 14),
             (NodeKind::Camp, 12),
-            (NodeKind::Shop, 12),
-            (NodeKind::Mystery, 18),
+            (NodeKind::Shop, 20),
+            (NodeKind::Mystery, 16),
         ]
     };
 

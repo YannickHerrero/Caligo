@@ -4,8 +4,8 @@ use crate::player::Player;
 use crate::run::Run;
 use crate::ui::screen::{Screen, Transition};
 use crate::ui::screens::{
-    FightScreen, PlaceholderNodeScreen, PlayerInfoScreen, SelectScreen, StartScreen,
-    TransitionKind, TransitionScreen,
+    FightScreen, InRunShopScreen, PlaceholderNodeScreen, PlayerInfoScreen, SelectScreen,
+    StartScreen, TransitionKind, TransitionScreen,
 };
 use crate::ui::widgets;
 use crossterm::event::KeyCode;
@@ -355,7 +355,8 @@ fn build_node_screen(player: &mut Player, map: Box<MapScreen>, kind: NodeKind) -
                 .unwrap_or_else(crate::data::enemies::slime);
             Screen::Fight(FightScreen::from_map(player, map, enemy, kind))
         }
-        NodeKind::Camp | NodeKind::Shop | NodeKind::Mystery => {
+        NodeKind::Shop => Screen::InRunShop(InRunShopScreen::new(map)),
+        NodeKind::Camp | NodeKind::Mystery => {
             Screen::PlaceholderNode(PlaceholderNodeScreen::new(map, kind, player))
         }
     }

@@ -306,7 +306,7 @@ fn stage_tier_weights(stage: NodeKind) -> [u32; 4] {
     }
 }
 
-fn stone_for_stage<R: Rng>(stage: NodeKind, rng: &mut R) -> Option<Item> {
+pub fn stone_for_stage<R: Rng>(stage: NodeKind, rng: &mut R) -> Option<Item> {
     let weights = stage_tier_weights(stage);
     let tier = pick_tier(rng, weights);
     let attacks = attack_lib::all_attacks();
