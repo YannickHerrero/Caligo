@@ -133,6 +133,13 @@ impl MapScreen {
                 }
                 self.menu_state = MapMenuState::Browsing;
 
+                // Advance the cursor onto the next-depth options now,
+                // so when the player returns from the fight / placeholder
+                // the map already focuses on a reachable child instead
+                // of leaving the cursor on the just-completed node.
+                self.cursor = pick_default_cursor(&self.run.map);
+                self.center_scroll_on_cursor();
+
                 // Move the current map forward so the run persists; clone
                 // for the transition's fade visual.
                 let map_owned = std::mem::replace(self, MapScreen::new());
