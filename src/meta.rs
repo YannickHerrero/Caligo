@@ -228,10 +228,27 @@ pub fn mint_wild_id() -> MonsterId {
 
 /// Push a freshly-captured monster onto the pending-purchases pile. The
 /// player can buy it from the post-run shop later (independently of run
-/// outcome).
+/// outcome). Used for starter rewards from boss kills; wild captures
+/// take the more direct `add_owned_monster` path.
 pub fn push_pending_capture(instance: MonsterInstance) {
     let snap = with_meta_mut(|meta| {
         meta.pending_captures.push(instance);
+        meta.clone()
+    });
+    save_to_disk(&snap);
+}
+
+/// Add a monster directly to the player's permanent collection. Used by
+/// wild captures: catching always grants ownership immediately, no
+/// shop step. The new monster is also auto-added to `party` if there's
+/// room, mirroring the post-purchase behaviour of `try_buy_recruit`.
+pub fn add_owned_monster(instance: MonsterInstance) {
+    let snap = with_meta_mut(|meta| {
+        let id = instance.id.clone();
+        meta.monsters.insert(id.clone(), instance);
+        if meta.party.len() < PARTY_CAP && !meta.party.contains(&id) {
+            meta.party.push(id);
+        }
         meta.clone()
     });
     save_to_disk(&snap);

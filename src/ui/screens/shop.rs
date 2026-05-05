@@ -539,15 +539,17 @@ fn render_recruits(frame: &mut Frame, selected: usize, area: Rect) {
     frame.render_widget(Paragraph::new(lines), inner);
 }
 
-/// Per-tier recruit price. Starters (not in the bestiary) default to a
-/// flat 100 — they enter the pool via Phase 7's boss-kill drops.
+/// Per-tier recruit price. With wild captures going straight into the
+/// collection, the post-run shop only sells starter recruits in
+/// practice — those are priced at a flat 10 embers each (the bestiary
+/// tiers are kept around for future "shop also stocks captures" knobs).
 pub fn recruit_price(species: &str) -> u32 {
     match enemies::tier_for_species(species) {
         Some(EnemyTier::Easy) => 20,
         Some(EnemyTier::Normal) => 50,
         Some(EnemyTier::Elite) => 120,
         Some(EnemyTier::Boss) => 300,
-        None => 100,
+        None => 10,
     }
 }
 

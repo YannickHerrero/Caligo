@@ -48,6 +48,9 @@ pub struct CapturePromptScreen {
     /// Base catch rate for this enemy's tier.
     pub catch_rate: f32,
     phase: CapturePhase,
+    /// The MonsterInstance minted at roll-resolve time. Held so the
+    /// replace-slot flow can reuse it instead of minting a duplicate.
+    captured: Option<crate::meta::MonsterInstance>,
 }
 
 impl CapturePromptScreen {
@@ -69,6 +72,7 @@ impl CapturePromptScreen {
             enemy_species,
             catch_rate,
             phase: CapturePhase::Confirm,
+            captured: None,
         }
     }
 
@@ -287,7 +291,7 @@ impl CapturePromptScreen {
         );
         frame.render_widget(
             Paragraph::new(Line::from(Span::styled(
-                "It's added to the run roster, and to the post-run shop.",
+                "Joined your run roster and your collection.",
                 Style::default().fg(Color::DarkGray),
             )))
             .alignment(Alignment::Center),
@@ -382,23 +386,23 @@ impl CapturePromptScreen {
             return;
         }
 
-        // Mint the wild monster.
+        // Mint the wild monster and grant ownership immediately —
+        // wild captures go straight into the permanent collection (and
+        // into Meta.party if there's room there). Only starter recruits
+        // route through the post-run shop.
         let id = crate::meta::mint_wild_id();
         let instance = crate::meta::MonsterInstance {
             id: id.clone(),
             species: self.enemy_species.clone(),
         };
-        crate::meta::push_pending_capture(instance.clone());
+        crate::meta::add_owned_monster(instance.clone());
+        self.captured = Some(instance.clone());
 
         // Add to the active run roster if there's room; otherwise pop the
-        // replace-slot picker.
+        // replace-slot picker. Run roster is per-fight scratch; the
+        // permanent collection was already updated above.
         if let Some(map) = self.map.as_mut() {
             if map.run.party.len() < PARTY_CAP {
-                // Wild captures don't have a Starter template yet. For
-                // Phase 4 we wrap the species in a placeholder Starter
-                // sourced from the bestiary so the run can render and
-                // act on it. A unified MonsterTemplate replaces this in
-                // a follow-up.
                 if let Some(member) = crate::run::build_party_member_from_instance(&instance) {
                     map.run.party.push(member);
                     self.phase = CapturePhase::Caught;
@@ -414,13 +418,12 @@ impl CapturePromptScreen {
     }
 
     fn replace_slot(&mut self, slot: usize) {
-        let id = crate::meta::mint_wild_id();
-        let instance = crate::meta::MonsterInstance {
-            id: id.clone(),
-            species: self.enemy_species.clone(),
+        // Reuse the instance minted in resolve_roll; minting again here
+        // would create a phantom MonsterId that's already owned but
+        // unreferenced.
+        let Some(instance) = self.captured.clone() else {
+            return;
         };
-        // pending_capture was already pushed in resolve_roll(); don't
-        // double-push. Just swap the run slot.
         if let (Some(map), Some(member)) =
             (self.map.as_mut(), crate::run::build_party_member_from_instance(&instance))
         {
